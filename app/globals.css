@@ -1,0 +1,286 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Terrion design tokens
+
+   Style: Organic Biophilic — earth green and harvest gold on white. The
+   product is about land, seasons and yield, so the palette comes from a
+   growing field rather than from a SaaS template. White is the ground: it is
+   what a printed RDKK form is, what a phone in bright sun needs, and what lets
+   the one green and the one gold actually mean something.
+
+   The old palette sampled a game tileset (#dbc9b4 mud on #432b30 brown). It
+   made every screen look like a sepia photograph and left no colour free to
+   signal urgency, which the collision alert needs more than decoration does.
+
+   Three colours carry meaning and nothing else does:
+     green  — growing, healthy, the cooperative's own
+     gold   — harvest, money, a thing to act on
+     red    — over capacity, declined, past a cap
+--------------------------------------------------------------------------- */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* The font-face families loaded in app/layout.tsx. Previously this read
+     `--font-sans: var(--font-sans)`, which is self-referential: the variable
+     resolved to itself, became invalid, and every page fell back to the
+     browser's default serif. That is the Times New Roman. */
+  --font-sans: var(--font-fira-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-fira-code), ui-monospace, monospace;
+  --font-heading: var(--font-fira-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --animate-rise: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade: fade 0.4s ease-out both;
+  --animate-grow: grow 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+:root {
+  /* Field greens, from young shoot to deep canopy. */
+  --terrion-green-50: #f2f9f4;
+  --terrion-green-100: #dff0e5;
+  --terrion-green-200: #bde0ca;
+  --terrion-green-500: #2f9e5c;
+  --terrion-green-600: #1f8049;
+  --terrion-green-700: #15803d;
+  --terrion-green-900: #14532d;
+
+  /* Harvest gold. The only warm colour, so it always means "act on this". */
+  --terrion-gold-50: #fdf8ec;
+  --terrion-gold-200: #f2dfab;
+  --terrion-gold-500: #c2870b;
+  --terrion-gold-600: #a16207;
+
+  /* Ink, warmed very slightly towards green so it sits with the palette
+     instead of looking like a pasted-in neutral. */
+  --terrion-ink: #10231a;
+  --terrion-ink-soft: #4a5b52;
+
+  --background: #ffffff;
+  --foreground: var(--terrion-ink);
+  --card: #ffffff;
+  --card-foreground: var(--terrion-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--terrion-ink);
+
+  --primary: var(--terrion-green-700);
+  --primary-foreground: #ffffff;
+  --secondary: var(--terrion-green-50);
+  --secondary-foreground: var(--terrion-green-900);
+
+  /* Muted is a tinted surface, not grey: it separates a panel from the page
+     without introducing a second neutral. */
+  --muted: var(--terrion-green-50);
+  --muted-foreground: var(--terrion-ink-soft);
+
+  --accent: var(--terrion-gold-600);
+  --accent-foreground: #ffffff;
+  --destructive: #c2410c;
+  --destructive-foreground: #ffffff;
+
+  --border: #e3ece6;
+  --input: #d4e2d9;
+  --ring: var(--terrion-green-600);
+
+  /* Chart series: two hues plus lightness steps, so the order survives
+     greyscale printing and the common forms of colour blindness. */
+  --chart-1: var(--terrion-green-700);
+  --chart-2: var(--terrion-gold-500);
+  --chart-3: var(--terrion-green-500);
+  --chart-4: var(--terrion-ink-soft);
+  --chart-5: var(--terrion-green-200);
+
+  --radius: 0.75rem;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--terrion-ink);
+  --sidebar-primary: var(--terrion-green-700);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--terrion-green-50);
+  --sidebar-accent-foreground: var(--terrion-green-900);
+  --sidebar-border: #e3ece6;
+  --sidebar-ring: var(--terrion-green-600);
+
+  /* Shadows tinted green rather than black — a neutral drop shadow on a warm
+     white reads as dirt.
+
+     One ladder, five rungs, each a contact shadow plus a diffuse one. The two
+     names below it (soft, lift) are the ones the existing components ask for;
+     they are aliases so the scale could be introduced without touching every
+     card in the product at the same time. */
+  --shadow-xs: 0 1px 1px rgb(16 35 26 / 0.04);
+  --shadow-sm: 0 1px 2px rgb(16 35 26 / 0.04), 0 4px 16px rgb(16 35 26 / 0.06);
+  --shadow-md: 0 2px 4px rgb(16 35 26 / 0.06), 0 8px 20px rgb(16 35 26 / 0.08);
+  --shadow-lg: 0 2px 4px rgb(16 35 26 / 0.06), 0 12px 28px rgb(16 35 26 / 0.10);
+  --shadow-xl: 0 4px 8px rgb(16 35 26 / 0.07), 0 24px 56px rgb(16 35 26 / 0.14);
+
+  --shadow-soft: var(--shadow-sm);
+  --shadow-lift: var(--shadow-lg);
+
+  /* The canvas draws onto soil, not onto the page, so it cannot borrow
+     --border: a line tuned to be visible on white disappears on brown. This
+     is the one token that exists because a <canvas> cannot use a class. */
+  --canvas-grid: rgb(16 35 26 / 0.13);
+
+  /* Display sizes for the landing hero. Fluid rather than stepped: the hero
+     is one headline that has to hold the top of the screen at every width,
+     and a breakpoint jump in the middle of that is visible. */
+  --text-display-sm: clamp(2rem, 6vw, 3rem);
+  --text-display: clamp(2.5rem, 8vw, 5rem);
+  --text-display-lg: clamp(3rem, 10.5vw, 7rem);
+
+  /* The public header's height, pinned rather than measured.
+     The landing hero fills the screen below it -- calc(100dvh - this) -- and
+     that subtraction is only correct if the header really is this tall. So
+     the header sets its own height from the same token, and the two agree by
+     construction instead of by a number somebody measured once. */
+  --public-header: 3.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    /* A field seen from above: two very faint washes, no image request. At 3%
+       and 2% they are below the threshold of "a gradient" and read as paper
+       having a slight warmth to it. */
+    background-image:
+      radial-gradient(60rem 40rem at 82% -10%, rgb(47 158 92 / 0.05), transparent 60%),
+      radial-gradient(50rem 35rem at -10% 5%, rgb(194 135 11 / 0.04), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  /* Figures line up in columns wherever they are compared — tonnage, hectares,
+     rupiah. Proportional digits in a table are a data-entry bug you can see. */
+  th, td, [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1, h2, h3 {
+    @apply font-heading tracking-tight;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Keyboard focus only. A mouse click should not leave a ring behind. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+@layer components {
+  /* One shared transition for anything that responds to a pointer. Transform
+     and opacity only, so it stays on the compositor thread. */
+  .interactive {
+    transition:
+      transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 150ms ease-out,
+      border-color 150ms ease-out,
+      color 150ms ease-out;
+  }
+
+  /* A card that lifts towards the pointer. Displacement stays small: this is
+     feedback, not movement. */
+  .card-lift {
+    box-shadow: var(--shadow-soft);
+  }
+  .card-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lift);
+  }
+
+  /* Entry animation for lists. The delay is set per item inline, so a server
+     component can stagger without shipping any JavaScript. */
+  .rise {
+    animation: var(--animate-rise);
+    animation-delay: var(--rise-delay, 0ms);
+  }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* For a bar or a meter growing to its value. */
+@keyframes grow {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+/* Somebody who has asked their system for less motion gets the final state
+   immediately. Not a slower animation — none. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card-lift:hover {
+    transform: none;
+  }
+}

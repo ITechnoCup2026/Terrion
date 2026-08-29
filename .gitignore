@@ -1,0 +1,65 @@
+# Third-party art is tracked. The Immunity pack's licence forbids
+# redistribution, so this repository must stay PRIVATE until permission is
+# obtained. Do not make it public with assets/ in it.
+
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# next.js
+.next/
+out/
+build/
+next-env.d.ts
+
+# production
+dist/
+
+# misc
+.DS_Store
+*.pem
+Thumbs.db
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env
+.env
+.env*.local
+.env.production
+
+# local-only notes: test account credentials and similar
+*.local.md
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+
+# supabase
+supabase/.branches
+supabase/.temp
+supabase/.env
+
+# testing
+coverage/
+
+# editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Working notes, specs, the design brief and the manual walkthrough.
+docs/
+brainstorming.md
+
+# Agent tooling. Regenerated locally; not part of the product.
+AGENTS.md
+CLAUDE.md
+.claude/

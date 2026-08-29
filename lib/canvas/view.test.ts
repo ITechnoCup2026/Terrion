@@ -1,0 +1,119 @@
+import { describe, it, expect } from 'vitest'
+import { fitView, snapScale, pinchScale, scaleStep, MIN_SCALE, MAX_SCALE } from './view'
+
+describe('scaleStep', () => {
+  it('allows halves only where they land on whole device pixels', () => {
+    expect(scaleStep(2)).toBe(0.5)
+    expect(scaleStep(3)).toBe(0.5)
+  })
+
+  it('holds to integers on a low-density screen', () => {
+    // 1.5x of a 32px sprite is 48 physical pixels at dpr 1, so every source
+    // pixel straddles one and a half of them and the plants crawl.
+    expect(scaleStep(1)).toBe(1)
+  })
+})
+
+describe('snapScale', () => {
+  it('snaps to an integer scale by default', () => {
+    expect(snapScale(1.8)).toBe(2)
+    expect(snapScale(2.2)).toBe(2)
+  })
+
+  it('snaps to halves when the step allows it', () => {
+    expect(snapScale(2.4, 0.5)).toBe(2.5)
+    expect(snapScale(2.2, 0.5)).toBe(2)
+    expect(snapScale(1.75, 0.5)).toBe(2)
+  })
+
+  it('clamps to the scale bounds', () => {
+    expect(snapScale(0.1)).toBe(MIN_SCALE)
+    expect(snapScale(99)).toBe(MAX_SCALE)
+    expect(snapScale(0.1, 0.5)).toBe(MIN_SCALE)
+    expect(snapScale(99, 0.5)).toBe(MAX_SCALE)
+  })
+})
+
+describe('fitView', () => {
+  it('returns a scale on the notch it was given', () => {
+    expect(fitView(14, 10, 32, 900, 600).scale % 1).toBe(0)
+    expect((fitView(14, 10, 32, 900, 600, 0.5).scale * 2) % 1).toBe(0)
+  })
+
+  it('keeps the whole grid inside the viewport', () => {
+    for (const step of [1, 0.5]) {
+      const view = fitView(14, 10, 32, 900, 600, step)
+      expect(14 * 32 * view.scale).toBeLessThanOrEqual(900)
+      expect(10 * 32 * view.scale).toBeLessThanOrEqual(600)
+    }
+  })
+
+  it('centres the grid in the viewport', () => {
+    const view = fitView(14, 10, 32, 900, 600)
+    expect(view.offsetX).toBeCloseTo((900 - 14 * 32 * view.scale) / 2)
+    expect(view.offsetY).toBeCloseTo((600 - 10 * 32 * view.scale) / 2)
+  })
+
+  it('never drops below the minimum scale, even when the grid cannot fit', () => {
+    expect(fitView(200, 200, 32, 320, 240).scale).toBe(MIN_SCALE)
+    expect(fitView(200, 200, 32, 320, 240, 0.5).scale).toBe(MIN_SCALE)
+  })
+
+  it('scales up a small grid in a large viewport', () => {
+    expect(fitView(4, 4, 32, 1280, 1024).scale).toBeGreaterThan(1)
+  })
+
+  // Half steps buy a notch exactly when the best fit lands past .5, which is
+  // half of all plot shapes. A 12x10 grid at 32px is 384x320; in 1500x900 the
+  // best fit is 2.8, so integers throw away 0.8 of it and halves keep 0.5.
+  //
+  // Worth being accurate about what this is worth: it is a second-order gain.
+  // The farm was drawn at 1x not because of rounding but because the canvas
+  // was never given the height -- it sat in a padded box inside a scrolling
+  // page. Fix that and the same plot fits at 2 on integers alone. This is the
+  // notch on top.
+  it('uses a half step to fill more of the screen than integers can', () => {
+    const integer = fitView(12, 10, 32, 1500, 900, 1)
+    const halved = fitView(12, 10, 32, 1500, 900, 0.5)
+    expect(integer.scale).toBe(2)
+    expect(halved.scale).toBe(2.5)
+    // Still fits, which is the constraint the extra reach must not break.
+    expect(12 * 32 * halved.scale).toBeLessThanOrEqual(1500)
+    expect(10 * 32 * halved.scale).toBeLessThanOrEqual(900)
+  })
+
+  // The shape from the bug report, for the record: height binds at 2.008, so
+  // halves and integers agree. The win here came entirely from the layout.
+  it('agrees with integers when the fit is only just past a whole notch', () => {
+    expect(fitView(16, 14, 32, 1500, 900, 1).scale).toBe(2)
+    expect(fitView(16, 14, 32, 1500, 900, 0.5).scale).toBe(2)
+  })
+})
+
+describe('pinchScale', () => {
+  it('zooms in when the fingers spread apart', () => {
+    expect(pinchScale(1, 100, 200)).toBe(2)
+  })
+
+  it('zooms out when the fingers come together', () => {
+    expect(pinchScale(4, 200, 100)).toBe(2)
+  })
+
+  it('holds the scale for a gesture that barely moves', () => {
+    expect(pinchScale(3, 200, 205)).toBe(3)
+  })
+
+  it('lands on halves when the step allows it', () => {
+    expect(pinchScale(2, 100, 125, 0.5)).toBe(2.5)
+  })
+
+  it('stays within the scale bounds', () => {
+    expect(pinchScale(4, 100, 900)).toBe(MAX_SCALE)
+    expect(pinchScale(2, 900, 10)).toBe(MIN_SCALE)
+  })
+
+  // Two pointers landing on the same spot would otherwise divide by zero.
+  it('survives a zero starting distance', () => {
+    expect(pinchScale(2, 0, 150)).toBe(2)
+  })
+})
