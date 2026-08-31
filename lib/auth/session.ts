@@ -1,23 +1,18 @@
-import { createServerClient } from '@/lib/supabase/server'
 import { assertRole, type AppUser, type UserRole } from './roles'
 
 export type { AppUser, UserRole }
 
 /**
- * The signed-in user's app_user row, or null if nobody is signed in.
- * Uses getUser, which verifies the token with Supabase — getSession would
- * trust a cookie the browser could have forged.
+ * This repo has no backend attached -- the Supabase project it used to read
+ * from was removed. There is no session to read, so every caller sees nobody
+ * signed in, and every page gated on this redirects to /login exactly as it
+ * would for a real signed-out visitor.
  */
 export async function currentAppUser(): Promise<AppUser | null> {
-  const db = await createServerClient()
-  const { data: { user } } = await db.auth.getUser()
-  if (!user) return null
-
-  const { data } = await db.from('app_user').select('*').eq('id', user.id).maybeSingle()
-  return data ?? null
+  return null
 }
 
-/** The signed-in user, but only if their role is allowed. Throws otherwise. */
+/** Always throws until a backend is wired back up: nobody is ever signed in. */
 export async function requireRole(roles: UserRole[]): Promise<AppUser> {
   return assertRole(await currentAppUser(), roles)
 }

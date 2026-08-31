@@ -3,12 +3,14 @@ import { notFound } from 'next/navigation'
 
 import { RequestForm } from '@/components/commerce/RequestForm'
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
+import { toISODate } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
-import { listingSummary } from '@/lib/catalog/copy'
+import { listingSummary, requestStatusLabel } from '@/lib/catalog/copy'
 import { parseListingId } from '@/lib/catalog/listings'
 import { loadCooperativeListings } from '@/lib/catalog/load'
 import { commodityStyle } from '@/lib/catalog/commodity-style'
 import { formatNumberId } from '@/lib/format/number'
+import { createServerClient } from '@/lib/supabase/server'
 
 // No revalidate here, unlike the list page. This page calls currentAppUser(),
 // which reads cookies, so it renders dynamically no matter what this export
@@ -32,6 +34,26 @@ export default async function ListingPage({
 
   const user = await currentAppUser()
   const style = commodityStyle(listing.commodityName)
+
+  // A buyer with an open request against this exact listing sees its status
+  // instead of the form -- otherwise the same button submits again on every
+  // visit to this page, and the cooperative's inbox fills with duplicates of
+  // a request it has not even answered yet.
+  const existingRequest = user?.role === 'buyer'
+    ? await (async () => {
+        const db = await createServerClient()
+        const { data } = await db.from('supply_contract_request')
+          .select('status')
+          .eq('buyer_id', user.id)
+          .eq('cooperative_id', listing.cooperativeId)
+          .eq('commodity_id', listing.commodityId)
+          .eq('window_start', toISODate(listing.weekStart))
+          .eq('window_end', toISODate(listing.weekEnd))
+          .in('status', ['pending', 'accepted'])
+          .maybeSingle()
+        return data
+      })()
+    : null
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
@@ -107,11 +129,28 @@ export default async function ListingPage({
       </div>
 
       {user?.role === 'buyer' ? (
-        <RequestForm
-          listingId={listing.id}
-          projectedTonnes={listing.tonnes}
-          className="mt-6"
-        />
+        existingRequest ? (
+          <div className="mt-6 rounded-lg border border-border bg-card p-4 text-sm">
+            <p className="font-semibold text-foreground">
+              {requestStatusLabel(existingRequest.status)}
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              Anda sudah mengajukan permintaan untuk panen ini.
+            </p>
+            <Link
+              href="/my-requests"
+              className="mt-2 inline-block font-medium text-foreground underline"
+            >
+              Lihat permintaan saya
+            </Link>
+          </div>
+        ) : (
+          <RequestForm
+            listingId={listing.id}
+            projectedTonnes={listing.tonnes}
+            className="mt-6"
+          />
+        )
       ) : user ? (
         // Signed in, but on the cooperative side. Telling them to sign in would
         // be nonsense -- they already have; they are simply not a buyer.

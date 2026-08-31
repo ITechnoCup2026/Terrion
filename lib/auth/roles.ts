@@ -1,7 +1,13 @@
-import type { Database } from '@/lib/supabase/types.gen'
+export type UserRole = 'kader' | 'pengurus' | 'buyer'
 
-export type AppUser = Database['public']['Tables']['app_user']['Row']
-export type UserRole = AppUser['role']
+export type AppUser = {
+  id: string
+  cooperative_id: string | null
+  full_name: string
+  organisation: string | null
+  role: UserRole
+  created_at: string
+}
 
 /**
  * Lets a user through only if their role is on the list, otherwise throws.
