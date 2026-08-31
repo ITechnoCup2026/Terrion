@@ -3,10 +3,10 @@
 import { ErrorState } from '@/components/ui/ErrorState'
 
 export default function Error({
-  error, retry,
+  error, reset,
 }: {
   error: Error & { digest?: string }
-  retry: () => void
+  reset: () => void
 }) {
-  return <ErrorState retry={retry} digest={error.digest} />
+  return <ErrorState retry={reset} digest={error.digest} />
 }

@@ -17,7 +17,7 @@ export const metadata = { title: 'Daftar sebagai pembeli' }
 export default function SignupPage() {
   return (
     <main className="grid min-h-dvh lg:grid-cols-2">
-      <AuthShowcasePanel />
+      <AuthShowcasePanel variant="signup" />
 
       <div className="relative flex flex-col items-center justify-center bg-background p-6">
         <AuthBackButton />

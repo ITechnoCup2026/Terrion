@@ -2,23 +2,18 @@
 
 import { Building2, Lock, Sprout, User, UserCog } from 'lucide-react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useState } from 'react'
 
+import { signIn } from '@/app/actions/login'
 import { AuthBackButton } from '@/components/auth/AuthBackButton'
 import { AuthShowcasePanel } from '@/components/auth/AuthShowcasePanel'
 import { AuthField, AuthPasswordField } from '@/components/auth/fields'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/Logo'
 
-/**
- * The sign-in page.
- *
- * This repo has no backend attached, so there is nothing this form can
- * actually sign in against -- submitting always shows the same refusal. Kept
- * as a real page, rather than deleted, so the header's "Masuk" link and the
- * (app) layout's redirect both still land somewhere.
- */
+/** The sign-in page. Role/cooperative come back from GET /api/me after
+ *  sign-in, not from the form -- the "masuk sebagai" tabs are just a label. */
 export default function LoginPage() {
   return (
     <main className="grid min-h-dvh lg:grid-cols-2">
@@ -92,6 +87,7 @@ const roleCopy: Record<LoginRole, { label: string; placeholder: string; icon: ty
 const loginRoles = Object.keys(roleCopy) as LoginRole[]
 
 function LoginForm() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const requestedRole = searchParams.get('role')
   const initialRole = loginRoles.includes(requestedRole as LoginRole)
@@ -104,11 +100,23 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setError(null)
     setPending(true)
-    setError('Belum ada backend yang terhubung untuk memeriksa akun.')
-    setPending(false)
+    try {
+      const result = await signIn({ email, password })
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
+      router.push('/dashboard')
+      router.refresh()
+    } catch {
+      setError('Tidak bisa menghubungi server. Periksa koneksi Anda, lalu coba lagi.')
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
@@ -133,6 +141,7 @@ function LoginForm() {
       >
         {loginRoles.map(key => {
           const isActive = role === key
+          const Icon = roleCopy[key].icon
           return (
             <button
               key={key}
@@ -141,12 +150,13 @@ function LoginForm() {
               aria-selected={isActive}
               onClick={() => setRole(key)}
               className={
-                'interactive rounded-md py-1.5 text-sm font-medium transition-colors ' +
+                'interactive flex flex-col items-center gap-1 rounded-md py-1.5 text-sm font-medium ' +
                 (isActive
                   ? 'bg-card text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground')
               }
             >
+              <Icon aria-hidden className={'size-3.5 transition-colors ' + (isActive ? 'text-primary' : '')} />
               {roleCopy[key].label}
             </button>
           )

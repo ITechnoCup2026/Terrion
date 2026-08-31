@@ -3,7 +3,9 @@ import { redirect } from 'next/navigation'
 import { PlotForm, type PreviousEntry } from '@/components/plots/PlotForm'
 import { toISODate } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
-import { createServerClient } from '@/lib/supabase/server'
+import { loadAtlasCooperatives } from '@/lib/atlas/load'
+import { loadCommodities } from '@/lib/commodities/load'
+import { loadPlots } from '@/lib/plots/load'
 
 export const metadata = { title: 'Daftarkan lahan' }
 
@@ -24,32 +26,23 @@ export default async function NewPlotPage() {
   const cooperativeId = user.cooperative_id
   if (!cooperativeId) redirect('/login')
 
-  const db = await createServerClient()
-
-  const [{ data: commodities }, { data: varieties }, { data: coop }, { count }] = await Promise.all([
-    db.from('commodity').select('id, name').order('sprite_row'),
-    db.from('variety').select('id, commodity_id, name').order('name'),
-    db.from('cooperative').select('lat, lng').eq('id', cooperativeId).maybeSingle(),
-    db.from('plot').select('id', { count: 'exact', head: true }).eq('cooperative_id', cooperativeId),
+  const [commodityCatalogue, cooperatives, plots] = await Promise.all([
+    loadCommodities(),
+    loadAtlasCooperatives(),
+    loadPlots(),
   ])
 
-  // "Salin dari lahan sebelumnya" reads the most recent registration.
-  let previous: PreviousEntry = null
-  const { data: lastPlot } = await db.from('plot')
-    .select('id').eq('cooperative_id', cooperativeId)
-    .order('created_at', { ascending: false }).limit(1).maybeSingle()
-  if (lastPlot) {
-    const { data: block } = await db.from('block')
-      .select('commodity_id, variety_id, planting_date')
-      .eq('plot_id', lastPlot.id).order('order_index').limit(1).maybeSingle()
-    if (block) {
-      previous = {
-        commodityId: block.commodity_id,
-        varietyId: block.variety_id,
-        plantingDate: block.planting_date,
-      }
-    }
-  }
+  const commodities = commodityCatalogue.map(c => ({ id: c.id, name: c.name }))
+  const varieties = commodityCatalogue.flatMap(c =>
+    c.varieties.map(v => ({ id: v.id, commodity_id: v.commodityId, name: v.name })))
+  const cooperative = cooperatives.find(c => c.id === cooperativeId)
+
+  // "Salin dari lahan sebelumnya" read the most recently registered plot's
+  // first planting. GET /api/plots is sorted by soonest harvest, not by
+  // registration date, and carries no block-level commodity/variety detail --
+  // there is nothing in the contract to resolve this shortcut from, so it is
+  // dropped rather than guessed at.
+  const previous: PreviousEntry = null
 
   return (
     <main className="mx-auto w-full max-w-xl p-4 sm:p-6">
@@ -59,11 +52,11 @@ export default async function NewPlotPage() {
         lahan ditanami lebih dari satu jenis; blok juga bisa dipecah setelahnya.
       </p>
       <PlotForm
-        commodities={commodities ?? []}
-        varieties={varieties ?? []}
+        commodities={commodities}
+        varieties={varieties}
         previous={previous}
-        registered={count ?? 0}
-        origin={{ lat: Number(coop?.lat ?? -6.2833), lng: Number(coop?.lng ?? 107.8167) }}
+        registered={plots.length}
+        origin={{ lat: cooperative?.lat ?? -6.2833, lng: cooperative?.lng ?? 107.8167 }}
         seasonShortcuts={seasonShortcuts(new Date())}
       />
     </main>

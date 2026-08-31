@@ -82,3 +82,52 @@ export function AuthPasswordField({
     </label>
   )
 }
+
+/**
+ * A live read on a new password, shown only while registering.
+ *
+ * The schema's own bar is eight characters -- this doesn't raise it, since
+ * that would silently reject passwords the server accepts. It only tells a
+ * buyer, before they submit, whether "8 characters" is also a *weak* choice,
+ * which the schema's error message has no room to say.
+ */
+const strengthLevels = [
+  { label: 'Sangat lemah', color: 'var(--destructive)' },
+  { label: 'Lemah', color: 'var(--terrion-gold-600)' },
+  { label: 'Cukup', color: 'var(--terrion-gold-500)' },
+  { label: 'Kuat', color: 'var(--terrion-green-500)' },
+  { label: 'Sangat kuat', color: 'var(--terrion-green-700)' },
+] as const
+
+function passwordScore(value: string): number {
+  if (!value) return 0
+  let score = 0
+  if (value.length >= 8) score++
+  if (value.length >= 12) score++
+  if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score++
+  if (/[0-9]/.test(value)) score++
+  if (/[^a-zA-Z0-9]/.test(value)) score++
+  return Math.min(score, strengthLevels.length)
+}
+
+export function PasswordStrength({ value }: { value: string }) {
+  if (!value) return null
+
+  const score = passwordScore(value)
+  const level = strengthLevels[Math.max(score - 1, 0)]
+
+  return (
+    <div className="-mt-1 flex items-center gap-2" aria-live="polite">
+      <div className="flex h-1 flex-1 gap-1 overflow-hidden rounded-full bg-muted">
+        {strengthLevels.map((_, i) => (
+          <span
+            key={i}
+            className="h-full flex-1 rounded-full transition-colors duration-300"
+            style={{ background: i < score ? level.color : undefined }}
+          />
+        ))}
+      </div>
+      <span className="text-xs text-muted-foreground">{level.label}</span>
+    </div>
+  )
+}

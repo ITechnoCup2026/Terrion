@@ -1,8 +1,3 @@
-// This repo has no backend attached. currentAppUser() below always returns
-// null, so every path past its redirect is dead code left untyped rather
-// than rewritten; re-check it once a real backend returns.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
@@ -11,11 +6,10 @@ import { PlotBrowser } from '@/components/plots/PlotBrowser'
 import type { CommodityRef } from '@/components/plots/PlotCard'
 import { buttonVariants } from '@/components/ui/button'
 import { addDays } from '@/lib/agronomy/dates'
-import { projectCooperative } from '@/lib/agronomy/project'
 import { currentAppUser } from '@/lib/auth/session'
+import { loadCommodities } from '@/lib/commodities/load'
 import { formatNumberId } from '@/lib/format/number'
-import { summarisePlots, type PlotRow } from '@/lib/plots/summary'
-import { createServerClient } from '@/lib/supabase/server'
+import { loadPlots } from '@/lib/plots/load'
 
 export const metadata = { title: 'Lahan' }
 
@@ -28,42 +22,24 @@ export default async function PlotsPage() {
   if (!user) redirect('/login')
   if (!user.cooperative_id) redirect('/catalog')
 
-  const db = await createServerClient()
-
-  // RLS scopes this to the viewer's cooperative.
-  const [{ data: rows }, { data: commodityRows }] = await Promise.all([
-    db.from('plot')
-      .select('id, name, area_ha, member:member_id(name)')
-      .order('created_at', { ascending: false }),
-    db.from('commodity').select('id, name, sprite_row').order('sprite_row'),
+  // GET /api/plots already returns each plot sorted by soonest harvest, with
+  // its window and expected tonnage pre-computed.
+  const [summaries, commodityCatalogue] = await Promise.all([
+    loadPlots(),
+    loadCommodities(),
   ])
 
-  const plots: PlotRow[] = (rows ?? []).map(p => ({
-    id: p.id,
-    name: p.name,
-    areaHa: Number(p.area_ha),
-    memberName: (p.member as unknown as { name: string } | null)?.name ?? null,
-  }))
-
-  // Projecting an empty cooperative is wasted work, and projectCooperative
-  // reads every block of every plot.
-  const { projections, windows } = plots.length === 0
-    ? { projections: [], windows: new Map() }
-    : await projectCooperative(user.cooperative_id)
-
-  const summaries = summarisePlots({ plots, projections, windows })
-
-  const commodities: CommodityRef[] = (commodityRows ?? []).map(c => ({
-    id: c.id, name: c.name, spriteRow: c.sprite_row,
+  const commodities: CommodityRef[] = commodityCatalogue.map(c => ({
+    id: c.id, name: c.name, spriteRow: c.spriteRow,
   }))
 
   // The four figures describe the cooperative, not the current filter: they
   // are the fixed thing a narrowed list is measured against.
   const soon = addDays(now, 30)
   const kpis = [
-    { label: 'Lahan', value: formatNumberId(plots.length) },
-    { label: 'Luas total', value: `${formatNumberId(plots.reduce((s, p) => s + p.areaHa, 0))} ha` },
-    { label: 'Blok aktif', value: formatNumberId(projections.length) },
+    { label: 'Lahan', value: formatNumberId(summaries.length) },
+    { label: 'Luas total', value: `${formatNumberId(summaries.reduce((s, p) => s + p.areaHa, 0))} ha` },
+    { label: 'Blok aktif', value: formatNumberId(summaries.reduce((s, p) => s + p.blockCount, 0)) },
     {
       label: 'Panen 30 hari',
       value: formatNumberId(
@@ -83,7 +59,7 @@ export default async function PlotsPage() {
         <Link href="/plots/new" className={buttonVariants()}>Daftarkan lahan</Link>
       </div>
 
-      {plots.length > 0 && (
+      {summaries.length > 0 && (
         <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {kpis.map(k => (
             <div

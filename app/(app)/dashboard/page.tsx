@@ -1,8 +1,3 @@
-// This repo has no backend attached. currentAppUser() below always returns
-// null, so every path past its redirect is dead code left untyped rather
-// than rewritten; re-check it once a real backend returns.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import { redirect } from 'next/navigation'
 
 import { CollisionAlert, type CollisionAlertData } from '@/components/dashboard/CollisionAlert'
@@ -11,18 +6,13 @@ import { ImpactPanel } from '@/components/dashboard/ImpactPanel'
 import { ProjectionChart, type ChartWeek } from '@/components/dashboard/ProjectionChart'
 import { UpcomingHarvests } from '@/components/dashboard/UpcomingHarvests'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { detectCollisions } from '@/lib/agronomy/collide'
 import { addDays } from '@/lib/agronomy/dates'
-import { loadImpact } from '@/lib/agronomy/impact-load'
-import { projectCooperative } from '@/lib/agronomy/project'
 import { currentAppUser } from '@/lib/auth/session'
-import { selectLeadCollision } from '@/lib/dashboard/lead'
-import { weeklyProjection } from '@/lib/dashboard/series'
-import { upcomingHarvests, upcomingTonnes, type PlotRef } from '@/lib/dashboard/upcoming'
+import { loadDashboard } from '@/lib/dashboard/load'
 import { formatNumberId } from '@/lib/format/number'
 import { MONTHS_ID } from '@/lib/harvest/format'
-import { loadSeasonInputs } from '@/lib/rdkk/load'
-import { createServiceClient } from '@/lib/supabase/server'
+import { loadPlots } from '@/lib/plots/load'
+import { loadSeasonInputs, seasonRequirementLines } from '@/lib/rdkk/load'
 
 export const metadata = { title: 'Dasbor' }
 
@@ -37,35 +27,28 @@ function weekTick(weekStart: Date): string {
   return `${weekStart.getUTCDate()} ${MONTHS_ID[weekStart.getUTCMonth()]}`
 }
 
+const UPCOMING_SHOWN = 5
+
 export default async function DashboardPage() {
   const user = await currentAppUser()
   if (!user || user.role === 'buyer') redirect('/login')
-  const cooperativeId = user.cooperative_id
-  if (!cooperativeId) redirect('/login')
+  if (!user.cooperative_id) redirect('/login')
 
   const now = new Date()
-  const db = createServiceClient()
 
-  const { projections } = await projectCooperative(cooperativeId, now)
+  // GET /api/dashboard is one projection covering the 12-week chart, the
+  // collision detector's flagged weeks and lead pile-up, its staggering
+  // suggestions, the coming week's harvests, and the four impact figures --
+  // all pre-computed, so this page is a mapping from that response to the
+  // props each widget already expects, not a re-computation of any of it.
+  const [dashboard, plots, rdkk] = await Promise.all([
+    loadDashboard(),
+    loadPlots(),
+    loadSeasonInputs({ label: 'musim ini', start: addDays(now, -365), end: now }),
+  ])
 
-  // The cooperative's own stated weekly capacity, where it set one. Absent, the
-  // collision detector falls back to a multiple of its own median week.
-  const { data: capacityRows } = await db
-    .from('cooperative_capacity')
-    .select('commodity_id, tonnes_per_week')
-    .eq('cooperative_id', cooperativeId)
-
-  const capacity = capacityRows?.length
-    ? new Map(capacityRows.map(r => [r.commodity_id, Number(r.tonnes_per_week)]))
-    : null
-
-  const { flagged, suggestions } = detectCollisions(projections, capacity)
-  const weeks = weeklyProjection({ projections, from: now })
-
-  // A chart week is "risk" when the collision detector flagged that ISO week
-  // for any commodity — the chart aggregates commodities, the alert names one.
-  const flaggedWeeks = new Set(flagged.map(f => f.isoWeek))
-  const chartWeeks: ChartWeek[] = weeks.map(w => ({
+  const flaggedWeeks = new Set(dashboard.flagged.map(f => f.isoWeek))
+  const chartWeeks: ChartWeek[] = dashboard.weeks.map(w => ({
     label: weekTick(w.weekStart),
     expected: w.expectedTonnes,
     min: w.minTonnes,
@@ -73,117 +56,50 @@ export default async function DashboardPage() {
     risk: flaggedWeeks.has(w.isoWeek),
   }))
 
-  const [{ count: totalPlots }, { data: commodities }] = await Promise.all([
-    db.from('plot').select('id', { count: 'exact', head: true }).eq('cooperative_id', cooperativeId),
-    db.from('commodity').select('id, name'),
-  ])
-
-  const commodityName = new Map((commodities ?? []).map(c => [c.id, c.name]))
-
-  // A board acts on one thing at a time, and the thing worth acting on is a
-  // week where plots converge — see lib/dashboard/lead.ts for why that is not
-  // simply the heaviest week.
-  const plotOfBlock = new Map(projections.map(p => [p.blockId, p.plotId]))
-  const plotIdsFor = (blockIds: string[]) => [...new Set(
-    blockIds.map(id => plotOfBlock.get(id)).filter((id): id is string => !!id),
-  )]
-
-  const worst = selectLeadCollision(
-    flagged.map(f => ({ ...f, plotCount: plotIdsFor(f.contributingBlockIds).length })),
-  )
-
   let alert: CollisionAlertData | null = null
-  if (worst) {
-    const plotIds = plotIdsFor(worst.contributingBlockIds)
-
-    const { data: plotRows } = await db
-      .from('plot')
-      .select('id, name, member:member_id(name)')
-      .in('id', plotIds)
-
-    const contributingPlots = (plotRows ?? []).map(p => ({
-      id: p.id,
-      name: p.name,
-      memberName:
-        (Array.isArray(p.member) ? p.member[0]?.name : p.member?.name) ?? 'Anggota',
-    }))
-
-    const suggestion = suggestions.find(
-      s => s.isoWeek === worst.isoWeek && s.commodityId === worst.commodityId,
+  if (dashboard.lead) {
+    const lead = dashboard.lead
+    const suggestion = dashboard.suggestions.find(
+      s => s.isoWeek === lead.isoWeek && s.commodityId === lead.commodityId,
     ) ?? null
 
     alert = {
-      isoWeek: worst.isoWeek,
-      commodityId: worst.commodityId,
-      weekStart: worst.weekStart,
-      commodityName: commodityName.get(worst.commodityId) ?? 'Komoditas',
-      tonnes: worst.tonnes,
-      basis: worst.basis,
-      threshold: worst.threshold,
-      plotCount: plotIds.length,
-      totalPlots: totalPlots ?? plotIds.length,
-      contributingPlots,
-      suggestion,
+      isoWeek: lead.isoWeek,
+      commodityId: lead.commodityId,
+      weekStart: lead.weekStart,
+      commodityName: lead.commodityName,
+      tonnes: lead.tonnes,
+      basis: lead.basis,
+      threshold: lead.threshold,
+      plotCount: lead.plotCount,
+      totalPlots: plots.length,
+      // GET /api/dashboard names which blocks contribute (block_ids), not
+      // which plots -- and no contract endpoint maps a block id back to its
+      // plot's name and farmer without a per-plot lookup this page has no
+      // reason to make. The count above is real; the roster is not available.
+      contributingPlots: [],
+      suggestion: suggestion
+        ? { blockIds: suggestion.blockIds, shiftDays: suggestion.shiftDays, tonnesMoved: suggestion.tonnesMoved }
+        : null,
     }
   }
 
-  // Whose harvest is due in the coming week. The chart says how much; a
-  // pengurus reading this on Sunday needs the names before Monday.
-  //
-  // Only the plots that actually have a block due are looked up, so this is a
-  // small `in` rather than a second read of every plot in the cooperative.
-  const week = { from: now, to: addDays(now, 7) }
-  const dueBlocks = projections.filter(
-    p => p.window.start <= week.to && p.window.end >= week.from)
-  const { data: duePlotRows } = dueBlocks.length === 0
-    ? { data: [] }
-    : await db.from('plot').select('id, name, member:member_id(name)')
-        .in('id', [...new Set(dueBlocks.map(p => p.plotId))])
+  const upcomingRows = dashboard.upcoming.rows.slice(0, UPCOMING_SHOWN)
 
-  const duePlots = new Map<string, PlotRef>((duePlotRows ?? []).map(p => [p.id, {
-    name: p.name,
-    memberName: (Array.isArray(p.member) ? p.member[0]?.name : p.member?.name) ?? null,
-  }]))
-
-  const UPCOMING_SHOWN = 5
-  const allUpcoming = upcomingHarvests({
-    projections, from: week.from, to: week.to,
-    plots: duePlots, commodities: commodityName,
-  })
-  const upcoming = allUpcoming.slice(0, UPCOMING_SHOWN)
-
-  // Inputs are aggregated from what is actually recorded as planted, so the
-  // season is the twelve months behind us rather than a season nobody has
-  // entered yet.
-  const [rdkk, impact] = await Promise.all([
-    loadSeasonInputs(cooperativeId, {
-      label: 'musim ini',
-      start: addDays(now, -365),
-      end: now,
-    }),
-    // Reuses the projections already computed above rather than paying for a
-    // second projectCooperative pass.
-    loadImpact({ cooperativeId, projections, capacity }),
-  ])
-
-  // The four figures at the top, all derived from work already done above.
-  // The peak week is the heaviest of the twelve, which is not necessarily a
-  // flagged one -- a heavy week inside capacity is fine, and saying so is part
-  // of the point.
-  const peak = weeks.reduce<typeof weeks[number] | null>(
+  const peak = dashboard.weeks.reduce<typeof dashboard.weeks[number] | null>(
     (best, w) => (best === null || w.expectedTonnes > best.expectedTonnes ? w : best), null)
 
   const kpis = [
     {
       label: 'Panen 12 minggu',
-      value: `${formatNumberId(weeks.reduce((s, w) => s + w.expectedTonnes, 0))} ton`,
+      value: `${formatNumberId(dashboard.weeks.reduce((s, w) => s + w.expectedTonnes, 0))} ton`,
     },
     {
       label: 'Minggu puncak',
       value: peak ? `${weekTick(peak.weekStart)} · ${formatNumberId(peak.expectedTonnes)} t` : '—',
     },
     { label: 'Minggu berisiko', value: formatNumberId(flaggedWeeks.size) },
-    { label: 'Lahan', value: formatNumberId(totalPlots ?? 0) },
+    { label: 'Lahan', value: formatNumberId(plots.length) },
   ]
 
   return (
@@ -243,13 +159,13 @@ export default async function DashboardPage() {
 
         <div className="flex flex-col gap-4">
           <UpcomingHarvests
-            rows={upcoming}
-            totalTonnes={upcomingTonnes(allUpcoming)}
-            hidden={allUpcoming.length - upcoming.length}
+            rows={upcomingRows}
+            totalTonnes={dashboard.upcoming.totalTonnes}
+            hidden={dashboard.upcoming.rows.length - upcomingRows.length}
           />
           <GroupPurchaseAlert
-            totals={rdkk.totals}
-            plotCount={totalPlots ?? 0}
+            totals={seasonRequirementLines(rdkk)}
+            plotCount={plots.length}
             seasonLabel="musim ini"
             commoditiesWithoutRates={rdkk.commoditiesWithoutRates}
           />
@@ -258,7 +174,7 @@ export default async function DashboardPage() {
 
       {/* Last, because it looks backwards: what the cooperative already got
           out of this, rather than what it must do next. */}
-      <ImpactPanel figures={impact} />
+      <ImpactPanel figures={dashboard.impact} />
     </div>
   )
 }

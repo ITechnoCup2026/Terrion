@@ -10,7 +10,7 @@ import { parseListingId } from '@/lib/catalog/listings'
 import { loadCooperativeListings } from '@/lib/catalog/load'
 import { commodityStyle } from '@/lib/catalog/commodity-style'
 import { formatNumberId } from '@/lib/format/number'
-import { createServerClient } from '@/lib/supabase/server'
+import { loadSupplyRequests } from '@/lib/supply-requests/load'
 
 // No revalidate here, unlike the list page. This page calls currentAppUser(),
 // which reads cookies, so it renders dynamically no matter what this export
@@ -40,19 +40,13 @@ export default async function ListingPage({
   // visit to this page, and the cooperative's inbox fills with duplicates of
   // a request it has not even answered yet.
   const existingRequest = user?.role === 'buyer'
-    ? await (async () => {
-        const db = await createServerClient()
-        const { data } = await db.from('supply_contract_request')
-          .select('status')
-          .eq('buyer_id', user.id)
-          .eq('cooperative_id', listing.cooperativeId)
-          .eq('commodity_id', listing.commodityId)
-          .eq('window_start', toISODate(listing.weekStart))
-          .eq('window_end', toISODate(listing.weekEnd))
-          .in('status', ['pending', 'accepted'])
-          .maybeSingle()
-        return data
-      })()
+    ? (await loadSupplyRequests()).find(r =>
+        r.cooperativeId === listing.cooperativeId &&
+        r.commodityId === listing.commodityId &&
+        r.windowStart === toISODate(listing.weekStart) &&
+        r.windowEnd === toISODate(listing.weekEnd) &&
+        (r.status === 'pending' || r.status === 'accepted'),
+      ) ?? null
     : null
 
   return (

@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { signUpBuyer } from '@/app/actions/signup'
-import { AuthField, AuthPasswordField } from '@/components/auth/fields'
+import { AuthField, AuthPasswordField, PasswordStrength } from '@/components/auth/fields'
 import { Button } from '@/components/ui/button'
 import { signupSchema, type SignupInput } from '@/lib/schemas/signup'
 
@@ -23,12 +23,13 @@ export function SignupForm() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [sentTo, setSentTo] = useState<string | null>(null)
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignupInput>({
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
       fullName: '', organisation: '', email: '', password: '', confirmPassword: '',
     },
   })
+  const password = watch('password')
 
   const onSubmit = handleSubmit(async values => {
     setSubmitError(null)
@@ -110,13 +111,16 @@ export function SignupForm() {
         error={errors.email?.message}
       />
 
-      <AuthPasswordField
-        icon={Lock}
-        label="Kata sandi"
-        {...register('password')}
-        autoComplete="new-password"
-        error={errors.password?.message}
-      />
+      <div className="flex flex-col gap-2">
+        <AuthPasswordField
+          icon={Lock}
+          label="Kata sandi"
+          {...register('password')}
+          autoComplete="new-password"
+          error={errors.password?.message}
+        />
+        <PasswordStrength value={password ?? ''} />
+      </div>
 
       <AuthPasswordField
         icon={Lock}

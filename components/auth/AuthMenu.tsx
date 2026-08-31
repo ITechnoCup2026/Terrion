@@ -33,7 +33,7 @@ export function AuthMenu() {
           <Menu.Popup
             className={cn(
               'w-64 rounded-xl border border-border bg-card p-1.5 shadow-[var(--shadow-lg)]',
-              'origin-[var(--transform-origin)] transition-[transform,opacity]',
+              'origin-[var(--transform-origin,top)] transition-[transform,opacity]',
               'data-[starting-style]:scale-95 data-[starting-style]:opacity-0',
               'data-[ending-style]:scale-95 data-[ending-style]:opacity-0',
             )}

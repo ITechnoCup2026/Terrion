@@ -6,8 +6,7 @@ import { PlotStage, type StageBlock } from '@/components/plots/PlotStage'
 import { ShareLink } from '@/components/plots/ShareLink'
 import { formatNumberId } from '@/lib/format/number'
 import { MONTHS_ID } from '@/lib/harvest/format'
-import { loadCooperativePlots, loadPublicPlot } from '@/lib/plots/public-load'
-import { neighboursOf } from '@/lib/plots/siblings'
+import { loadPublicPlot } from '@/lib/plots/public-load'
 
 // Indexed by commodity.sprite_row, matching the crop sheet's row order.
 const BLOCK_COLOURS = ['#52513d', '#525726', '#ab5124', '#7a6a3a', '#8a4b2f', '#6b5b95', '#a33d5e']
@@ -44,12 +43,6 @@ export default async function GardenPage({
   const { public_id } = await params
   const plot = await loadPublicPlot(public_id)
   if (!plot) notFound()
-
-  // The rest of this cooperative's public land, so the page is not a leaf.
-  // Loaded after the plot rather than beside it, because it needs the village
-  // and district the plot carries.
-  const { cooperativeName, plots } = await loadCooperativePlots(plot.village, plot.district)
-  const neighbours = neighboursOf(plots, plot.publicId)
 
   const stageBlocks: StageBlock[] = plot.blocks.map(b => ({
     id: b.id,
@@ -145,8 +138,8 @@ export default async function GardenPage({
       </div>
 
       <PlotNeighbours
-        neighbours={neighbours}
-        cooperativeName={cooperativeName}
+        neighbours={plot.neighbours}
+        cooperativeName={plot.cooperativeName}
         village={plot.village}
       />
 

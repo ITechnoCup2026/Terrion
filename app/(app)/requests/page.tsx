@@ -1,8 +1,3 @@
-// This repo has no backend attached. currentAppUser() below always returns
-// null, so every path past its redirect is dead code left untyped rather
-// than rewritten; re-check it once a real backend returns.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import { redirect } from 'next/navigation'
 
 import { respondToRequest } from '@/app/actions/supply-request'
@@ -12,8 +7,9 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { utcDate } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
 import { INBOX_EMPTY, requestBuyerLabel, requestStatusLabel } from '@/lib/catalog/copy'
+import { loadCommodities } from '@/lib/commodities/load'
 import { formatNumberId } from '@/lib/format/number'
-import { createServerClient } from '@/lib/supabase/server'
+import { loadSupplyRequests } from '@/lib/supply-requests/load'
 
 export const metadata = { title: 'Permintaan pasokan' }
 
@@ -25,22 +21,14 @@ export default async function RequestsPage() {
   if (!user) redirect('/login')
   if (user.role !== 'pengurus') redirect('/dashboard')
 
-  const db = await createServerClient()
-
-  // RLS scopes this to the viewer's own cooperative. Another cooperative's
-  // requests are not filtered out here -- they are never returned.
-  //
-  // Who is asking is read from the request row, not from app_user. app_user
-  // carries a single policy, self_read (id = auth.uid()), so a pengurus cannot
-  // read the buyer's row and a join would always come back null. The name and
-  // organisation are copied onto the request at insert time instead, which
-  // keeps that boundary intact: browsing the catalogue stays anonymous, and
-  // identity is disclosed by the act of asking, to the cooperative asked.
-  const { data: requests } = await db.from('supply_contract_request')
-    .select('id, volume_kg, window_start, window_end, status, notes, created_at, buyer_name, buyer_organisation, commodity:commodity_id(name)')
-    .order('created_at', { ascending: false })
-
-  const rows = requests ?? []
+  // GET /api/supply-requests scopes this to the viewer's own cooperative --
+  // another cooperative's requests are never returned, so there is nothing to
+  // filter here beyond what the backend already did.
+  const [rows, commodities] = await Promise.all([
+    loadSupplyRequests(),
+    loadCommodities(),
+  ])
+  const commodityName = new Map(commodities.map(c => [c.id, c.name]))
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
@@ -53,73 +41,63 @@ export default async function RequestsPage() {
         <EmptyState className="mt-6" {...INBOX_EMPTY} />
       ) : (
         <div className="mt-6 grid gap-3">
-          {rows.map(r => {
-            const commodity = r.commodity as unknown as { name: string } | null
+          {rows.map(r => (
+            <div key={r.id} className="rounded-lg border border-border bg-card p-4">
+              <p className="text-sm font-semibold text-foreground">
+                {commodityName.get(r.commodityId) ?? 'Komoditas'} — {formatNumberId(r.volumeKg / 1000)} ton
+              </p>
 
-            return (
-              <div key={r.id} className="rounded-lg border border-border bg-card p-4">
-                <p className="text-sm font-semibold text-foreground">
-                  {commodity?.name ?? 'Komoditas'} — {formatNumberId(r.volume_kg / 1000)} ton
-                </p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {requestBuyerLabel(r.buyerName, r.buyerOrganisation)}
+              </p>
 
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  {requestBuyerLabel(r.buyer_name, r.buyer_organisation)}
-                </p>
-
-                <div className="mt-1">
-                  <HarvestWindow
-                    size="sm"
-                    week={{
-                      start: utcDate(r.window_start),
-                      end: utcDate(r.window_end),
-                      basis: 'observed',
-                    }}
-                  />
-                </div>
-
-                {r.notes && (
-                  <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">
-                    {r.notes}
-                  </p>
-                )}
-
-                {r.status === 'pending' ? (
-                  <div className="mt-3 flex gap-2">
-                    <form action={async () => {
-                      'use server'
-                      const result = await respondToRequest({ requestId: r.id, decision: 'accepted' })
-                      // These two buttons are inline Server Actions inside a Server
-                      // Component, so there is nowhere here to render a message.
-                      // A failure therefore goes to requests/error.tsx exactly as it
-                      // did before -- which is worse copy than the other call sites
-                      // now get, but far better than a click that silently does
-                      // nothing and leaves the request looking answered.
-                      if (!result.ok) throw new Error(result.message)
-                    }}>
-                      <Button type="submit">Terima</Button>
-                    </form>
-                    <form action={async () => {
-                      'use server'
-                      const result = await respondToRequest({ requestId: r.id, decision: 'declined' })
-                      // These two buttons are inline Server Actions inside a Server
-                      // Component, so there is nowhere here to render a message.
-                      // A failure therefore goes to requests/error.tsx exactly as it
-                      // did before -- which is worse copy than the other call sites
-                      // now get, but far better than a click that silently does
-                      // nothing and leaves the request looking answered.
-                      if (!result.ok) throw new Error(result.message)
-                    }}>
-                      <Button type="submit" variant="outline">Tolak</Button>
-                    </form>
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm font-medium text-foreground">
-                    {requestStatusLabel(r.status)}
-                  </p>
-                )}
+              <div className="mt-1">
+                <HarvestWindow
+                  size="sm"
+                  week={{
+                    start: utcDate(r.windowStart),
+                    end: utcDate(r.windowEnd),
+                    basis: 'observed',
+                  }}
+                />
               </div>
-            )
-          })}
+
+              {r.notes && (
+                <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+                  {r.notes}
+                </p>
+              )}
+
+              {r.status === 'pending' ? (
+                <div className="mt-3 flex gap-2">
+                  <form action={async () => {
+                    'use server'
+                    const result = await respondToRequest({ requestId: r.id, decision: 'accepted' })
+                    // These two buttons are inline Server Actions inside a Server
+                    // Component, so there is nowhere here to render a message.
+                    // A failure therefore goes to requests/error.tsx exactly as it
+                    // did before -- which is worse copy than the other call sites
+                    // now get, but far better than a click that silently does
+                    // nothing and leaves the request looking answered.
+                    if (!result.ok) throw new Error(result.message)
+                  }}>
+                    <Button type="submit">Terima</Button>
+                  </form>
+                  <form action={async () => {
+                    'use server'
+                    const result = await respondToRequest({ requestId: r.id, decision: 'declined' })
+                    if (!result.ok) throw new Error(result.message)
+                  }}>
+                    <Button type="submit" variant="outline">Tolak</Button>
+                  </form>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm font-medium text-foreground">
+                  {requestStatusLabel(r.status)}
+                </p>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>

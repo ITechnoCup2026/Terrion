@@ -24,7 +24,7 @@ export function ListingCard({ listing, index = 0 }: { listing: Listing; index?: 
   return (
     <Link
       href={`/catalog/${listing.id}`}
-      className="rise interactive card-lift group flex flex-col overflow-hidden rounded-xl border border-border bg-card"
+      className="rise interactive card-lift group flex flex-col overflow-hidden rounded-xl border border-border bg-card hover:border-foreground/15"
       style={{ ['--rise-delay' as string]: `${Math.min(index, 11) * 45}ms` }}
     >
       {/* The crop's own colour, standing in for a product shot. The glyph is a
@@ -79,7 +79,7 @@ export function ListingCard({ listing, index = 0 }: { listing: Listing; index?: 
           week={{ start: listing.weekStart, end: listing.weekEnd, basis: listing.basis }}
         />
 
-        <div className="mt-auto flex items-center gap-1.5 border-t border-border pt-2.5 text-xs text-muted-foreground">
+        <div className="mt-auto flex items-center gap-2 border-t border-border pt-2.5 text-xs text-muted-foreground">
           <svg aria-hidden viewBox="0 0 24 24" className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75">
             <path d="M12 21s-7-5.4-7-10a7 7 0 1 1 14 0c0 4.6-7 10-7 10Z" strokeLinejoin="round" />
             <circle cx="12" cy="11" r="2.4" />
@@ -87,6 +87,16 @@ export function ListingCard({ listing, index = 0 }: { listing: Listing; index?: 
           <span className="truncate">
             {listing.cooperativeName} · {listing.district}
           </span>
+
+          {/* The card's whole surface is the link; this arrow just makes that
+              affordance visible instead of leaving it implicit in the cursor. */}
+          <svg
+            aria-hidden viewBox="0 0 24 24"
+            className="ml-auto size-3.5 shrink-0 -translate-x-1 text-muted-foreground/0 transition-all duration-200 group-hover:translate-x-0 group-hover:text-foreground"
+            fill="none" stroke="currentColor" strokeWidth="1.75"
+          >
+            <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </div>
       </div>
     </Link>

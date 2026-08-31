@@ -8,9 +8,7 @@ import { currentAppUser } from '@/lib/auth/session'
 import { formatNumberId } from '@/lib/format/number'
 import { MONTHS_ID } from '@/lib/harvest/format'
 import { SUBSIDY_CAP_HA } from '@/lib/rdkk/aggregate'
-import { buildRdkkDocument } from '@/lib/rdkk/export'
 import { loadSeasonInputs } from '@/lib/rdkk/load'
-import { createServerClient } from '@/lib/supabase/server'
 
 export const metadata = { title: 'RDKK' }
 
@@ -28,26 +26,10 @@ export default async function RdkkPage() {
   if (!user) redirect('/login')
   if (!user.cooperative_id) redirect('/catalog')
 
-  const db = await createServerClient()
-  const { data: cooperative } = await db
-    .from('cooperative')
-    .select('name, village, district, province')
-    .eq('id', user.cooperative_id)
-    .maybeSingle()
-
   const now = new Date()
-  const aggregate = await loadSeasonInputs(user.cooperative_id, {
-    label: 'musim ini', start: addDays(now, -365), end: now,
-  })
-
-  const doc = buildRdkkDocument(aggregate, {
-    cooperativeName: cooperative?.name ?? 'Koperasi',
-    village: cooperative?.village ?? '—',
-    district: cooperative?.district ?? '—',
-    province: cooperative?.province ?? '—',
-    seasonLabel: 'musim ini',
-    printedAt: now,
-  })
+  // GET /api/rdkk already returns the cooperative's name/village/district/
+  // province alongside the aggregate, so there is nothing else to look up.
+  const doc = await loadSeasonInputs({ label: 'musim ini', start: addDays(now, -365), end: now })
 
   if (doc.rows.length === 0) {
     return (

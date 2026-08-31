@@ -48,6 +48,16 @@ const MESSAGES: Record<string, string> = {
 
   validation_failed:
     'Ada isian yang belum benar. Periksa kembali email dan kata sandi Anda.',
+
+  // Also used by the login form (app/actions/login.ts) -- Supabase returns
+  // this same code for a wrong password and for an email with no account,
+  // and the two must read identically so a login form can't be used to
+  // find out who has an account.
+  invalid_credentials:
+    'Email atau kata sandi salah. Periksa kembali, atau daftar jika belum punya akun.',
+
+  email_not_confirmed:
+    'Email Anda belum dikonfirmasi. Buka tautan konfirmasi yang dikirim ke email Anda.',
 }
 
 const FALLBACK =

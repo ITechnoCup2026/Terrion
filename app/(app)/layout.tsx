@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation'
 
 import { signOut } from '@/app/actions/auth'
 import { AppShell } from '@/components/ui/AppShell'
+import { loadAtlasCooperatives } from '@/lib/atlas/load'
 import { currentAppUser } from '@/lib/auth/session'
-import { createServerClient } from '@/lib/supabase/server'
 
 /**
  * The cooperative-side shell: who you are, which cooperative you are acting
@@ -32,12 +32,15 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
   // check constraint), so this shell is not theirs.
   if (!user.cooperative_id) redirect('/catalog')
 
-  const db = await createServerClient()
-  const { data: cooperative } = await db
-    .from('cooperative')
-    .select('name, village, district')
-    .eq('id', user.cooperative_id)
-    .maybeSingle()
+  // GET /api/me doesn't return the cooperative's name/village/district, and
+  // there is no dedicated "my cooperative" endpoint -- but /api/atlas/cooperatives
+  // is public and already carries them, so this looks itself up in that list
+  // rather than inventing a new call.
+  const cooperatives = await loadAtlasCooperatives()
+  const match = cooperatives.find(c => c.id === user.cooperative_id)
+  const cooperative = match
+    ? { name: match.name, village: match.village, district: match.district }
+    : null
 
   const initials = user.full_name
     .split(' ')

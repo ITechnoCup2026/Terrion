@@ -6,7 +6,6 @@ export type AppUser = {
   full_name: string
   organisation: string | null
   role: UserRole
-  created_at: string
 }
 
 /**

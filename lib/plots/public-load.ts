@@ -1,13 +1,8 @@
-/**
- * This repo has no backend attached -- the Supabase project this used to read
- * public plots from was removed. The shared garden page is public (no
- * session, no gate), so it renders straight through: a missing plot is
- * indistinguishable from an unreachable backend, and both are `notFound()`.
- * Re-wire these to a real data source when the backend comes back.
- */
-
+import { utcDate } from '@/lib/agronomy/dates'
 import type { HarvestWindow } from '@/lib/agronomy/types'
-import type { PlotNeighbour } from '@/lib/plots/siblings'
+import { apiFetch } from '@/lib/api/client'
+import type { HarvestWindowRaw, PublicBlockRaw, PublicPlotResponseRaw } from '@/lib/api/types'
+import type { Neighbours, PlotNeighbour } from '@/lib/plots/siblings'
 
 export type PublicBlock = {
   id: string
@@ -29,22 +24,74 @@ export type PublicPlot = {
   memberName: string
   village: string
   district: string
+  cooperativeName: string
   blocks: PublicBlock[]
   degraded: boolean
   terrainSeed: number
+  neighbours: Neighbours
 }
 
-export async function loadPublicPlot(_publicId: string): Promise<PublicPlot | null> {
-  return null
+function toHarvestWindow(raw: HarvestWindowRaw): HarvestWindow {
+  return {
+    start: utcDate(raw.start),
+    end: utcDate(raw.end),
+    confidence: 0.8,
+    gddAccumulated: raw.gdd_accumulated,
+    gddRequired: raw.gdd_required,
+    stage: raw.stage,
+    basis: raw.basis,
+    plausibility: raw.plausibility,
+    cumulativeGdd: raw.cumulative_gdd ?? [],
+  }
 }
 
-export type CooperativePlots = {
-  cooperativeName: string | null
-  plots: PlotNeighbour[]
+function toBlock(raw: PublicBlockRaw): PublicBlock {
+  return {
+    id: raw.id,
+    label: raw.label,
+    areaHa: raw.area_ha,
+    orderIndex: raw.order_index,
+    commodityName: raw.commodity_name,
+    varietyName: raw.variety_name,
+    spriteRow: raw.sprite_row,
+    plantingDate: utcDate(raw.planting_date),
+    window: raw.window ? toHarvestWindow(raw.window) : null,
+    yieldRangeTonnes: raw.yield_range_tonnes,
+  }
 }
 
-export async function loadCooperativePlots(
-  _village: string, _district: string,
-): Promise<CooperativePlots> {
-  return { cooperativeName: null, plots: [] }
+function toNeighbour(raw: { public_id: string; name: string; member_name: string; area_ha: number }): PlotNeighbour {
+  return { publicId: raw.public_id, name: raw.name, memberName: raw.member_name, areaHa: raw.area_ha }
+}
+
+/**
+ * GET /api/public/plots/:publicId already embeds this plot's neighbours
+ * (position/total/previous/next/others) in the same response, so there is no
+ * separate "list plots by village/district" call to make.
+ */
+export async function loadPublicPlot(publicId: string): Promise<PublicPlot | null> {
+  try {
+    const raw = await apiFetch<PublicPlotResponseRaw>(`/api/public/plots/${publicId}`)
+    return {
+      publicId: raw.public_id,
+      name: raw.name,
+      areaHa: raw.area_ha,
+      memberName: raw.member_name,
+      village: raw.village,
+      district: raw.district,
+      cooperativeName: raw.cooperative_name,
+      degraded: raw.degraded,
+      terrainSeed: raw.terrain_seed,
+      blocks: raw.blocks.map(toBlock),
+      neighbours: {
+        position: raw.neighbours.position,
+        total: raw.neighbours.total,
+        previous: raw.neighbours.previous ? toNeighbour(raw.neighbours.previous) : null,
+        next: raw.neighbours.next ? toNeighbour(raw.neighbours.next) : null,
+        others: raw.neighbours.others.map(toNeighbour),
+      },
+    }
+  } catch {
+    return null
+  }
 }
