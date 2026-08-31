@@ -27,3 +27,10 @@ export const respondToRequestSchema = z.object({
 })
 
 export type RespondToRequestInput = z.infer<typeof respondToRequestSchema>
+
+// A buyer withdraws their own still-pending request.
+export const withdrawRequestSchema = z.object({
+  requestId: z.uuid(),
+})
+
+export type WithdrawRequestInput = z.infer<typeof withdrawRequestSchema>

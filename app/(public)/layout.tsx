@@ -5,9 +5,9 @@ import { Logo } from '@/components/ui/Logo'
 /**
  * The public shell: the Atlas and the supply catalogue.
  *
- * Deliberately thin. Nothing here may assume a signed-in user — these pages are
- * read by buyers and by anyone following a shared plot link, so the frame
- * carries no cooperative identity and no navigation into the app.
+ * Deliberately thin: no cooperative identity, no app navigation, no session
+ * awareness. This repo is frontend-only -- there is no backend to ask who is
+ * signed in, so the header always renders the signed-out state.
  *
  * The header is sticky and translucent: on the catalogue the reader scrolls a
  * long list and still needs the way back, and a solid bar that far down the
@@ -25,10 +25,8 @@ export default function PublicLayout({ children }: LayoutProps<'/'>) {
             <Logo className="transition-transform duration-300 group-hover:-translate-y-0.5" />
           </Link>
 
-          {/* Katalog and Atlas are the two things to look at; Masuk and
-              Daftar are the two things to do. The Atlas entry is new: it
-              stopped being a section of the landing page and became a page,
-              so it needs a way in from every public screen. */}
+          {/* Katalog and Atlas are the two things to look at. What comes after
+              depends on who is asking. */}
           <nav aria-label="Navigasi publik" className="flex items-center gap-1">
             <Link
               href="/catalog"
@@ -42,6 +40,7 @@ export default function PublicLayout({ children }: LayoutProps<'/'>) {
             >
               Atlas
             </Link>
+
             <Link
               href="/login"
               className="interactive rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
