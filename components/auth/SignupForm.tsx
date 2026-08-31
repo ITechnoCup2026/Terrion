@@ -1,11 +1,13 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Building2, Lock, Mail, User } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { signUpBuyer } from '@/app/actions/signup'
+import { AuthField, AuthPasswordField } from '@/components/auth/fields'
 import { Button } from '@/components/ui/button'
 import { signupSchema, type SignupInput } from '@/lib/schemas/signup'
 
@@ -16,12 +18,6 @@ import { signupSchema, type SignupInput } from '@/lib/schemas/signup'
  * one kind of account, and the Server Action hard-codes which -- a select box
  * here would imply the choice was the browser's to make.
  */
-const field =
-  'interactive h-11 rounded-lg border border-input bg-background px-3 text-base font-normal ' +
-  'text-foreground hover:border-ring/40 focus:border-ring focus:outline-none'
-const labelText = 'flex flex-col gap-1.5 text-sm font-medium text-foreground'
-const errorText = 'text-xs text-destructive'
-
 export function SignupForm() {
   const router = useRouter()
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -63,7 +59,7 @@ export function SignupForm() {
   // so this form cannot be used to find out who has an account.
   if (sentTo) {
     return (
-      <div className="rise mt-7 rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-soft)]">
+      <div className="rise mt-7 rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-soft)]">
         <p className="text-sm font-semibold text-foreground">Periksa email Anda</p>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Kami mengirim tautan konfirmasi ke <span className="text-foreground">{sentTo}</span>.
@@ -76,45 +72,59 @@ export function SignupForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="rise mt-7 flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-soft)]"
+      className="rise relative mt-7 flex flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-soft)]"
       style={{ ['--rise-delay' as string]: '80ms' }}
     >
-      <label className={labelText}>
-        Nama lengkap
-        <input {...register('fullName')} autoComplete="name"
-          placeholder="Ibu Diana Prasetyo" className={`${field} placeholder:text-muted-foreground/60`} />
-        {errors.fullName && <span className={errorText}>{errors.fullName.message}</span>}
-      </label>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full"
+        style={{ background: 'color-mix(in oklch, var(--terrion-gold-500), transparent 88%)' }}
+      />
 
-      <label className={labelText}>
-        Nama organisasi
-        <input {...register('organisation')} autoComplete="organization"
-          placeholder="PT Pangan Nusantara" className={`${field} placeholder:text-muted-foreground/60`} />
-        {errors.organisation
-          ? <span className={errorText}>{errors.organisation.message}</span>
-          : <span className="text-xs text-muted-foreground">
-              Ditampilkan kepada koperasi saat Anda mengajukan permintaan.
-            </span>}
-      </label>
+      <AuthField
+        icon={User}
+        label="Nama lengkap"
+        {...register('fullName')}
+        autoComplete="name"
+        placeholder="Ibu Diana Prasetyo"
+        error={errors.fullName?.message}
+      />
 
-      <label className={labelText}>
-        Email
-        <input {...register('email')} type="email" autoComplete="email"
-          placeholder="nama@perusahaan.co.id" className={`${field} placeholder:text-muted-foreground/60`} />
-        {errors.email && <span className={errorText}>{errors.email.message}</span>}
-      </label>
+      <AuthField
+        icon={Building2}
+        label="Nama organisasi"
+        {...register('organisation')}
+        autoComplete="organization"
+        placeholder="PT Pangan Nusantara"
+        error={errors.organisation?.message}
+        hint={errors.organisation ? undefined : 'Ditampilkan kepada koperasi saat Anda mengajukan permintaan.'}
+      />
 
-      <label className={labelText}>
-        Kata sandi
-        <input {...register('password')} type="password" autoComplete="new-password" className={field} />
-        {errors.password && <span className={errorText}>{errors.password.message}</span>}
-      </label>
+      <AuthField
+        icon={Mail}
+        label="Email"
+        {...register('email')}
+        type="email"
+        autoComplete="email"
+        placeholder="nama@perusahaan.co.id"
+        error={errors.email?.message}
+      />
 
-      <label className={labelText}>
-        Konfirmasi kata sandi
-        <input {...register('confirmPassword')} type="password" autoComplete="new-password" className={field} />
-        {errors.confirmPassword && <span className={errorText}>{errors.confirmPassword.message}</span>}
-      </label>
+      <AuthPasswordField
+        icon={Lock}
+        label="Kata sandi"
+        {...register('password')}
+        autoComplete="new-password"
+        error={errors.password?.message}
+      />
+
+      <AuthPasswordField
+        icon={Lock}
+        label="Konfirmasi kata sandi"
+        {...register('confirmPassword')}
+        autoComplete="new-password"
+        error={errors.confirmPassword?.message}
+      />
 
       {submitError && (
         <p role="alert"

@@ -75,23 +75,33 @@
   --animate-rise: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-fade: fade 0.4s ease-out both;
   --animate-grow: grow 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-float: float 6s ease-in-out infinite;
 }
 
 :root {
-  /* Field greens, from young shoot to deep canopy. */
-  --terrion-green-50: #f2f9f4;
-  --terrion-green-100: #dff0e5;
-  --terrion-green-200: #bde0ca;
-  --terrion-green-500: #2f9e5c;
-  --terrion-green-600: #1f8049;
-  --terrion-green-700: #15803d;
-  --terrion-green-900: #14532d;
+  /* Field greens, from young shoot to deep canopy -- tuned to the brand
+     board's Deep Forest / Green Field / Fresh Leaf swatches. */
+  --terrion-green-50: #f1f8f2;
+  --terrion-green-100: #dcedde;
+  --terrion-green-200: #b6dbb9;
+  --terrion-green-500: #4c9a5b;
+  --terrion-green-600: #2e7d4f;
+  --terrion-green-700: #1f5c3f;
+  --terrion-green-900: #0e3b26;
 
-  /* Harvest gold. The only warm colour, so it always means "act on this". */
-  --terrion-gold-50: #fdf8ec;
-  --terrion-gold-200: #f2dfab;
-  --terrion-gold-500: #c2870b;
-  --terrion-gold-600: #a16207;
+  /* Harvest gold, from the brand board's sun. The only warm colour, so it
+     always means "act on this". */
+  --terrion-gold-50: #fdf6e8;
+  --terrion-gold-200: #f3dfa0;
+  --terrion-gold-500: #e8a93a;
+  --terrion-gold-600: #c9821f;
+
+  /* The brand board's two supporting neutrals: warm sand (paper, cards on the
+     auth screens) and soil brown (used sparingly, never for text). */
+  --terrion-sand-50: #faf5ec;
+  --terrion-sand-100: #f0e4d3;
+  --terrion-brown-600: #7a5c3e;
+  --terrion-sky-100: #dceaf2;
 
   /* Ink, warmed very slightly towards green so it sits with the palette
      instead of looking like a pasted-in neutral. */
@@ -267,6 +277,14 @@
 @keyframes grow {
   from { transform: scaleY(0); }
   to   { transform: scaleY(1); }
+}
+
+/* A slow, gentle drift for decorative elements -- the auth showcase panel's
+   floating stat cards. Small enough amplitude that it reads as ambient, not
+   as something demanding attention. */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
 }
 
 /* Somebody who has asked their system for less motion gets the final state

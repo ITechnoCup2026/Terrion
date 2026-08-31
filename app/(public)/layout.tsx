@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import { AuthMenu } from '@/components/auth/AuthMenu'
 import { Logo } from '@/components/ui/Logo'
 
 /**
@@ -41,22 +42,9 @@ export default function PublicLayout({ children }: LayoutProps<'/'>) {
               Atlas
             </Link>
 
-            <Link
-              href="/login"
-              className="interactive rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              Masuk
-            </Link>
-            {/* "Daftar pembeli", not "Daftar". A bare Daftar reads as an
-                invitation to register a cooperative, and there is no such
-                form -- a koperasi is verified offline. Naming the audience is
-                the difference between a door and a dead end. */}
-            <Link
-              href="/signup"
-              className="interactive ml-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Daftar pembeli
-            </Link>
+            <div className="ml-1">
+              <AuthMenu />
+            </div>
           </nav>
         </div>
       </header>
