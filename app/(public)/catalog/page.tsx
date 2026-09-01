@@ -2,7 +2,10 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import { ListingCard } from '@/components/commerce/ListingCard'
+import { buttonVariants } from '@/components/ui/button'
+import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Page, PageHeader } from '@/components/ui/Page'
 import { CATALOG_EMPTY, FILTERS_EMPTY } from '@/lib/catalog/copy'
 import type { ListingFilters } from '@/lib/catalog/listings'
 import { loadCatalogListings } from '@/lib/catalog/load'
@@ -62,43 +65,42 @@ export default async function CatalogPage({
     : listings
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-            Katalog pasokan
-          </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
+    <Page width="wide">
+      <PageHeader
+        title="Katalog pasokan"
+        description={
+          <>
             Panen yang diproyeksikan koperasi dalam 12 minggu ke depan. Setiap kartu
             adalah satu komoditas pada satu minggu panen — pilih satu untuk mengajukan
             kontrak pasokan.
-          </p>
-        </div>
-
-        {/* A quiet scale-setter: it tells a first-time buyer this is a real,
-            populated market before they touch a single filter. */}
-        <div className="flex shrink-0 gap-4 rounded-xl border border-border bg-card px-4 py-2.5">
-          <div>
-            <p className="font-mono text-lg font-medium leading-none text-foreground">
-              {listings.length}
-            </p>
-            <p className="mt-1 text-[0.7rem] text-muted-foreground">penawaran</p>
-          </div>
-          <div className="w-px bg-border" aria-hidden />
-          <div>
-            <p className="font-mono text-lg font-medium leading-none text-foreground">
-              {commodities.length}
-            </p>
-            <p className="mt-1 text-[0.7rem] text-muted-foreground">komoditas</p>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+        actions={
+          /* A quiet scale-setter: it tells a first-time buyer this is a real,
+             populated market before they touch a single filter. */
+          <Card pad="none" className="flex gap-4 px-4 py-2.5">
+            <div>
+              <p className="font-mono text-lg font-medium leading-none text-foreground">
+                {listings.length}
+              </p>
+              <p className="mt-1 text-[0.7rem] text-muted-foreground">penawaran</p>
+            </div>
+            <div className="w-px bg-border" aria-hidden />
+            <div>
+              <p className="font-mono text-lg font-medium leading-none text-foreground">
+                {commodities.length}
+              </p>
+              <p className="mt-1 text-[0.7rem] text-muted-foreground">komoditas</p>
+            </div>
+          </Card>
+        }
+      />
 
       {/* A filter bar, not a form card: it sticks under the header so a buyer
           deep in the grid can narrow without scrolling back up. */}
       <form
         method="get"
-        className="sticky top-[3.75rem] z-30 -mx-4 mt-6 flex flex-wrap items-end gap-3 border-y border-border bg-background/90 px-4 py-3 shadow-sm backdrop-blur-md"
+        className="sticky top-[var(--public-header)] z-30 -mx-4 mt-6 flex flex-wrap items-end gap-3 border-y border-border bg-background/90 px-4 py-3 shadow-sm backdrop-blur-md"
       >
         <Field label="Komoditas" htmlFor="f-komoditas">
           <select id="f-komoditas" name="komoditas" defaultValue={filters.commodityId ?? ''} className={field}>
@@ -130,18 +132,12 @@ export default async function CatalogPage({
           />
         </Field>
 
-        <button
-          type="submit"
-          className="interactive h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
+        <button type="submit" className={buttonVariants({ size: 'lg' })}>
           Terapkan
         </button>
 
         {hasActiveFilter && (
-          <Link
-            href="/catalog"
-            className="interactive h-9 rounded-lg px-2 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          >
+          <Link href="/catalog" className={buttonVariants({ variant: 'ghost', size: 'lg' })}>
             Hapus filter
           </Link>
         )}
@@ -160,10 +156,7 @@ export default async function CatalogPage({
           {...(listings.length === 0 ? CATALOG_EMPTY : FILTERS_EMPTY)}
           action={
             hasActiveFilter && (
-              <Link
-                href="/catalog"
-                className="interactive inline-flex h-9 items-center rounded-lg border border-input bg-background px-4 text-sm font-medium text-foreground hover:border-ring/40"
-              >
+              <Link href="/catalog" className={buttonVariants({ variant: 'outline', size: 'lg' })}>
                 Hapus semua filter
               </Link>
             )
@@ -174,6 +167,6 @@ export default async function CatalogPage({
           {shown.map((l, i) => <ListingCard key={l.id} listing={l} index={i} />)}
         </div>
       )}
-    </div>
+    </Page>
   )
 }

@@ -1,6 +1,6 @@
 import { utcDate } from '@/lib/agronomy/dates'
 import type { HarvestWindow } from '@/lib/agronomy/types'
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch, isNotFound } from '@/lib/api/client'
 import type { HarvestWindowRaw, PublicBlockRaw, PublicPlotResponseRaw } from '@/lib/api/types'
 import type { Neighbours, PlotNeighbour } from '@/lib/plots/siblings'
 
@@ -68,6 +68,12 @@ function toNeighbour(raw: { public_id: string; name: string; member_name: string
  * GET /api/public/plots/:publicId already embeds this plot's neighbours
  * (position/total/previous/next/others) in the same response, so there is no
  * separate "list plots by village/district" call to make.
+ *
+ * null means 404 and nothing else. A backend that is down answers 502, and
+ * swallowing that into null would show a farmer's family "kebun tidak
+ * ditemukan" for a garden that is still very much there -- they would stop
+ * opening the link. Every other failure is rethrown to the error boundary,
+ * which at least says to try again.
  */
 export async function loadPublicPlot(publicId: string): Promise<PublicPlot | null> {
   try {
@@ -91,7 +97,8 @@ export async function loadPublicPlot(publicId: string): Promise<PublicPlot | nul
         others: raw.neighbours.others.map(toNeighbour),
       },
     }
-  } catch {
-    return null
+  } catch (error) {
+    if (isNotFound(error)) return null
+    throw error
   }
 }

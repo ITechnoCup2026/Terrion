@@ -2,7 +2,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { PrintButton } from '@/components/commerce/PrintButton'
+import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Page } from '@/components/ui/Page'
 import { addDays } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
 import { formatNumberId } from '@/lib/format/number'
@@ -33,27 +35,31 @@ export default async function RdkkPage() {
 
   if (doc.rows.length === 0) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-6">
+      <Page>
         <EmptyState
           title="Belum ada yang bisa dicetak"
           description="RDKK dihitung dari tanam yang tercatat 12 bulan terakhir. Daftarkan tanam untuk mengisi formulir ini."
-          action={<Link href="/purchases" className="text-sm underline">Kembali ke pembelian</Link>}
+          action={
+            <Link href="/purchases" className={buttonVariants({ variant: 'outline' })}>
+              Kembali ke pembelian
+            </Link>
+          }
         />
-      </div>
+      </Page>
     )
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6 print:max-w-none print:px-0 print:py-0">
+    <Page width="wide" className="max-w-4xl print:max-w-none print:px-0 print:py-0">
       {/* Screen-only controls. On paper they would be a row of dead buttons. */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Link href="/purchases" className="text-sm text-muted-foreground underline">
+        <Link href="/purchases" className={buttonVariants({ variant: 'ghost' })}>
           Kembali ke pembelian
         </Link>
         <PrintButton label="Cetak / simpan PDF" />
       </div>
 
-      <article className="rounded-lg border border-border bg-card p-6 text-foreground print:rounded-none print:border-0 print:bg-transparent print:p-0 print:text-black">
+      <article className="rounded-xl border border-border bg-card p-4 text-foreground shadow-[var(--shadow-xs)] sm:p-6 print:rounded-none print:border-0 print:bg-transparent print:p-0 print:text-black print:shadow-none">
         <header className="text-center">
           <h1 className="text-base font-bold uppercase tracking-wide">
             Rencana Definitif Kebutuhan Kelompok (RDKK)
@@ -183,6 +189,6 @@ export default async function RdkkPage() {
           </div>
         </footer>
       </article>
-    </div>
+    </Page>
   )
 }

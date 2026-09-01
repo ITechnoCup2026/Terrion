@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 
 import { CreateOrderButton } from '@/components/commerce/CreateOrderButton'
 import { buttonVariants } from '@/components/ui/button'
+import { Card } from '@/components/ui/Card'
+import { Page, PageHeader } from '@/components/ui/Page'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { addDays } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
@@ -33,30 +35,27 @@ export default async function PurchasesPage() {
   const canOrder = user.role === 'pengurus'
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Pembelian kelompok</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Kebutuhan pupuk musim ini, diagregasi dari tanam yang sudah tercatat.
-          </p>
-        </div>
-        {lines.length > 0 && (
-          <Link href="/purchases/rdkk" className={buttonVariants({ variant: 'outline' })}>
-            Ekspor RDKK
-          </Link>
-        )}
-      </div>
+    <Page className="flex flex-col gap-6">
+      <PageHeader
+        title="Pembelian kelompok"
+        description="Kebutuhan pupuk musim ini, diagregasi dari tanam yang sudah tercatat."
+        actions={
+          lines.length > 0 && (
+            <Link href="/purchases/rdkk" className={buttonVariants({ variant: 'outline' })}>
+              Ekspor RDKK
+            </Link>
+          )
+        }
+      />
 
       {lines.length === 0 ? (
         <EmptyState
-          className="mt-6"
           title="Belum ada kebutuhan pupuk"
           description="Kebutuhan dihitung dari tanam yang tercatat 12 bulan terakhir. Daftarkan tanam untuk mengisi daftar ini."
         />
       ) : (
         <>
-          <div className="mt-6 rounded-lg border border-border bg-card p-4">
+          <Card>
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <p className="text-sm font-semibold text-foreground">Kebutuhan musim ini</p>
               <p className="text-xs text-muted-foreground">
@@ -116,10 +115,10 @@ export default async function PurchasesPage() {
                 melihat kebutuhan musim ini di atas.
               </p>
             )}
-          </div>
+          </Card>
 
           {overCap.length > 0 && (
-            <div className="mt-4 rounded-lg border border-destructive/40 bg-card p-4">
+            <Card tone="alert">
               <p className="text-sm font-semibold text-foreground">
                 {overCap.length} anggota melewati batas {SUBSIDY_CAP_HA} ha
               </p>
@@ -137,10 +136,10 @@ export default async function PurchasesPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           )}
         </>
       )}
-    </div>
+    </Page>
   )
 }

@@ -4,7 +4,7 @@ import { toISODate } from '@/lib/agronomy/dates'
 import { attempt, ExpectedFailure, type ActionResult } from '@/lib/actions/result'
 import { apiFetch, ApiError } from '@/lib/api/client'
 import type { CreatePlotResponseRaw } from '@/lib/api/types'
-import { currentAccessToken, requireRole } from '@/lib/auth/session'
+import { currentSessionId, requireRole } from '@/lib/auth/session'
 import { createPlotSchema } from '@/lib/schemas/plot'
 
 export async function createPlot(raw: unknown): Promise<ActionResult<{ plotId: string; publicId: string }>> {
@@ -15,12 +15,12 @@ export async function createPlot(raw: unknown): Promise<ActionResult<{ plotId: s
       throw new ExpectedFailure(parsed.error.issues[0]?.message ?? 'Isian tidak valid.')
     }
     const { memberName, plotName, lat, lng, plantings } = parsed.data
-    const token = await currentAccessToken()
+    const sessionId = await currentSessionId()
 
     try {
       const result = await apiFetch<CreatePlotResponseRaw>('/api/plots', {
         method: 'POST',
-        accessToken: token,
+        sessionId,
         body: {
           member_name: memberName,
           plot_name: plotName,

@@ -1,26 +1,61 @@
 'use server'
 
+import { apiExchange, ApiError, isBackendDown, sessionIdFromResponse } from '@/lib/api/client'
+import type { LoginResponseRaw } from '@/lib/api/types'
+import { setSessionCookie } from '@/lib/auth/session'
 import { signupErrorMessage } from '@/lib/auth/signup-errors'
-import { createServerClient } from '@/lib/supabase/server'
+import { loginSchema, type LoginInput } from '@/lib/schemas/login'
 
-export type LoginInput = { email: string; password: string }
+export type { LoginInput }
 
 export type LoginResult =
-  | { ok: true }
+  | { ok: true; role: LoginResponseRaw['role'] }
   | { ok: false; message: string }
 
 /**
- * Signs in against Supabase directly -- the backend contract has no login
- * endpoint of its own; Supabase issues the token and this backend only
- * verifies it. Errors are mapped through the same
- * Indonesian messages the signup form uses, since Supabase returns the same
- * kind of auth error codes for both.
+ * Exchanges email and password for a session at POST /api/auth/login.
+ *
+ * The backend holds the GoTrue token pair in Redis and answers with a session
+ * id in a `terrion_session` cookie scoped to its own domain -- which in
+ * production is not this one -- so the id is lifted out of the response and
+ * re-issued here under this app's origin.
+ *
+ * The response body is a `UserResponse`, the same shape GET /api/me returns,
+ * so there is nothing to look up afterwards: the role travels back with the
+ * sign-in itself.
  */
 export async function signIn(raw: LoginInput): Promise<LoginResult> {
-  const supabase = await createServerClient()
-  const { error } = await supabase.auth.signInWithPassword(raw)
-  if (error) {
-    return { ok: false, message: signupErrorMessage(error) }
+  const parsed = loginSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? 'Isian tidak valid.' }
   }
-  return { ok: true }
+
+  try {
+    const { data, response } = await apiExchange<LoginResponseRaw>('/api/auth/login', {
+      method: 'POST',
+      body: parsed.data,
+    })
+
+    const sessionId = sessionIdFromResponse(response)
+    if (!sessionId) {
+      // Credentials were accepted but no cookie came back, so nothing here can
+      // prove who the next request is. Saying "signed in" would hand the reader
+      // a dashboard that immediately bounces them to /login.
+      return { ok: false, message: 'Sesi tidak bisa dibuat. Coba lagi sebentar lagi.' }
+    }
+
+    await setSessionCookie(sessionId)
+    return { ok: true, role: data.role }
+  } catch (error) {
+    // An unreachable backend is not a wrong password, and must not be
+    // described as one: the reader would keep retyping a password that was
+    // right the first time.
+    if (isBackendDown(error)) {
+      return { ok: false, message: 'Server sedang tidak bisa dihubungi. Coba lagi beberapa saat lagi.' }
+    }
+    if (error instanceof ApiError) {
+      return { ok: false, message: signupErrorMessage({ code: error.code }) }
+    }
+    return { ok: false, message: 'Tidak bisa menghubungi server. Periksa koneksi Anda, lalu coba lagi.' }
+  }
 }

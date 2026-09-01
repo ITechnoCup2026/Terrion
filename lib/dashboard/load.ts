@@ -2,7 +2,7 @@ import { utcDate } from '@/lib/agronomy/dates'
 import type { ImpactFigures } from '@/lib/agronomy/impact'
 import { apiFetch } from '@/lib/api/client'
 import type { DashboardResponseRaw, ThresholdBasis } from '@/lib/api/types'
-import { currentAccessToken } from '@/lib/auth/session'
+import { currentSessionId } from '@/lib/auth/session'
 import type { UpcomingHarvest } from '@/lib/dashboard/upcoming'
 
 export type DashboardWeek = {
@@ -66,8 +66,8 @@ function toFlaggedWeek(raw: DashboardResponseRaw['flagged'][number]): DashboardF
  * straight field mapping, not a re-computation.
  */
 export async function loadDashboard(): Promise<DashboardData> {
-  const token = await currentAccessToken()
-  const raw = await apiFetch<DashboardResponseRaw>('/api/dashboard', { accessToken: token })
+  const sessionId = await currentSessionId()
+  const raw = await apiFetch<DashboardResponseRaw>('/api/dashboard', { sessionId })
 
   return {
     weeks: raw.weeks.map(w => ({

@@ -33,6 +33,23 @@ export type SignupResponseRaw = {
   email: string
 }
 
+// ---- POST /api/auth/login ---------------------------------------------------
+
+/**
+ * Login answers with a UserResponse -- the very shape GET /api/me returns --
+ * so a successful sign-in already knows the role and cooperative, and there is
+ * no follow-up call to make. The session id itself never appears in the body:
+ * it arrives as the terrion_session cookie.
+ */
+export type LoginResponseRaw = MeResponseRaw
+
+// ---- GET /api/health --------------------------------------------------------
+
+export type HealthResponseRaw = {
+  status: string
+  service: string
+}
+
 // ---- GET /api/commodities ---------------------------------------------------
 
 export type VarietyRaw = {

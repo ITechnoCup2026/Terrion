@@ -1,8 +1,8 @@
 import { utcDate } from '@/lib/agronomy/dates'
 import type { HarvestWindow } from '@/lib/agronomy/types'
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch, isNotFound } from '@/lib/api/client'
 import type { HarvestWindowRaw, PlotBlockRaw, PlotDetailResponseRaw, PlotListItemRaw } from '@/lib/api/types'
-import { currentAccessToken } from '@/lib/auth/session'
+import { currentSessionId } from '@/lib/auth/session'
 import type { PlotSummary } from '@/lib/plots/summary'
 
 function toHarvestWindow(raw: HarvestWindowRaw): HarvestWindow {
@@ -25,8 +25,8 @@ function toHarvestWindow(raw: HarvestWindowRaw): HarvestWindow {
  * plot/commodity read + projectCooperative() with a straight mapping.
  */
 export async function loadPlots(): Promise<PlotSummary[]> {
-  const token = await currentAccessToken()
-  const raw = await apiFetch<PlotListItemRaw[]>('/api/plots', { accessToken: token })
+  const sessionId = await currentSessionId()
+  const raw = await apiFetch<PlotListItemRaw[]>('/api/plots', { sessionId })
   return raw.map(toPlotSummary)
 }
 
@@ -94,11 +94,16 @@ function toPlotDetailBlock(raw: PlotBlockRaw): PlotDetailBlock {
  * pre-computed (GDD, stage, plausibility, daily series) -- this replaces the
  * page's raw block/commodity/variety reads plus its own loadWeatherFor() +
  * predictHarvest() pass with a straight mapping.
+ *
+ * null means 404, which the contract merges with "belongs to another
+ * cooperative" on purpose -- a kader must not be able to probe ids that are
+ * not theirs. It does NOT mean the backend failed: that is rethrown, so a
+ * pengurus sees "coba lagi" rather than being told their own plot is gone.
  */
 export async function loadPlot(id: string): Promise<PlotDetail | null> {
-  const token = await currentAccessToken()
+  const sessionId = await currentSessionId()
   try {
-    const raw = await apiFetch<PlotDetailResponseRaw>(`/api/plots/${id}`, { accessToken: token })
+    const raw = await apiFetch<PlotDetailResponseRaw>(`/api/plots/${id}`, { sessionId })
     return {
       id: raw.id,
       name: raw.name,
@@ -111,7 +116,8 @@ export async function loadPlot(id: string): Promise<PlotDetail | null> {
       hasHarvestedBlocks: raw.has_harvested_blocks,
       blocks: raw.blocks.map(toPlotDetailBlock),
     }
-  } catch {
-    return null
+  } catch (error) {
+    if (isNotFound(error)) return null
+    throw error
   }
 }

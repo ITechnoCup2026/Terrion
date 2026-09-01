@@ -1,6 +1,6 @@
 import { apiFetch } from '@/lib/api/client'
 import type { SupplyRequestRaw, SupplyRequestStatus } from '@/lib/api/types'
-import { currentAccessToken } from '@/lib/auth/session'
+import { currentSessionId } from '@/lib/auth/session'
 
 export type SupplyRequest = {
   id: string
@@ -39,10 +39,10 @@ function toSupplyRequest(raw: SupplyRequestRaw): SupplyRequest {
 /**
  * GET /api/supply-requests answers a different question depending on who
  * asks: a cooperative sees requests made to it, a buyer sees their own --
- * the backend scopes this by token, there is nothing to filter here.
+ * the backend scopes this by session, there is nothing to filter here.
  */
 export async function loadSupplyRequests(): Promise<SupplyRequest[]> {
-  const token = await currentAccessToken()
-  const raw = await apiFetch<SupplyRequestRaw[]>('/api/supply-requests', { accessToken: token })
+  const sessionId = await currentSessionId()
+  const raw = await apiFetch<SupplyRequestRaw[]>('/api/supply-requests', { sessionId })
   return raw.map(toSupplyRequest)
 }

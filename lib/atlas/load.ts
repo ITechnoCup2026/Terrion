@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch, isBackendDown, isNotFound } from '@/lib/api/client'
 import type { AtlasCooperativeRaw, AtlasFarmResponseRaw } from '@/lib/api/types'
 
 /** One cooperative, as a pin on the map. */
@@ -52,6 +52,7 @@ export async function loadAtlasCooperatives(): Promise<AtlasCooperative[]> {
   return raw.map(toAtlasCooperative)
 }
 
+/** null for a cooperative that is not there; anything else is rethrown. */
 export async function loadAtlasFarm(cooperativeId: string): Promise<AtlasFarm | null> {
   try {
     const raw = await apiFetch<AtlasFarmResponseRaw>(`/api/atlas/farms/${cooperativeId}`)
@@ -70,7 +71,32 @@ export async function loadAtlasFarm(cooperativeId: string): Promise<AtlasFarm | 
         crops: plot.crops,
       })),
     }
-  } catch {
-    return null
+  } catch (error) {
+    if (isNotFound(error)) return null
+    throw error
+  }
+}
+
+/**
+ * The same pins, for a page that would rather render without them than not
+ * render at all.
+ *
+ * The landing page is the one surface where the backend being unreachable
+ * should not produce an error screen: its counts sit at the foot of the fold,
+ * under a headline and two links that need no data whatsoever, and a stranger
+ * who cannot even read what Terrion is will not come back to find out.
+ *
+ * null is "could not ask", which is not the same claim as `[]` -- that one
+ * means nobody has registered, and the page says so in words.
+ */
+export async function loadAtlasCooperativesIfUp(): Promise<AtlasCooperative[] | null> {
+  try {
+    return await loadAtlasCooperatives()
+  } catch (error) {
+    if (isBackendDown(error)) {
+      console.error('[atlas] cooperatives unavailable', error)
+      return null
+    }
+    throw error
   }
 }

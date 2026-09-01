@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Archipelago } from "@/components/landing/Archipelago";
 import { buttonVariants } from "@/components/ui/button";
-import { loadAtlasCooperatives } from "@/lib/atlas/load";
+import { loadAtlasCooperativesIfUp } from "@/lib/atlas/load";
 import { formatNumberId } from "@/lib/format/number";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +31,12 @@ export const metadata = {
  * Every number on this page is read from the database. There are no logos, no
  * testimonials and no rounded-up totals, because Terrion has none of those and
  * inventing them would put the only unmeasured thing on the page.
+ *
+ * That rule is also why the counts vanish rather than fall back to zero when
+ * the backend cannot be reached: "0 koperasi" is a measurement, and a wrong
+ * one. The rest of the page needs no data at all, so it still renders -- a
+ * stranger who followed a link here should learn what Terrion is even during
+ * an outage, which an error screen does not tell them.
  */
 
 const DERIVED = [
@@ -57,11 +63,15 @@ const DERIVED = [
 ];
 
 export default async function LandingPage() {
-  const cooperatives = await loadAtlasCooperatives();
+  // null is "could not ask", which the page shows as nothing at all. An empty
+  // array is the different, sayable claim that nobody has registered yet.
+  const cooperatives = await loadAtlasCooperativesIfUp();
 
-  const plots = cooperatives.reduce((s, c) => s + c.plotCount, 0);
-  const hectares = cooperatives.reduce((s, c) => s + c.hectares, 0);
-  const provinces = new Set(cooperatives.map((c) => c.province.toLowerCase()));
+  const plots = cooperatives?.reduce((s, c) => s + c.plotCount, 0) ?? 0;
+  const hectares = cooperatives?.reduce((s, c) => s + c.hectares, 0) ?? 0;
+  const provinces = new Set(
+    (cooperatives ?? []).map((c) => c.province.toLowerCase()),
+  );
 
   return (
     <div className="flex w-full flex-1 flex-col">
@@ -94,17 +104,22 @@ export default async function LandingPage() {
         />
 
         <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 text-center">
-          <p className="rise inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
-            <span aria-hidden className="relative flex size-1.5">
-              {/* A slow pulse: the projection is live, and one moving pixel
-                  says so more cheaply than the word "live" would. */}
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
-              <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
-            </span>
-            {cooperatives.length === 0
-              ? "Belum ada koperasi terdaftar"
-              : `${formatNumberId(cooperatives.length)} koperasi · ${provinces.size} provinsi`}
-          </p>
+          {/* The pulse says the projection is live, so the badge goes away
+              entirely when nothing could be read -- a dot pulsing beside a
+              number nobody could fetch is the one lie this page can tell. */}
+          {cooperatives && (
+            <p className="rise inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
+              <span aria-hidden className="relative flex size-1.5">
+                {/* A slow pulse: the projection is live, and one moving pixel
+                    says so more cheaply than the word "live" would. */}
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
+              </span>
+              {cooperatives.length === 0
+                ? "Belum ada koperasi terdaftar"
+                : `${formatNumberId(cooperatives.length)} koperasi · ${provinces.size} provinsi`}
+            </p>
+          )}
 
           <h1
             className="rise text-[length:var(--text-display-sm)] leading-[1.04] font-bold tracking-tight text-balance text-foreground sm:text-[length:var(--text-display)]"
@@ -165,6 +180,7 @@ export default async function LandingPage() {
            Deliberately the last thing on the first screen rather than the
            first thing on the second: four numbers at the foot of the fold are
            what say the page above them is describing something real. */}
+      {cooperatives && (
       <section className="shrink-0 border-y border-border bg-secondary/40">
         <dl className="mx-auto grid w-full max-w-5xl grid-cols-2 divide-border px-4 py-6 sm:grid-cols-4 sm:divide-x">
           {[
@@ -182,6 +198,7 @@ export default async function LandingPage() {
           ))}
         </dl>
       </section>
+      )}
 
       </div>
 

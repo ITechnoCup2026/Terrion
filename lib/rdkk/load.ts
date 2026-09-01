@@ -1,7 +1,7 @@
 import { utcDate } from '@/lib/agronomy/dates'
 import { apiFetch } from '@/lib/api/client'
 import type { RdkkResponseRaw } from '@/lib/api/types'
-import { currentAccessToken } from '@/lib/auth/session'
+import { currentSessionId } from '@/lib/auth/session'
 
 export type Season = { label: string; start: Date; end: Date }
 
@@ -47,9 +47,9 @@ export type RdkkSeason = {
 }
 
 export async function loadSeasonInputs(season: Season): Promise<RdkkSeason> {
-  const token = await currentAccessToken()
+  const sessionId = await currentSessionId()
   const raw = await apiFetch<RdkkResponseRaw>('/api/rdkk', {
-    accessToken: token,
+    sessionId,
     query: {
       from: season.start.toISOString().slice(0, 10),
       to: season.end.toISOString().slice(0, 10),

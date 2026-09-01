@@ -8,7 +8,7 @@ import type {
   SplitBlockResponseRaw,
   SplitLeavesTooLittleData,
 } from '@/lib/api/types'
-import { currentAccessToken, requireRole } from '@/lib/auth/session'
+import { currentSessionId, requireRole } from '@/lib/auth/session'
 import { splitBlockSchema } from '@/lib/schemas/block'
 
 const ha = (n: number) => n.toFixed(2).replace('.', ',')
@@ -23,12 +23,12 @@ export async function splitBlock(
       throw new ExpectedFailure(parsed.error.issues[0]?.message ?? 'Isian tidak valid.')
     }
     const { blockId, areaHa, commodityId, varietyId, plantingDate } = parsed.data
-    const token = await currentAccessToken()
+    const sessionId = await currentSessionId()
 
     try {
       const result = await apiFetch<SplitBlockResponseRaw>(`/api/blocks/${blockId}/split`, {
         method: 'POST',
-        accessToken: token,
+        sessionId,
         body: {
           area_ha: areaHa,
           commodity_id: commodityId,

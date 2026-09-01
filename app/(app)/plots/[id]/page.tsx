@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import type { FarmSummary } from '@/components/plots/FarmSummaryPanel'
 import { PlotStage, type StageBlock } from '@/components/plots/PlotStage'
 import type { ReferenceCommodity, ReferenceVariety } from '@/components/plots/SplitBlockForm'
+import { Page, PageHeader } from '@/components/ui/Page'
 import { currentAppUser } from '@/lib/auth/session'
 import { loadCommodities } from '@/lib/commodities/load'
 import { formatDateId } from '@/lib/harvest/format'
@@ -110,19 +111,17 @@ export default async function PlotPage({ params }: { params: Promise<{ id: strin
           </header>
         </>
       ) : (
-        <div className="mx-auto w-full max-w-3xl p-4">
-          <header className="mb-4">
-            <h1 className="text-lg font-semibold">{plot.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {plot.areaHa.toFixed(2)} ha · kode publik {plot.publicId}
-            </p>
-          </header>
+        <Page className="flex flex-col gap-4">
+          <PageHeader
+            title={plot.name}
+            description={`${plot.areaHa.toFixed(2)} ha · kode publik ${plot.publicId}`}
+          />
           <p className="text-sm text-muted-foreground">
             {plot.hasHarvestedBlocks
               ? 'Belum ada tanaman aktif — seluruh musim di lahan ini sudah dipanen.'
               : 'Lahan ini belum punya blok.'}
           </p>
-        </div>
+        </Page>
       )}
     </main>
   )

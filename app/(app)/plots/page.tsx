@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation'
 import { PlotBrowser } from '@/components/plots/PlotBrowser'
 import type { CommodityRef } from '@/components/plots/PlotCard'
 import { buttonVariants } from '@/components/ui/button'
+import { MetricRow } from '@/components/ui/Card'
+import { Page, PageHeader } from '@/components/ui/Page'
 import { addDays } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
 import { loadCommodities } from '@/lib/commodities/load'
@@ -48,38 +50,24 @@ export default async function PlotsPage() {
   ]
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Lahan</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Setiap lahan koperasi ini, dengan perkiraan panen terdekatnya.
-          </p>
-        </div>
-        <Link href="/plots/new" className={buttonVariants()}>Daftarkan lahan</Link>
-      </div>
+    <Page width="wide" className="flex flex-col gap-5">
+      <PageHeader
+        title="Lahan"
+        description="Setiap lahan koperasi ini, dengan perkiraan panen terdekatnya."
+        actions={
+          <Link href="/plots/new" className={buttonVariants()}>
+            Daftarkan lahan
+          </Link>
+        }
+      />
 
-      {summaries.length > 0 && (
-        <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {kpis.map(k => (
-            <div
-              key={k.label}
-              className="rounded-xl border border-border bg-card px-3 py-2.5 shadow-[var(--shadow-xs)]"
-            >
-              <dt className="text-xs text-muted-foreground">{k.label}</dt>
-              <dd className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
-                {k.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      )}
+      {summaries.length > 0 && <MetricRow items={kpis} />}
 
       {/* useSearchParams needs a boundary; without one the whole route opts out
           of static rendering with a build-time error. */}
       <Suspense fallback={null}>
         <PlotBrowser plots={summaries} commodities={commodities} />
       </Suspense>
-    </div>
+    </Page>
   )
 }

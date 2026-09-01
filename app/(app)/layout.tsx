@@ -2,8 +2,11 @@ import { redirect } from 'next/navigation'
 
 import { signOut } from '@/app/actions/auth'
 import { AppShell } from '@/components/ui/AppShell'
-import { loadAtlasCooperatives } from '@/lib/atlas/load'
-import { currentAppUser } from '@/lib/auth/session'
+import { BackendDownState } from '@/components/ui/BackendDownState'
+import { isBackendDown } from '@/lib/api/client'
+import { loadAtlasCooperativesIfUp } from '@/lib/atlas/load'
+import { initialsOf } from '@/lib/auth/display'
+import { currentAppUser, type AppUser } from '@/lib/auth/session'
 
 /**
  * The cooperative-side shell: who you are, which cooperative you are acting
@@ -25,7 +28,18 @@ import { currentAppUser } from '@/lib/auth/session'
  * owns its own padding now.
  */
 export default async function AppLayout({ children }: LayoutProps<'/'>) {
-  const user = await currentAppUser()
+  // Caught here rather than left to a boundary: an error.tsx catches a
+  // layout's children, never the layout itself, so an outage would otherwise
+  // land on the root global-error screen -- and, worse, the redirect below
+  // would have sent the reader to /login to fix a session that is fine.
+  let user: AppUser | null
+  try {
+    user = await currentAppUser()
+  } catch (error) {
+    if (!isBackendDown(error)) throw error
+    return <BackendDownState />
+  }
+
   if (!user) redirect('/login')
 
   // Buyers have no cooperative by construction (see the buyer_has_no_coop
@@ -36,19 +50,18 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
   // there is no dedicated "my cooperative" endpoint -- but /api/atlas/cooperatives
   // is public and already carries them, so this looks itself up in that list
   // rather than inventing a new call.
-  const cooperatives = await loadAtlasCooperatives()
-  const match = cooperatives.find(c => c.id === user.cooperative_id)
+  //
+  // Tolerant of that call failing: the name under the logo is a label, and a
+  // layout that throws takes down every page inside it -- an error.tsx catches
+  // a layout's children, never the layout itself, so this one would land on
+  // the root global-error screen over a subtitle.
+  const cooperatives = await loadAtlasCooperativesIfUp()
+  const match = cooperatives?.find(c => c.id === user.cooperative_id)
   const cooperative = match
     ? { name: match.name, village: match.village, district: match.district }
     : null
 
-  const initials = user.full_name
-    .split(' ')
-    .filter(w => !/^(pak|bu|ibu|mas|mbak)$/i.test(w))
-    .slice(0, 2)
-    .map(w => w[0])
-    .join('')
-    .toUpperCase()
+  const initials = initialsOf(user.full_name)
 
   return (
     <AppShell
@@ -56,7 +69,7 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
       userName={user.full_name}
       initials={initials}
       signOutButton={
-        <form action={signOut}>
+        <form action={signOut.bind(null, '/login')}>
           <button
             type="submit"
             className="interactive rounded-lg border border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-input hover:bg-muted hover:text-foreground"

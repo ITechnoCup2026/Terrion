@@ -3,7 +3,7 @@
 import { attempt, ExpectedFailure, type ActionResult } from '@/lib/actions/result'
 import { apiFetch, ApiError } from '@/lib/api/client'
 import type { SupplyRequestRaw } from '@/lib/api/types'
-import { currentAccessToken, requireRole } from '@/lib/auth/session'
+import { currentSessionId, requireRole } from '@/lib/auth/session'
 import { createSupplyRequestSchema, respondToRequestSchema } from '@/lib/schemas/supply-request'
 
 export async function createSupplyRequest(
@@ -16,12 +16,12 @@ export async function createSupplyRequest(
       throw new ExpectedFailure(parsed.error.issues[0]?.message ?? 'Isian tidak valid.')
     }
     const { listingId, volumeTonnes, deliveryPreference, notes } = parsed.data
-    const token = await currentAccessToken()
+    const sessionId = await currentSessionId()
 
     try {
       const result = await apiFetch<SupplyRequestRaw>('/api/supply-requests', {
         method: 'POST',
-        accessToken: token,
+        sessionId,
         body: {
           listing_id: listingId,
           volume_tonnes: volumeTonnes,
@@ -52,12 +52,12 @@ export async function respondToRequest(raw: unknown): Promise<ActionResult<void>
       throw new ExpectedFailure(parsed.error.issues[0]?.message ?? 'Isian tidak valid.')
     }
     const { requestId, decision } = parsed.data
-    const token = await currentAccessToken()
+    const sessionId = await currentSessionId()
 
     try {
       await apiFetch<void>(`/api/supply-requests/${requestId}`, {
         method: 'PATCH',
-        accessToken: token,
+        sessionId,
         body: { decision },
       })
     } catch (error) {

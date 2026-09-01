@@ -6,6 +6,15 @@ import { cn } from '@/lib/utils'
 const WORDMARK_RATIO = 593 / 163
 
 /**
+ * Width:height of public/brand/logo.png. It is 225x219, not square -- close
+ * enough to look square and far enough for next/image to complain: declaring
+ * a 1:1 box for it means the CSS-derived height no longer matches the stated
+ * width, which is exactly the "width or height modified, but not the other"
+ * warning. `size` stays the height, as it is for the wordmark.
+ */
+const MARK_RATIO = 225 / 219
+
+/**
  * The Terrion mark, in one place.
  *
  * Every header previously inlined its own SVG seedling, which meant four
@@ -46,7 +55,7 @@ export function Logo({
     <Image
       src="/brand/logo.png"
       alt=""
-      width={size}
+      width={Math.round(size * MARK_RATIO)}
       height={size}
       priority
       className={cn('rounded-lg object-contain', className)}

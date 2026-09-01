@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 
 import { PlotForm, type PreviousEntry } from '@/components/plots/PlotForm'
+import { Page, PageHeader } from '@/components/ui/Page'
 import { toISODate } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
 import { loadAtlasCooperatives } from '@/lib/atlas/load'
@@ -45,12 +46,13 @@ export default async function NewPlotPage() {
   const previous: PreviousEntry = null
 
   return (
-    <main className="mx-auto w-full max-w-xl p-4 sm:p-6">
-      <h1 className="mb-1 text-lg font-semibold">Daftarkan lahan</h1>
-      <p className="mb-6 text-sm text-muted-foreground">
-        Luas lahan adalah jumlah luas tanamannya. Tambah komoditas jika satu
-        lahan ditanami lebih dari satu jenis; blok juga bisa dipecah setelahnya.
-      </p>
+    // A <div>, not a <main>: the shell already renders one, and nesting a
+    // second landmark inside it makes "skip to content" ambiguous.
+    <Page width="form" className="flex flex-col gap-6">
+      <PageHeader
+        title="Daftarkan lahan"
+        description="Luas lahan adalah jumlah luas tanamannya. Tambah komoditas jika satu lahan ditanami lebih dari satu jenis; blok juga bisa dipecah setelahnya."
+      />
       <PlotForm
         commodities={commodities}
         varieties={varieties}
@@ -59,6 +61,6 @@ export default async function NewPlotPage() {
         origin={{ lat: cooperative?.lat ?? -6.2833, lng: cooperative?.lng ?? 107.8167 }}
         seasonShortcuts={seasonShortcuts(new Date())}
       />
-    </main>
+    </Page>
   )
 }

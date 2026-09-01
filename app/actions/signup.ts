@@ -1,10 +1,10 @@
 'use server'
 
-import { apiFetch, ApiError } from '@/lib/api/client'
+import { apiFetch, ApiError, isBackendDown } from '@/lib/api/client'
 import type { SignupResponseRaw } from '@/lib/api/types'
 import { signupErrorMessage } from '@/lib/auth/signup-errors'
 import { signupSchema } from '@/lib/schemas/signup'
-import { createServerClient } from '@/lib/supabase/server'
+import { signIn } from './login'
 
 export type SignupResult =
   | { outcome: 'signed_in' }
@@ -16,8 +16,12 @@ export type SignupResult =
  * always creates a `buyer` -- role and cooperative are not in the request
  * body at all, see the schema comment). Its `signed_in` outcome means the
  * project doesn't require email confirmation, but the response carries no
- * token, so this immediately follows up with its own sign-in call to
- * actually establish the browser's session.
+ * session cookie, so this immediately follows up with POST /api/auth/login to
+ * actually establish one.
+ *
+ * An address that already has an account also answers `confirm_email`, and
+ * nothing here may treat that differently: the signup form must not become a
+ * way to find out who is registered.
  */
 export async function signUpBuyer(raw: unknown): Promise<SignupResult> {
   const parsed = signupSchema.safeParse(raw)
@@ -39,13 +43,19 @@ export async function signUpBuyer(raw: unknown): Promise<SignupResult> {
     })
 
     if (result.outcome === 'signed_in') {
-      const supabase = await createServerClient()
-      await supabase.auth.signInWithPassword({ email, password })
+      const signedIn = await signIn({ email, password })
+      if (!signedIn.ok) return { outcome: 'error', message: signedIn.message }
       return { outcome: 'signed_in' }
     }
 
     return { outcome: 'confirm_email', email: result.email }
   } catch (error) {
+    // Nothing was created, so this one is worth saying plainly rather than
+    // through the "hubungi pengelola Terrion" fallback: there is nobody to
+    // telephone about a server that is merely down.
+    if (isBackendDown(error)) {
+      return { outcome: 'error', message: 'Server sedang tidak bisa dihubungi. Coba lagi beberapa saat lagi.' }
+    }
     if (error instanceof ApiError) {
       return { outcome: 'error', message: signupErrorMessage({ code: error.code }) }
     }

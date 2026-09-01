@@ -61,7 +61,7 @@ export function PlotNeighbours({
         <PlotList plots={others} className="mt-3" />
       ) : (
         <details className="group mt-3">
-          <summary className="interactive cursor-pointer list-none rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground hover:bg-muted">
+          <summary className="interactive cursor-pointer list-none rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground shadow-[var(--shadow-xs)] hover:bg-muted">
             Lihat {others.length} lahan lain
             <span className="ml-1 text-muted-foreground group-open:hidden">— buka daftar</span>
             <span className="ml-1 hidden text-muted-foreground group-open:inline">— tutup daftar</span>
@@ -137,7 +137,7 @@ function Step({
   return (
     <Link
       href={`/garden/${plot.publicId}`}
-      className={`interactive block rounded-lg border border-border bg-card px-3 py-2
+      className={`interactive block rounded-xl border border-border bg-card px-3 py-2
         transition-colors hover:border-input hover:bg-muted ${side}`}
     >
       <span className="block text-xs text-muted-foreground">{label}</span>

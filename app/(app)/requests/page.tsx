@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { respondToRequest } from '@/app/actions/supply-request'
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/Card'
+import { Page, PageHeader } from '@/components/ui/Page'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { utcDate } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
@@ -31,18 +33,18 @@ export default async function RequestsPage() {
   const commodityName = new Map(commodities.map(c => [c.id, c.name]))
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6">
-      <h1 className="text-lg font-semibold text-foreground">Permintaan pasokan</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Pembeli mengajukan; koperasi memutuskan menerima atau menolak.
-      </p>
+    <Page className="flex flex-col gap-6">
+      <PageHeader
+        title="Permintaan pasokan"
+        description="Pembeli mengajukan; koperasi memutuskan menerima atau menolak."
+      />
 
       {rows.length === 0 ? (
-        <EmptyState className="mt-6" {...INBOX_EMPTY} />
+        <EmptyState {...INBOX_EMPTY} />
       ) : (
-        <div className="mt-6 grid gap-3">
+        <ul className="grid list-none gap-3">
           {rows.map(r => (
-            <div key={r.id} className="rounded-lg border border-border bg-card p-4">
+            <Card as="li" key={r.id}>
               <p className="text-sm font-semibold text-foreground">
                 {commodityName.get(r.commodityId) ?? 'Komoditas'} — {formatNumberId(r.volumeKg / 1000)} ton
               </p>
@@ -51,7 +53,7 @@ export default async function RequestsPage() {
                 {requestBuyerLabel(r.buyerName, r.buyerOrganisation)}
               </p>
 
-              <div className="mt-1">
+              <div className="mt-1.5">
                 <HarvestWindow
                   size="sm"
                   week={{
@@ -96,10 +98,10 @@ export default async function RequestsPage() {
                   {requestStatusLabel(r.status)}
                 </p>
               )}
-            </div>
+            </Card>
           ))}
-        </div>
+        </ul>
       )}
-    </div>
+    </Page>
   )
 }

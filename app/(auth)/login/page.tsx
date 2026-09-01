@@ -12,8 +12,9 @@ import { AuthField, AuthPasswordField } from '@/components/auth/fields'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/Logo'
 
-/** The sign-in page. Role/cooperative come back from GET /api/me after
- *  sign-in, not from the form -- the "masuk sebagai" tabs are just a label. */
+/** The sign-in page. Role and cooperative come back in the login response
+ *  itself -- POST /api/auth/login answers with a UserResponse -- not from the
+ *  form: the "masuk sebagai" tabs are a label, never an input. */
 export default function LoginPage() {
   return (
     <main className="grid min-h-dvh lg:grid-cols-2">
@@ -110,7 +111,10 @@ function LoginForm() {
         setError(result.message)
         return
       }
-      router.push('/dashboard')
+      // Where they land follows the role the backend just returned, not the
+      // tab they picked. A buyer has no cooperative, so /dashboard would only
+      // answer 403 -- the catalogue is the thing they signed in for.
+      router.push(result.role === 'buyer' ? '/catalog' : '/dashboard')
       router.refresh()
     } catch {
       setError('Tidak bisa menghubungi server. Periksa koneksi Anda, lalu coba lagi.')

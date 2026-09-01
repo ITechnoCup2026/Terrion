@@ -3,7 +3,7 @@
 import { attempt, ExpectedFailure, type ActionResult } from '@/lib/actions/result'
 import { apiFetch, ApiError } from '@/lib/api/client'
 import type { StaggerNothingToShiftData, StaggerResponseRaw } from '@/lib/api/types'
-import { currentAccessToken, requireRole } from '@/lib/auth/session'
+import { currentSessionId, requireRole } from '@/lib/auth/session'
 import { applyStaggerSchema } from '@/lib/schemas/stagger'
 
 export async function applyStagger(raw: unknown): Promise<ActionResult<{ shifted: number }>> {
@@ -14,12 +14,12 @@ export async function applyStagger(raw: unknown): Promise<ActionResult<{ shifted
       throw new ExpectedFailure(parsed.error.issues[0]?.message ?? 'Isian tidak valid.')
     }
     const { isoWeek, commodityId } = parsed.data
-    const token = await currentAccessToken()
+    const sessionId = await currentSessionId()
 
     try {
       const result = await apiFetch<StaggerResponseRaw>('/api/stagger', {
         method: 'POST',
-        accessToken: token,
+        sessionId,
         body: { iso_week: isoWeek, commodity_id: commodityId },
       })
       return { shifted: result.shifted }

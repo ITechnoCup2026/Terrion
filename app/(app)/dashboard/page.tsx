@@ -5,7 +5,9 @@ import { GroupPurchaseAlert } from '@/components/dashboard/GroupPurchaseAlert'
 import { ImpactPanel } from '@/components/dashboard/ImpactPanel'
 import { ProjectionChart, type ChartWeek } from '@/components/dashboard/ProjectionChart'
 import { UpcomingHarvests } from '@/components/dashboard/UpcomingHarvests'
+import { Card, MetricRow } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Page, PageHeader, SectionHeading } from '@/components/ui/Page'
 import { addDays } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
 import { loadDashboard } from '@/lib/dashboard/load'
@@ -105,30 +107,16 @@ export default async function DashboardPage() {
   return (
     // The page owns its padding now: the shell stopped applying any, so that
     // the farm page can fill the screen without fighting a parent.
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Dasbor</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Proyeksi panen 12 minggu ke depan untuk seluruh lahan koperasi.
-        </p>
-      </div>
+    <Page width="wide" className="flex flex-col gap-6">
+      <PageHeader
+        title="Dasbor"
+        description="Proyeksi panen 12 minggu ke depan untuk seluruh lahan koperasi."
+      />
 
       {/* Four figures, read in one line. They were four full-width slabs, so
           the page opened with numbers stacked like paragraphs and the one
           thing worth acting on sat below the fold. */}
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {kpis.map(k => (
-          <div
-            key={k.label}
-            className="rounded-xl border border-border bg-card px-3 py-2.5 shadow-[var(--shadow-xs)]"
-          >
-            <dt className="text-xs text-muted-foreground">{k.label}</dt>
-            <dd className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
-              {k.value}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <MetricRow items={kpis} />
 
       {/* Full width, and directly under the figures: it is the single thing on
           this page a board can act on. */}
@@ -144,8 +132,8 @@ export default async function DashboardPage() {
       {/* The chart is the evidence behind the alert, so it gets two thirds and
           sits beside the things it is not evidence for. */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="flex flex-col rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-xs)] lg:col-span-2">
-          <h2 className="text-sm font-medium text-foreground">Proyeksi panen mingguan</h2>
+        <Card as="section" className="flex flex-col lg:col-span-2">
+          <SectionHeading>Proyeksi panen mingguan</SectionHeading>
           <p className="mt-1 mb-4 text-xs text-muted-foreground">
             Batang menunjukkan perkiraan; area abu-abu menunjukkan rentang antara panen
             yang pasti jatuh di minggu itu dan yang mungkin seluruhnya jatuh di sana.
@@ -155,7 +143,7 @@ export default async function DashboardPage() {
           <div className="min-h-0 flex-1">
             <ProjectionChart weeks={chartWeeks} />
           </div>
-        </section>
+        </Card>
 
         <div className="flex flex-col gap-4">
           <UpcomingHarvests
@@ -175,6 +163,6 @@ export default async function DashboardPage() {
       {/* Last, because it looks backwards: what the cooperative already got
           out of this, rather than what it must do next. */}
       <ImpactPanel figures={dashboard.impact} />
-    </div>
+    </Page>
   )
 }
