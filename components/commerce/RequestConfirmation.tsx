@@ -11,7 +11,7 @@ import { LEGAL_FRAMING } from '@/lib/catalog/copy'
  */
 export function RequestConfirmation() {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-xs)]">
       <p className="text-sm font-semibold text-foreground">Permintaan terkirim</p>
       <p className="mt-2 text-sm text-muted-foreground">{LEGAL_FRAMING}</p>
       <Link

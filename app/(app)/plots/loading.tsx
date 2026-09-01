@@ -1,5 +1,5 @@
 import { ListSkeleton } from '@/components/ui/Skeleton'
 
 export default function Loading() {
-  return <ListSkeleton />
+  return <ListSkeleton width="wide" metrics variant="grid" rows={8} />
 }

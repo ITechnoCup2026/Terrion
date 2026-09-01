@@ -7,15 +7,15 @@ import { ErrorState } from '@/components/ui/ErrorState'
  * boundary is mounted. It has to render its own html and body.
  */
 export default function GlobalError({
-  error, retry,
+  error, reset,
 }: {
   error: Error & { digest?: string }
-  retry: () => void
+  reset: () => void
 }) {
   return (
     <html lang="id">
       <body>
-        <ErrorState retry={retry} digest={error.digest} />
+        <ErrorState retry={reset} digest={error.digest} />
       </body>
     </html>
   )

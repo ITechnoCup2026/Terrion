@@ -1,19 +1,38 @@
 import Link from 'next/link'
 
+import { AccountMenu } from '@/components/auth/AccountMenu'
+import { AuthMenu } from '@/components/auth/AuthMenu'
 import { Logo } from '@/components/ui/Logo'
+import { isBackendDown } from '@/lib/api/client'
+import { currentAppUser, type AppUser } from '@/lib/auth/session'
 
 /**
- * The public shell: the Atlas and the supply catalogue.
+ * The public shell: the landing page, the supply catalogue and a shared garden.
  *
- * Deliberately thin: no cooperative identity, no app navigation, no session
- * awareness. This repo is frontend-only -- there is no backend to ask who is
- * signed in, so the header always renders the signed-out state.
+ * It IS session-aware, and has to be. The header used to render "Masuk"
+ * unconditionally on the grounds that there was no backend to ask — a comment
+ * that outlived the backend arriving. The result was that a buyer, whose whole
+ * job happens on the public catalogue, was invited to sign in on every page
+ * after they already had, and had nowhere to sign out from at all.
  *
  * The header is sticky and translucent: on the catalogue the reader scrolls a
  * long list and still needs the way back, and a solid bar that far down the
  * page reads as a second, unrelated header.
  */
-export default function PublicLayout({ children }: LayoutProps<'/'>) {
+export default async function PublicLayout({ children }: LayoutProps<'/'>) {
+  // These pages are public by design, so an unreachable backend must not take
+  // them down — a stranger reading the catalogue is not affected by our being
+  // unable to look up who they are. "I could not ask" therefore renders the
+  // signed-out header here, which is the one place in the app where collapsing
+  // it with "nobody is signed in" costs the reader nothing: every link in both
+  // states goes somewhere that says so itself.
+  let user: AppUser | null = null
+  try {
+    user = await currentAppUser()
+  } catch (error) {
+    if (!isBackendDown(error)) throw error
+  }
+
   return (
     <div className="flex min-h-full flex-1 flex-col">
       {/* h-[var(--public-header)] rather than padding: the landing hero sizes
@@ -41,22 +60,17 @@ export default function PublicLayout({ children }: LayoutProps<'/'>) {
               Atlas
             </Link>
 
-            <Link
-              href="/login"
-              className="interactive rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              Masuk
-            </Link>
-            {/* "Daftar pembeli", not "Daftar". A bare Daftar reads as an
-                invitation to register a cooperative, and there is no such
-                form -- a koperasi is verified offline. Naming the audience is
-                the difference between a door and a dead end. */}
-            <Link
-              href="/signup"
-              className="interactive ml-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Daftar pembeli
-            </Link>
+            <div className="ml-1">
+              {user ? (
+                <AccountMenu
+                  fullName={user.full_name}
+                  organisation={user.organisation}
+                  role={user.role}
+                />
+              ) : (
+                <AuthMenu />
+              )}
+            </div>
           </nav>
         </div>
       </header>

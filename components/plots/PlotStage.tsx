@@ -15,7 +15,9 @@ import { stageOn, timelineBounds } from '@/lib/canvas/timeline'
 import { generateTerrain } from '@/lib/terrain/generate'
 import type { HarvestWindow as HarvestWindowData } from '@/lib/agronomy/types'
 import { allocateTiles } from '@/lib/tilegrid/allocate'
+import type { TileHit } from '@/lib/canvas/hittest'
 import { BlockDetailPanel } from './BlockDetailPanel'
+import { PlantDetailPanel } from './PlantDetailPanel'
 import type { ReferenceCommodity, ReferenceVariety } from './SplitBlockForm'
 import { FarmSummaryPanel, type FarmSummary } from './FarmSummaryPanel'
 
@@ -35,6 +37,9 @@ export type StageBlock = {
    *  in the browser without asking the server. */
   plantingDate: string
   gddRequired: number
+  /** Only the public garden passes these, because only its panel says them. */
+  varietyName?: string | null
+  yieldRangeTonnes?: { min: number; max: number } | null
 }
 
 const MOBILE_MAX_PX = 640
@@ -45,14 +50,15 @@ const CELL_PX = 32
 
 /** What the reader has open: one block, the farmhouse, or nothing. */
 type Selection =
-  | { kind: 'block'; blockId: string; at: Point }
+  | { kind: 'block'; blockId: string; at: Point; tile: TileHit | null }
   | { kind: 'house'; at: Point }
   | null
 
 // Client wrapper around the canvas: the page computes blocks on the server,
 // this owns the sprite sheets, the generated scenery and the open panel.
 export function PlotStage({
-  plotAreaHa, blocks, terrainSeed, summary, degraded, variant = 'full', editing,
+  plotAreaHa, blocks, terrainSeed, summary, degraded, variant = 'full',
+  detail = 'block', editing,
 }: {
   plotAreaHa: number
   blocks: StageBlock[]
@@ -70,6 +76,16 @@ export function PlotStage({
    *  h-full resolved against an auto-height parent -- so the canvas fell back
    *  to its intrinsic 150px and the farm rendered as a strip. */
   variant?: 'full' | 'card'
+  /** What a tap opens.
+   *
+   *  'block' is the working view: one panel per field, with the split form
+   *  behind it for readers who may write.
+   *
+   *  'tile' is the public garden's view: the panel describes the single square
+   *  that was tapped. The diagram already draws a crop per square, so a tap
+   *  that could only name the field was answering a question the reader had
+   *  not asked. */
+  detail?: 'block' | 'tile'
   /** The reference lists the split form needs, passed only when the viewer is
    *  allowed to write. Absent on the public garden page, which is why that
    *  page never ships a commodity list to the browser. */
@@ -194,6 +210,27 @@ export function PlotStage({
     ? blocks.find(b => b.id === selection.blockId) ?? null
     : null
 
+  // Which square within its own block, counting from one.
+  //
+  // A block's tiles are contiguous in the grid's reading order but not in
+  // memory -- the fields are packed as rectangles, so a block's rows are
+  // separated by whatever else shares the shelf. Counting is therefore a scan
+  // rather than arithmetic on startTile. It runs once per tap over at most
+  // MAX_TILES squares, which is nothing.
+  const tileFacts = useMemo(() => {
+    const hit = selection?.kind === 'block' ? selection.tile : null
+    if (!hit) return null
+    const v = hit.blockIndex + 1
+    let ordinal = 0
+    let tileCount = 0
+    for (let i = 0; i < layout.tiles.length; i++) {
+      if (layout.tiles[i] !== v) continue
+      tileCount++
+      if (i <= hit.index) ordinal++
+    }
+    return { ordinal, tileCount }
+  }, [selection, layout])
+
   return (
     <div
       ref={stageRef}
@@ -211,8 +248,8 @@ export function PlotStage({
         terrain={terrain}
         sheets={sheets}
         initialView={frame?.view ?? null}
-        onSelectBlock={(blockId, at) =>
-          setSelection(blockId && at ? { kind: 'block', blockId, at } : null)}
+        onSelectBlock={(blockId, at, tile) =>
+          setSelection(blockId && at ? { kind: 'block', blockId, at, tile } : null)}
         selectedBlockId={selectedBlock?.id ?? null}
         onSelectHouse={summary ? at => setSelection({ kind: 'house', at }) : undefined}
       />
@@ -238,10 +275,21 @@ export function PlotStage({
           label={`Rincian ${selectedBlock.label}`}
           onClose={() => setSelection(null)}
         >
-          <BlockDetailPanel
-            block={selectedBlock} degraded={degraded} editing={editing}
-            onClose={() => setSelection(null)}
-          />
+          {detail === 'tile' && tileFacts ? (
+            <PlantDetailPanel
+              block={selectedBlock}
+              tileSizeM2={layout.tileSizeM2}
+              ordinal={tileFacts.ordinal}
+              tileCount={tileFacts.tileCount}
+              degraded={degraded}
+              onClose={() => setSelection(null)}
+            />
+          ) : (
+            <BlockDetailPanel
+              block={selectedBlock} degraded={degraded} editing={editing}
+              onClose={() => setSelection(null)}
+            />
+          )}
         </AnchoredPanel>
       )}
 

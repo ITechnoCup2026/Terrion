@@ -1,21 +1,17 @@
-// This repo has no backend attached. currentAppUser() below always returns
-// null, so every path past its redirect is dead code left untyped rather
-// than rewritten; re-check it once a real backend returns.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { CreateOrderButton } from '@/components/commerce/CreateOrderButton'
 import { buttonVariants } from '@/components/ui/button'
+import { Card } from '@/components/ui/Card'
+import { Page, PageHeader } from '@/components/ui/Page'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { addDays } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
 import { formatNumberId } from '@/lib/format/number'
 import { SUBSIDY_CAP_HA } from '@/lib/rdkk/aggregate'
-import { loadSeasonInputs } from '@/lib/rdkk/load'
+import { loadSeasonInputs, seasonRequirementLines } from '@/lib/rdkk/load'
 import { KG_PER_SACK, toOrderLines } from '@/lib/rdkk/order'
-import { createServerClient } from '@/lib/supabase/server'
 
 export const metadata = { title: 'Pembelian' }
 
@@ -28,17 +24,10 @@ export default async function PurchasesPage() {
   if (!user.cooperative_id) redirect('/catalog')
 
   const now = new Date()
-  const rdkk = await loadSeasonInputs(user.cooperative_id, {
-    label: 'musim ini', start: addDays(now, -365), end: now,
-  })
-  const lines = toOrderLines(rdkk.totals)
+  const rdkk = await loadSeasonInputs({ label: 'musim ini', start: addDays(now, -365), end: now })
+  const lines = toOrderLines(seasonRequirementLines(rdkk))
 
-  const db = await createServerClient()
-  const { data: orders } = await db.from('input_order')
-    .select('id, season_label, status, created_at, input_order_line(item, quantity, unit)')
-    .order('created_at', { ascending: false })
-
-  const overCap = rdkk.members.filter(m => m.overSubsidyCap)
+  const overCap = rdkk.rows.filter(m => m.overSubsidyCap)
 
   // A kader may read the requirement -- it is their members' land -- but only a
   // pengurus can commit the cooperative to an order. Showing them a button that
@@ -46,34 +35,31 @@ export default async function PurchasesPage() {
   const canOrder = user.role === 'pengurus'
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Pembelian kelompok</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Kebutuhan pupuk musim ini, diagregasi dari tanam yang sudah tercatat.
-          </p>
-        </div>
-        {lines.length > 0 && (
-          <Link href="/purchases/rdkk" className={buttonVariants({ variant: 'outline' })}>
-            Ekspor RDKK
-          </Link>
-        )}
-      </div>
+    <Page className="flex flex-col gap-6">
+      <PageHeader
+        title="Pembelian kelompok"
+        description="Kebutuhan pupuk musim ini, diagregasi dari tanam yang sudah tercatat."
+        actions={
+          lines.length > 0 && (
+            <Link href="/purchases/rdkk" className={buttonVariants({ variant: 'outline' })}>
+              Ekspor RDKK
+            </Link>
+          )
+        }
+      />
 
       {lines.length === 0 ? (
         <EmptyState
-          className="mt-6"
           title="Belum ada kebutuhan pupuk"
           description="Kebutuhan dihitung dari tanam yang tercatat 12 bulan terakhir. Daftarkan tanam untuk mengisi daftar ini."
         />
       ) : (
         <>
-          <div className="mt-6 rounded-lg border border-border bg-card p-4">
+          <Card>
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <p className="text-sm font-semibold text-foreground">Kebutuhan musim ini</p>
               <p className="text-xs text-muted-foreground">
-                {rdkk.members.length} anggota · karung {KG_PER_SACK} kg
+                {rdkk.rows.length} anggota · karung {KG_PER_SACK} kg
               </p>
             </div>
 
@@ -129,10 +115,10 @@ export default async function PurchasesPage() {
                 melihat kebutuhan musim ini di atas.
               </p>
             )}
-          </div>
+          </Card>
 
           {overCap.length > 0 && (
-            <div className="mt-4 rounded-lg border border-destructive/40 bg-card p-4">
+            <Card tone="alert">
               <p className="text-sm font-semibold text-foreground">
                 {overCap.length} anggota melewati batas {SUBSIDY_CAP_HA} ha
               </p>
@@ -150,38 +136,10 @@ export default async function PurchasesPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           )}
         </>
       )}
-
-      <h2 className="mt-8 text-sm font-semibold text-foreground">Pesanan tersimpan</h2>
-      {(orders ?? []).length === 0 ? (
-        <EmptyState
-          className="mt-3"
-          title="Belum ada pesanan"
-          description="Pesanan yang Anda buat akan muncul di sini beserta rinciannya."
-        />
-      ) : (
-        <div className="mt-3 grid gap-3">
-          {(orders ?? []).map(o => (
-            <div key={o.id} className="rounded-lg border border-border bg-card p-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <p className="text-sm font-medium text-foreground">{o.season_label}</p>
-                <p className="text-xs text-muted-foreground">
-                  {o.status === 'draft' ? 'Draf' : o.status === 'submitted' ? 'Terkirim' : 'Selesai'}
-                  {' · '}
-                  {new Date(o.created_at).toLocaleDateString('id-ID')}
-                </p>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {o.input_order_line.map(l =>
-                  `${l.item} ${formatNumberId(l.quantity, 0)} ${l.unit}`).join(' · ')}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    </Page>
   )
 }

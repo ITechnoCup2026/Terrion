@@ -13,7 +13,7 @@ import type { TerrainLayout } from '@/lib/terrain/generate'
 import {
   fitView, pinchScale, scaleStep, snapScale, WHEEL_STEP, type View,
 } from '@/lib/canvas/view'
-import { tileAt } from '@/lib/canvas/hittest'
+import { tileAt, type TileHit } from '@/lib/canvas/hittest'
 
 // A drag of more than this many pixels is a pan, not a click.
 const CLICK_SLOP_PX = 4
@@ -61,8 +61,18 @@ export function PlotCanvas({
   crops: HTMLImageElement | null
   cellPx?: number
   /** The click position comes with the selection: the panel opens at the
-   *  pointer, and this canvas is the only thing that knows where that was. */
-  onSelectBlock?: (blockId: string | null, at: { x: number; y: number } | null) => void
+   *  pointer, and this canvas is the only thing that knows where that was.
+   *
+   *  The tile comes with it too. The hit test has always resolved a click down
+   *  to one square and then thrown that away to report only which block it fell
+   *  in; the public garden wants to talk about the square itself, and the
+   *  square is something only this canvas can identify. Callers that care only
+   *  about the block ignore the third argument. */
+  onSelectBlock?: (
+    blockId: string | null,
+    at: { x: number; y: number } | null,
+    tile: TileHit | null,
+  ) => void
   selectedBlockId?: string | null
   terrain?: TerrainLayout | null
   sheets?: TerrainSheets | null
@@ -433,6 +443,7 @@ export function PlotCanvas({
     onSelectBlock(
       hit ? layout.blockRanges[hit.blockIndex].blockId : null,
       hit ? { x: e.clientX, y: e.clientY } : null,
+      hit,
     )
   }
 

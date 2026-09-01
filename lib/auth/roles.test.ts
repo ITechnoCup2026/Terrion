@@ -7,7 +7,6 @@ const user = (role: AppUser['role']): AppUser => ({
   full_name: 'Bu Sri',
   organisation: null,
   role,
-  created_at: '2026-08-01T00:00:00Z',
 })
 
 describe('assertRole', () => {

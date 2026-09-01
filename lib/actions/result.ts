@@ -22,6 +22,8 @@
  *                     original goes to the server log where it is useful.
  */
 
+import { isBackendDown } from '@/lib/api/client'
+
 export type ActionResult<T> =
   | { ok: true; data: T }
   | { ok: false; message: string }
@@ -36,6 +38,13 @@ export class ExpectedFailure extends Error {
 
 const GENERIC =
   'Terjadi kesalahan di sistem. Coba lagi, dan hubungi pengelola Terrion jika terus berulang.'
+
+// Not a bug, and not something to telephone anyone about: the action never
+// reached the server, so nothing was written and trying again later is the
+// whole remedy. GENERIC would send a pengurus looking for a fault that is not
+// theirs.
+const UNREACHABLE =
+  'Server sedang tidak bisa dihubungi, jadi perubahan ini belum tersimpan. Coba lagi beberapa saat lagi.'
 
 /** Narrows an ActionResult to its failure branch. */
 export function isFailure<T>(
@@ -55,6 +64,10 @@ export async function attempt<T>(body: () => Promise<T>): Promise<ActionResult<T
   } catch (error) {
     if (error instanceof ExpectedFailure) {
       return { ok: false, message: error.message }
+    }
+    if (isBackendDown(error)) {
+      console.error('[action] backend unreachable', error)
+      return { ok: false, message: UNREACHABLE }
     }
     // Not a fault the reader can act on, so it is logged rather than shown.
     console.error('[action] unexpected failure', error)

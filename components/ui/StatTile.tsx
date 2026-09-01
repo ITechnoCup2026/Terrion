@@ -47,7 +47,7 @@ export function StatTile({
     // was two.
     <div
       className={cn(
-        'rounded-lg border p-4',
+        'rounded-xl border p-4',
         empty
           ? 'border-dashed border-border bg-muted/25'
           : 'border-border bg-card shadow-[var(--shadow-xs)]',

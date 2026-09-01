@@ -1,6 +1,8 @@
 import Link from 'next/link'
 
 import { buttonVariants } from '@/components/ui/button'
+import { MessageCard } from '@/components/ui/Card'
+import { Page } from '@/components/ui/Page'
 
 /**
  * The 404, in Indonesian.
@@ -12,17 +14,19 @@ import { buttonVariants } from '@/components/ui/button'
  */
 export default function NotFound() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10">
-      <div className="rounded-lg border border-border bg-card p-6 text-center">
-        <p className="text-sm font-semibold text-foreground">Halaman tidak ditemukan</p>
-        <p className="mx-auto mt-2 max-w-prose text-sm text-muted-foreground">
-          Halaman ini mungkin sudah dipindahkan, atau listing panennya sudah lewat.
-          Katalog hanya menampilkan panen yang diproyeksikan dalam 12 minggu ke depan.
-        </p>
-        <Link href="/catalog" className={`${buttonVariants()} mt-4`}>
-          Lihat katalog
-        </Link>
-      </div>
-    </div>
+    <Page className="flex flex-1 items-center justify-center">
+      <MessageCard
+        className="w-full"
+        title="Halaman tidak ditemukan"
+        action={
+          <Link href="/catalog" className={buttonVariants()}>
+            Lihat katalog
+          </Link>
+        }
+      >
+        Halaman ini mungkin sudah dipindahkan, atau listing panennya sudah lewat.
+        Katalog hanya menampilkan panen yang diproyeksikan dalam 12 minggu ke depan.
+      </MessageCard>
+    </Page>
   )
 }

@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 
 import { RequestForm } from '@/components/commerce/RequestForm'
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
+import { Card } from '@/components/ui/Card'
+import { Page } from '@/components/ui/Page'
 import { toISODate } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
 import { listingSummary, requestStatusLabel } from '@/lib/catalog/copy'
@@ -10,7 +12,7 @@ import { parseListingId } from '@/lib/catalog/listings'
 import { loadCooperativeListings } from '@/lib/catalog/load'
 import { commodityStyle } from '@/lib/catalog/commodity-style'
 import { formatNumberId } from '@/lib/format/number'
-import { createServerClient } from '@/lib/supabase/server'
+import { loadSupplyRequests } from '@/lib/supply-requests/load'
 
 // No revalidate here, unlike the list page. This page calls currentAppUser(),
 // which reads cookies, so it renders dynamically no matter what this export
@@ -40,23 +42,17 @@ export default async function ListingPage({
   // visit to this page, and the cooperative's inbox fills with duplicates of
   // a request it has not even answered yet.
   const existingRequest = user?.role === 'buyer'
-    ? await (async () => {
-        const db = await createServerClient()
-        const { data } = await db.from('supply_contract_request')
-          .select('status')
-          .eq('buyer_id', user.id)
-          .eq('cooperative_id', listing.cooperativeId)
-          .eq('commodity_id', listing.commodityId)
-          .eq('window_start', toISODate(listing.weekStart))
-          .eq('window_end', toISODate(listing.weekEnd))
-          .in('status', ['pending', 'accepted'])
-          .maybeSingle()
-        return data
-      })()
+    ? (await loadSupplyRequests()).find(r =>
+        r.cooperativeId === listing.cooperativeId &&
+        r.commodityId === listing.commodityId &&
+        r.windowStart === toISODate(listing.weekStart) &&
+        r.windowEnd === toISODate(listing.weekEnd) &&
+        (r.status === 'pending' || r.status === 'accepted'),
+      ) ?? null
     : null
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8">
+    <Page>
       {/* A breadcrumb, not a back arrow: it says where you are as well as where
           you came from, and it does not lie when the page was opened from a
           shared link rather than from the grid. */}
@@ -86,7 +82,7 @@ export default async function ListingPage({
 
         <div className="rise flex flex-col gap-4" style={{ ['--rise-delay' as string]: '80ms' }}>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
               {listing.commodityName}
               {listing.varietyName && (
                 <span className="font-normal text-muted-foreground"> · {listing.varietyName}</span>
@@ -102,7 +98,7 @@ export default async function ListingPage({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-border bg-card p-4">
+            <Card>
               <p className="text-xs text-muted-foreground">Proyeksi tersedia</p>
               <p className="mt-1 flex items-baseline gap-1">
                 <span className="font-mono text-3xl font-medium tracking-tight" style={{ color: style.hue }}>
@@ -110,16 +106,16 @@ export default async function ListingPage({
                 </span>
                 <span className="text-sm text-muted-foreground">ton</span>
               </p>
-            </div>
+            </Card>
 
-            <div className="rounded-xl border border-border bg-card p-4">
+            <Card>
               <p className="text-xs text-muted-foreground">Jendela panen</p>
               <div className="mt-1.5">
                 <HarvestWindow
                   week={{ start: listing.weekStart, end: listing.weekEnd, basis: listing.basis }}
                 />
               </div>
-            </div>
+            </Card>
           </div>
 
           <p className="text-sm leading-relaxed text-muted-foreground">
@@ -130,7 +126,7 @@ export default async function ListingPage({
 
       {user?.role === 'buyer' ? (
         existingRequest ? (
-          <div className="mt-6 rounded-lg border border-border bg-card p-4 text-sm">
+          <Card className="mt-6 text-sm">
             <p className="font-semibold text-foreground">
               {requestStatusLabel(existingRequest.status)}
             </p>
@@ -143,7 +139,7 @@ export default async function ListingPage({
             >
               Lihat permintaan saya
             </Link>
-          </div>
+          </Card>
         ) : (
           <RequestForm
             listingId={listing.id}
@@ -154,7 +150,7 @@ export default async function ListingPage({
       ) : user ? (
         // Signed in, but on the cooperative side. Telling them to sign in would
         // be nonsense -- they already have; they are simply not a buyer.
-        <div className="mt-6 rounded-lg border border-dashed border-border p-4 text-sm">
+        <div className="mt-6 rounded-xl border border-dashed border-border p-4 text-sm">
           <p className="text-muted-foreground">
             Anda masuk sebagai akun koperasi. Hanya akun pembeli yang dapat
             mengajukan kontrak pasokan.
@@ -167,7 +163,7 @@ export default async function ListingPage({
           </Link>
         </div>
       ) : (
-        <div className="mt-6 rounded-lg border border-dashed border-border p-4 text-sm">
+        <div className="mt-6 rounded-xl border border-dashed border-border p-4 text-sm">
           <p className="text-muted-foreground">
             Masuk sebagai pembeli untuk mengajukan kontrak pasokan.
           </p>
@@ -187,6 +183,6 @@ export default async function ListingPage({
           </div>
         </div>
       )}
-    </div>
+    </Page>
   )
 }

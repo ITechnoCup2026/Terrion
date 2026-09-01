@@ -41,7 +41,7 @@ export function GroupPurchaseAlert({
 
   return (
     <section
-      className={cn('rounded-lg border border-border bg-card p-4', className)}
+      className={cn('rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-xs)]', className)}
       aria-labelledby="rdkk-heading"
     >
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

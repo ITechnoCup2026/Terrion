@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { ApiError } from '@/lib/api/client'
+
 import { attempt, ExpectedFailure, isFailure } from './result'
 
 describe('attempt', () => {
@@ -67,5 +69,32 @@ describe('isFailure', () => {
   it('narrows both ways', () => {
     expect(isFailure({ ok: false, message: 'x' })).toBe(true)
     expect(isFailure({ ok: true, data: 1 })).toBe(false)
+  })
+})
+
+/**
+ * An unreachable server is neither a refusal the reader caused nor a bug in
+ * this code, and reads as both if it is not named. It gets its own sentence
+ * because the remedy is different: wait, rather than fix the form or telephone
+ * anyone.
+ */
+describe('attempt, when the backend cannot be reached', () => {
+  it('says nothing was saved, and does not blame the reader', async () => {
+    const result = await attempt(async () => {
+      throw new ApiError(0, 'network_unreachable')
+    })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.message).toContain('belum tersimpan')
+    expect(result.message).not.toContain('hubungi pengelola')
+  })
+
+  it('still gives a refusal its own words', async () => {
+    const result = await attempt(async () => {
+      throw new ExpectedFailure('Blok ini sudah dipanen.')
+    })
+
+    expect(result).toEqual({ ok: false, message: 'Blok ini sudah dipanen.' })
   })
 })

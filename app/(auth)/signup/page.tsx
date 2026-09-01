@@ -1,5 +1,8 @@
+import { Leaf } from 'lucide-react'
 import Link from 'next/link'
 
+import { AuthBackButton } from '@/components/auth/AuthBackButton'
+import { AuthShowcasePanel } from '@/components/auth/AuthShowcasePanel'
 import { SignupForm } from '@/components/auth/SignupForm'
 import { Logo } from '@/components/ui/Logo'
 
@@ -13,35 +16,48 @@ export const metadata = { title: 'Daftar sebagai pembeli' }
  */
 export default function SignupPage() {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm">
-        <Link
-          href="/"
-          className="interactive mb-6 inline-block text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
-        >
-          Kembali ke beranda
-        </Link>
+    <main className="grid min-h-dvh lg:grid-cols-2">
+      <AuthShowcasePanel variant="signup" />
 
-        <div className="rise flex flex-col items-center gap-3 text-center">
-          <Link href="/" aria-label="Terrion, kembali ke beranda" className="interactive">
-            <Logo size={44} withWordmark={false} />
+      <div className="relative flex flex-col items-center justify-center bg-background p-6">
+        <AuthBackButton />
+
+        <div className="w-full max-w-sm">
+          <Link
+            href="/"
+            className="interactive mb-6 inline-block text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground lg:hidden"
+          >
+            Kembali ke beranda
           </Link>
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">Daftar sebagai pembeli</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Untuk menelusuri katalog dan mengajukan permintaan pasokan
-            </p>
+
+          <div className="rise flex flex-col items-center gap-3 text-center lg:items-start lg:text-left">
+            <Link href="/" aria-label="Terrion, kembali ke beranda" className="interactive lg:hidden">
+              <Logo size={44} withWordmark={false} />
+            </Link>
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+              style={{ background: 'var(--terrion-gold-50)', color: 'var(--terrion-gold-600)' }}
+            >
+              <Leaf aria-hidden className="size-3.5" />
+              Bergabung sebagai pembeli
+            </span>
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">Daftar sebagai pembeli</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Untuk menelusuri katalog dan mengajukan permintaan pasokan
+              </p>
+            </div>
           </div>
+
+          <SignupForm />
+
+          <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground lg:text-left">
+            Mendaftarkan koperasi? Akun koperasi dibuat oleh pengelola setelah verifikasi.{' '}
+            <Link href="/login" className="underline underline-offset-2 hover:text-foreground">
+              Sudah punya akun? Masuk
+            </Link>
+          </p>
         </div>
-
-        <SignupForm />
-
-        <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground">
-          Mendaftarkan koperasi? Akun koperasi dibuat oleh pengelola setelah verifikasi.{' '}
-          <Link href="/login" className="underline underline-offset-2 hover:text-foreground">
-            Sudah punya akun? Masuk
-          </Link>
-        </p>
       </div>
     </main>
   )

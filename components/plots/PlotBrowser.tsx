@@ -83,7 +83,6 @@ export function PlotBrowser({
   if (plots.length === 0) {
     return (
       <EmptyState
-        className="mt-6"
         title="Belum ada lahan terdaftar"
         description="Daftarkan lahan pertama untuk mulai memperkirakan jendela panen."
         action={<Link href="/plots/new" className={buttonVariants()}>Daftarkan lahan</Link>}
@@ -95,7 +94,7 @@ export function PlotBrowser({
     <>
       {/* Sticky, because the controls are useless once you have scrolled past
           them and the list is what you scroll. */}
-      <div className="sticky top-0 z-20 -mx-4 mt-6 border-b border-border bg-background/85 px-4 py-3 backdrop-blur-md">
+      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/85 px-4 py-3 backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-2">
           <input
             type="search"
