@@ -10,28 +10,47 @@ import type { UserRole } from '@/lib/auth/roles'
 import { cn } from '@/lib/utils'
 
 /**
- * The public header's signed-in state — the counterpart to <AuthMenu>.
+ * The signed-in state of every header in the product — the counterpart to
+ * <AuthMenu>.
  *
- * The header used to render "Masuk" unconditionally, because when it was
- * written there was no backend to ask who was looking. So a buyer who had just
- * signed in was invited to sign in again, with no way out except clearing a
- * cookie they cannot see. The catalogue is public AND is where a buyer works,
- * which is exactly why this header needs both states: the same page serves a
- * stranger and an account holder.
+ * The public header used to render "Masuk" unconditionally, because when it
+ * was written there was no backend to ask who was looking. So a buyer who had
+ * just signed in was invited to sign in again, with no way out except clearing
+ * a cookie they cannot see. The catalogue is public AND is where a buyer
+ * works, which is exactly why that header needs both states: the same page
+ * serves a stranger and an account holder.
  *
- * Deliberately the same shape as <AuthMenu> — one trigger, one menu — so the
- * header does not change size or rhythm when a session appears. The trigger is
- * secondary, not primary: signing in is a call to action, being signed in is
- * not.
+ * It serves the cooperative shell too, and did not used to. That side had its
+ * own arrangement — initials, a name, a role, and a bare square glyph that
+ * signed you out on one click — rendered three times over at three different
+ * widths, in the rail's foot, the collapsed rail, and the phone's top bar. So
+ * the same product asked its two kinds of user to learn two different account
+ * controls, and only one of them told you what pressing it would do.
+ *
+ * Deliberately the same shape as <AuthMenu> — one trigger, one menu — so a
+ * header does not change size or rhythm when a session appears.
  */
 export function AccountMenu({
   fullName,
   organisation,
   role,
+  signOutTo = '/',
+  triggerClassName,
 }: {
   fullName: string
   organisation: string | null
   role: UserRole
+  /**
+   * Where signing out lands. A buyer is on public pages and stays on them; a
+   * kader signed out of the cooperative shell has nowhere to be but /login.
+   */
+  signOutTo?: string
+  /**
+   * For the one place this floats over something rather than sitting in a
+   * header: the farm canvas, where a hairline border alone does not separate a
+   * white chip from a bright field.
+   */
+  triggerClassName?: string
 }) {
   const home = homeFor(role)
 
@@ -42,6 +61,7 @@ export function AccountMenu({
           'interactive inline-flex items-center gap-2 rounded-lg border border-border bg-card py-1 pr-2 pl-1',
           'text-sm font-medium text-foreground hover:bg-muted',
           'data-[popup-open]:bg-muted',
+          triggerClassName,
         )}
         aria-label={`Akun: ${fullName}`}
       >
@@ -60,7 +80,13 @@ export function AccountMenu({
       </Menu.Trigger>
 
       <Menu.Portal>
-        <Menu.Positioner side="bottom" align="end" sideOffset={8}>
+        {/* z-50: the popup is portalled to the end of <body>, which puts it
+            LAST in the DOM but not on top. A positioned element with a real
+            z-index paints in a later layer than one with z-index:auto, so the
+            catalogue's sticky filter bar (z-30) and this header itself (z-40)
+            were both painting over a menu that had no z-index at all. DOM
+            order does not settle this; a stacking order does. */}
+        <Menu.Positioner className="z-50" side="bottom" align="end" sideOffset={8}>
           <Menu.Popup
             className={cn(
               'w-64 rounded-xl border border-border bg-card p-1.5 shadow-[var(--shadow-lg)]',
@@ -105,13 +131,14 @@ export function AccountMenu({
                   'data-[highlighted]:bg-muted',
                 )}
               >
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
                   <ClipboardList aria-hidden className="size-4" />
                 </span>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-foreground">Permintaan Saya</span>
-                  <span className="text-[0.7rem] text-muted-foreground">Status ACC / Ditolak</span>
-                </div>
+                {/* Sentence case and no subtitle, like the two items either
+                    side of it. One row in three carrying a second line made
+                    the list ragged, and "ACC" was a fourth name for a state
+                    the pengurus's own button calls Terima. */}
+                <span className="text-sm font-medium text-foreground">Permintaan saya</span>
               </Menu.Item>
             )}
 
@@ -120,7 +147,7 @@ export function AccountMenu({
                 needing to know the endpoint. The form lives inside the popup
                 because the popup is portalled -- a form wrapped around the
                 trigger would not contain this button in the DOM. */}
-            <form action={signOut.bind(null, '/')}>
+            <form action={signOut.bind(null, signOutTo)}>
               <Menu.Item
                 nativeButton
                 render={<button type="submit" />}

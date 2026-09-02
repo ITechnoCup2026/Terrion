@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { SegmentedControl } from '@/components/ui/DataTable'
 import { utcDate } from '@/lib/agronomy/dates'
 import { commodityStyle } from '@/lib/catalog/commodity-style'
+import { REQUEST_STATUS_LABEL } from '@/lib/catalog/copy'
 import { formatDateId } from '@/lib/harvest/format'
 import { formatNumberId } from '@/lib/format/number'
 import type { SupplyRequest } from '@/lib/supply-requests/load'
@@ -21,13 +22,6 @@ type StatusFilter = 'all' | SupplyRequest['status']
 
 const STATUS_FILTERS: StatusFilter[] = ['all', 'accepted', 'pending', 'declined', 'withdrawn']
 
-const STATUS_TAB_LABEL: Record<StatusFilter, string> = {
-  all: 'Semua',
-  accepted: 'Disetujui (ACC)',
-  pending: 'Menunggu',
-  declined: 'Ditolak',
-  withdrawn: 'Ditarik',
-}
 
 interface CommodityItem {
   id: string
@@ -104,10 +98,10 @@ export function MyRequestsView({
   const summary: Metric[] = [
     { label: 'Total permintaan', value: stats.total },
     {
-      label: 'Disetujui',
+      label: 'Diterima',
       value: stats.accepted,
       hint: stats.acceptedTonnes > 0
-        ? `${formatNumberId(stats.acceptedTonnes)} ton disetujui koperasi`
+        ? `${formatNumberId(stats.acceptedTonnes)} ton diterima koperasi`
         : undefined,
     },
     {
@@ -148,7 +142,7 @@ export function MyRequestsView({
           onChange={setStatusFilter}
           options={STATUS_FILTERS.map(filter => ({
             value: filter,
-            label: STATUS_TAB_LABEL[filter],
+            label: REQUEST_STATUS_LABEL[filter],
             count:
               filter === 'all'
                 ? requests.length
@@ -363,7 +357,7 @@ function StatusNote({ status }: { status: SupplyRequest['status'] }) {
 function StatusBadge({ status }: { status: SupplyRequest['status'] }) {
   switch (status) {
     case 'accepted':
-      return <Badge tone="positive">Disetujui</Badge>
+      return <Badge tone="positive">Diterima</Badge>
     case 'declined':
       return <Badge tone="negative">Ditolak</Badge>
     case 'pending':

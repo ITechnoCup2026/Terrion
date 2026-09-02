@@ -71,10 +71,32 @@ export function listingSummary(input: { tonnes: number; cooperativeName: string 
   return `${formatNumberId(input.tonnes)} ton diproyeksikan oleh ${input.cooperativeName}.`
 }
 
-/** How a request's state reads to both sides. */
-export function requestStatusLabel(
-  status: 'pending' | 'accepted' | 'declined' | 'withdrawn',
-): string {
+export type RequestStatus = 'pending' | 'accepted' | 'declined' | 'withdrawn'
+
+/**
+ * One word per state, and the same word everywhere.
+ *
+ * A pengurus presses **Terima**, so the state that button produces is
+ * **Diterima** — an action keeps its name through the whole flow. Four screens
+ * had drifted off that: the buyer's filter tabs said "Disetujui (ACC)", their
+ * badges said "Disetujui", the pengurus's inbox said "Diterima", and the
+ * account menu and command palette said "ACC". Four names for one event, two
+ * of them office slang, on a screen whose entire job is telling a buyer
+ * whether they have a contract.
+ *
+ * `all` is here rather than in each filter bar because both inboxes offer it
+ * and both used to spell it themselves.
+ */
+export const REQUEST_STATUS_LABEL: Record<RequestStatus | 'all', string> = {
+  all: 'Semua',
+  pending: 'Menunggu',
+  accepted: 'Diterima',
+  declined: 'Ditolak',
+  withdrawn: 'Ditarik',
+}
+
+/** The same state as a sentence, naming who did it. */
+export function requestStatusLabel(status: RequestStatus): string {
   switch (status) {
     case 'pending':   return 'Menunggu jawaban koperasi'
     case 'accepted':  return 'Diterima koperasi'

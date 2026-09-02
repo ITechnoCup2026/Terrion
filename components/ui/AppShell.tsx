@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 
+import { AccountMenu } from '@/components/auth/AccountMenu'
 import { CommandPalette, useCommandShortcut } from '@/components/ui/CommandPalette'
 import { Logo } from '@/components/ui/Logo'
 import { MobileNav } from '@/components/ui/MobileNav'
@@ -47,14 +48,11 @@ export type ShellCooperative = { name: string; village: string; district: string
 const COLLAPSE_KEY = 'terrion:nav-collapsed'
 
 export function AppShell({
-  cooperative, userName, role, initials, signOutButton, children,
+  cooperative, userName, role, children,
 }: {
   cooperative: ShellCooperative
   userName: string
   role: UserRole
-  initials: string
-  /** The sign-out form, built on the server so its Server Action stays there. */
-  signOutButton: React.ReactNode
   children: React.ReactNode
 }) {
   const pathname = usePathname()
@@ -118,38 +116,28 @@ export function AppShell({
     </div>
   )
 
-  const avatar = (
-    <span
-      aria-hidden
-      className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[0.6875rem] font-medium text-secondary-foreground"
-    >
-      {initials}
-    </span>
+  // One account control, in one place, on both sides of the product. It used
+  // to be three: a row in the rail's foot, a stacked pair in the collapsed
+  // rail, and a bare glyph in the phone's top bar -- three arrangements of the
+  // same two facts, none of which matched what a buyer sees.
+  const account = (
+    <AccountMenu
+      fullName={userName}
+      organisation={cooperative?.name ?? null}
+      role={role}
+      signOutTo="/login"
+    />
   )
 
-  const railAccount = collapsed ? (
-    <div className="flex flex-col items-center gap-2" title={userName}>
-      {avatar}
-      {signOutButton}
-    </div>
-  ) : (
-    <div className="flex items-center gap-2 px-1 py-0.5">
-      {avatar}
-      <div className="min-w-0 flex-1 leading-tight">
-        <p className="truncate text-[0.75rem] font-medium text-foreground">{userName}</p>
-        <p className="truncate text-[0.6875rem] text-[var(--terrion-ink-faint)]">{roleLabel(role)}</p>
-      </div>
-      {signOutButton}
-    </div>
-  )
-
-  // Phone: no rail, so the top bar carries it. Same element tree, rendered a
-  // second time -- a React element is a description, not an instance.
-  const barAccount = (
-    <div className="flex items-center gap-2 md:hidden">
-      {avatar}
-      {signOutButton}
-    </div>
+  // The same control over the farm canvas, lifted so it reads against a field.
+  const floatingAccount = (
+    <AccountMenu
+      fullName={userName}
+      organisation={cooperative?.name ?? null}
+      role={role}
+      signOutTo="/login"
+      triggerClassName="shadow-[var(--shadow-md)]"
+    />
   )
 
   const palette = (
@@ -184,11 +172,7 @@ export function AppShell({
             </button>
           </div>
 
-          <div className="pointer-events-auto flex items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2 shadow-[var(--shadow-md)]">
-            {avatar}
-            <p className="hidden text-xs text-muted-foreground sm:block">{userName}</p>
-            {signOutButton}
-          </div>
+          <div className="pointer-events-auto">{floatingAccount}</div>
         </div>
 
         {/* Collapsed by default. The farm is the reason this page exists, and a
@@ -205,14 +189,14 @@ export function AppShell({
     // no outer scrollbar and a child asking for full height gets it.
     // print:h-auto, because the RDKK form is several pages tall on paper.
     <div className="flex h-dvh overflow-hidden print:block print:h-auto print:overflow-visible">
-      <Sidebar groups={groups} collapsed={collapsed} header={workspace} footer={railAccount} />
+      <Sidebar groups={groups} collapsed={collapsed} header={workspace} />
 
       <div className="flex min-w-0 flex-1 flex-col print:block">
         <Topbar
           collapsed={collapsed}
           onToggleCollapse={toggleCollapsed}
           onOpenSearch={openSearch}
-          account={barAccount}
+          account={account}
         />
 
         <main className="min-h-0 flex-1 overflow-y-auto print:overflow-visible">
