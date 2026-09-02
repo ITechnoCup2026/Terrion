@@ -37,10 +37,11 @@ const SORTS: { value: SortKey; label: string }[] = [
  * functions in lib/plots/filter.ts; this owns only the state and the URL.
  */
 export function PlotBrowser({
-  plots, commodities,
+  plots, commodities, onRegisterClick,
 }: {
   plots: PlotSummary[]
   commodities: CommodityRef[]
+  onRegisterClick?: () => void
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -85,7 +86,15 @@ export function PlotBrowser({
       <EmptyState
         title="Belum ada lahan terdaftar"
         description="Daftarkan lahan pertama untuk mulai memperkirakan jendela panen."
-        action={<Link href="/plots/new" className={buttonVariants()}>Daftarkan lahan</Link>}
+        action={
+          onRegisterClick ? (
+            <button type="button" onClick={onRegisterClick} className={buttonVariants()}>
+              Daftarkan lahan
+            </button>
+          ) : (
+            <Link href="/plots?new=1" className={buttonVariants()}>Daftarkan lahan</Link>
+          )
+        }
       />
     )
   }
@@ -94,15 +103,15 @@ export function PlotBrowser({
     <>
       {/* Sticky, because the controls are useless once you have scrolled past
           them and the list is what you scroll. */}
-      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/85 px-4 py-3 backdrop-blur-md">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 lg:-mx-8 border-b border-border bg-background/85 px-4 sm:px-6 lg:px-8 py-3.5 backdrop-blur-md shadow-xs">
+        <div className="flex flex-wrap items-center gap-3">
           <input
             type="search"
             value={filter.query}
             onChange={e => setFilter(f => ({ ...f, query: e.target.value }))}
             placeholder="Cari lahan atau nama petani"
             aria-label="Cari lahan atau nama petani"
-            className="min-w-52 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm
+            className="min-w-64 flex-1 rounded-xl border border-border bg-background px-3.5 py-2 text-sm
               outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
 
@@ -110,14 +119,14 @@ export function PlotBrowser({
             value={filter.sort}
             onChange={e => setFilter(f => ({ ...f, sort: e.target.value as SortKey }))}
             aria-label="Urutkan"
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm
+            className="rounded-xl border border-border bg-background px-3.5 py-2 text-sm
               outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             {SORTS.map(s => <option key={s.value} value={s.value}>Urut: {s.label}</option>)}
           </select>
         </div>
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
           <fieldset className="flex flex-wrap items-center gap-1.5">
             <legend className="sr-only">Jendela panen</legend>
             {HORIZONS.map(h => (
@@ -147,7 +156,7 @@ export function PlotBrowser({
             </fieldset>
           )}
 
-          <p className="ml-auto text-xs text-muted-foreground">
+          <p className="ml-auto text-xs font-semibold text-muted-foreground">
             {isDefaultFilter(filter)
               ? `${plots.length} lahan`
               : `${shown.length} dari ${plots.length} lahan`}
@@ -173,7 +182,7 @@ export function PlotBrowser({
           }
         />
       ) : (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {shown.map(p => <PlotCard key={p.id} plot={p} commodities={byId} />)}
         </div>
       )}

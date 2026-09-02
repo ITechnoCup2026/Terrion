@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 import { RequestForm } from '@/components/commerce/RequestForm'
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
@@ -26,6 +26,11 @@ export default async function ListingPage({
 }) {
   const { id } = await params
 
+  const user = await currentAppUser()
+  if (user && user.role !== 'buyer') {
+    redirect('/dashboard')
+  }
+
   // A malformed or stale id is a 404, never a throw.
   const parsed = parseListingId(id)
   if (!parsed) notFound()
@@ -34,7 +39,6 @@ export default async function ListingPage({
   const listing = listings.find(l => l.id === id)
   if (!listing) notFound()
 
-  const user = await currentAppUser()
   const style = commodityStyle(listing.commodityName)
 
   // A buyer with an open request against this exact listing sees its status

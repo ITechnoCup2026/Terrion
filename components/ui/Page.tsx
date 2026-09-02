@@ -23,13 +23,14 @@ import { cn } from '@/lib/utils'
  * the padding actually lives.
  */
 const WIDTHS = {
-  form: 'max-w-xl',
-  doc: 'max-w-3xl',
-  wide: 'max-w-6xl',
+  form: 'max-w-2xl',
+  doc: 'max-w-5xl',
+  wide: 'max-w-[1600px]',
+  full: 'max-w-full',
 } as const
 
 export function Page({
-  width = 'doc',
+  width = 'wide',
   className,
   children,
 }: {
@@ -38,7 +39,7 @@ export function Page({
   children: ReactNode
 }) {
   return (
-    <div className={cn('mx-auto w-full px-4 py-6 sm:py-8', WIDTHS[width], className)}>
+    <div className={cn('mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8', WIDTHS[width], className)}>
       {children}
     </div>
   )

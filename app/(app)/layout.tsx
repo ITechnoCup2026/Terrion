@@ -1,3 +1,4 @@
+import { LogOut } from 'lucide-react'
 import { redirect } from 'next/navigation'
 
 import { signOut } from '@/app/actions/auth'
@@ -67,14 +68,22 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
     <AppShell
       cooperative={cooperative ?? null}
       userName={user.full_name}
+      role={user.role}
       initials={initials}
       signOutButton={
+        // Glyph rather than the word "Keluar": this button is rendered into
+        // three slots of very different widths -- the expanded rail's foot, the
+        // 60 px collapsed rail, and the phone's top bar -- and only a square
+        // fits all three. The name survives in aria-label and title, which is
+        // what a screen reader and a hover both read.
         <form action={signOut.bind(null, '/login')}>
           <button
             type="submit"
-            className="interactive rounded-lg border border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-input hover:bg-muted hover:text-foreground"
+            title="Keluar"
+            aria-label="Keluar"
+            className="interactive flex size-7 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:border-input hover:bg-muted hover:text-foreground"
           >
-            Keluar
+            <LogOut aria-hidden className="size-3.5" />
           </button>
         </form>
       }

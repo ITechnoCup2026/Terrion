@@ -1,7 +1,7 @@
 'use client'
 
 import { Menu } from '@base-ui/react/menu'
-import { ChevronDown, LayoutDashboard, LogOut, Store } from 'lucide-react'
+import { ChevronDown, ClipboardList, LayoutDashboard, LogOut, Store } from 'lucide-react'
 import Link from 'next/link'
 
 import { signOut } from '@/app/actions/auth'
@@ -96,6 +96,24 @@ export function AccountMenu({
                 {role === 'buyer' ? 'Katalog pasokan' : 'Dasbor koperasi'}
               </span>
             </Menu.Item>
+
+            {role === 'buyer' && (
+              <Menu.Item
+                render={<Link href="/my-requests" />}
+                className={cn(
+                  'interactive flex items-center gap-2.5 rounded-lg p-2.5 outline-none',
+                  'data-[highlighted]:bg-muted',
+                )}
+              >
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                  <ClipboardList aria-hidden className="size-4" />
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-foreground">Permintaan Saya</span>
+                  <span className="text-[0.7rem] text-muted-foreground">Status ACC / Ditolak</span>
+                </div>
+              </Menu.Item>
+            )}
 
             {/* A form, not an onClick: signing out has to revoke the session at
                 the backend, and a Server Action does that without this menu

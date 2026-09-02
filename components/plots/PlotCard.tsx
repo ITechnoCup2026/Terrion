@@ -38,18 +38,20 @@ export function PlotCard({
     <Link
       href={`/plots/${plot.id}`}
       className="group relative flex flex-col overflow-hidden rounded-xl border border-border
-        bg-card shadow-[var(--shadow-xs)] transition-all
-        hover:-translate-y-0.5 hover:border-input hover:shadow-[var(--shadow-md)]"
+        bg-card shadow-[var(--shadow-xs)] transition-all duration-200 card-lift
+        hover:border-primary/40 hover:shadow-[var(--shadow-md)]"
     >
       {/* The commodity, as a band down the leading edge. */}
-      <span aria-hidden className="absolute inset-y-0 left-0 w-1" style={{ background: stripe }} />
+      <span aria-hidden className="absolute inset-y-0 left-0 w-1.5" style={{ background: stripe }} />
 
       <div className="flex flex-1 flex-col gap-3 p-4 pl-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-foreground">{plot.name}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {plot.memberName ?? 'Petani tidak tercatat'} · {formatNumberId(plot.areaHa)} ha
+            <p className="truncate text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+              {plot.name}
+            </p>
+            <p className="truncate text-xs text-muted-foreground font-medium mt-0.5">
+              {plot.memberName ?? 'Petani tidak tercatat'} · <span className="font-semibold">{formatNumberId(plot.areaHa)} ha</span>
             </p>
           </div>
           {lead && <CropGlyph spriteRow={lead.spriteRow} stage={CROP_STAGES - 2} />}
@@ -59,9 +61,9 @@ export function PlotCard({
           {plot.nextWindow ? (
             <HarvestWindow size="sm" window={plot.nextWindow} />
           ) : (
-            // Registered land with nothing growing on it is a real state, and
-            // saying so beats printing a date nobody predicted.
-            <span className="text-[0.8rem] text-muted-foreground">Belum ada tanaman aktif</span>
+            <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+              Belum ada tanaman aktif
+            </span>
           )}
         </div>
 
@@ -72,13 +74,13 @@ export function PlotCard({
           <SeasonMeter progress={plot.progress} colour={stripe} />
         )}
 
-        <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-xs text-muted-foreground">
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pt-2 text-xs border-t border-border/50 text-muted-foreground">
           {grown.length > 0 && (
-            <span className="truncate">{grown.map(c => c.name).join(' · ')}</span>
+            <span className="truncate font-medium text-foreground">{grown.map(c => c.name).join(' · ')}</span>
           )}
           {plot.expectedTonnes != null && (
-            <span className="ml-auto shrink-0">
-              {plot.blockCount} blok · ± {formatNumberId(plot.expectedTonnes)} ton
+            <span className="ml-auto shrink-0 font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+              {plot.blockCount} blok · ± {formatNumberId(plot.expectedTonnes)} t
             </span>
           )}
         </div>
