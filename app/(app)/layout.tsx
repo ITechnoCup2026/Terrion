@@ -55,8 +55,8 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
   // the root global-error screen over a subtitle.
   const cooperatives = await loadAtlasCooperativesIfUp()
   const match = cooperatives?.find(c => c.id === user.cooperative_id)
-  const cooperative = match
-    ? { name: match.name, village: match.village, district: match.district }
+  const workspace = match
+    ? { name: match.name, detail: `${match.village}, ${match.district}` }
     : null
 
   // No sign-out form built here any more: <AccountMenu> inside the shell owns
@@ -66,7 +66,7 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
   // bespoke account control.
   return (
     <AppShell
-      cooperative={cooperative ?? null}
+      workspace={workspace}
       userName={user.full_name}
       role={user.role}
     >

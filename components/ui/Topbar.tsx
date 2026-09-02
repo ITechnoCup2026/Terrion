@@ -4,6 +4,7 @@ import { ChevronRight, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-reac
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+import type { UserRole } from '@/lib/auth/roles'
 import { breadcrumbsFor } from '@/lib/nav/breadcrumbs'
 import { cn } from '@/lib/utils'
 
@@ -24,14 +25,16 @@ export function Topbar({
   onToggleCollapse,
   onOpenSearch,
   account,
+  role,
 }: {
   collapsed: boolean
   onToggleCollapse: () => void
   onOpenSearch: () => void
   account: React.ReactNode
+  role: UserRole
 }) {
   const pathname = usePathname()
-  const crumbs = breadcrumbsFor(pathname)
+  const crumbs = breadcrumbsFor(pathname, role)
 
   return (
     <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-card px-3 sm:px-4 print:hidden">

@@ -43,6 +43,29 @@ describe('breadcrumbsFor', () => {
     ])
   })
 
+  // A buyer's navigation is one group, and a section label above the only
+  // section names nothing -- the rail drops it, so the trail drops it too.
+  it('drops the section crumb for a reader who has only one section', () => {
+    expect(breadcrumbsFor('/catalog', 'buyer')).toEqual([{ label: 'Katalog' }])
+    expect(breadcrumbsFor('/catalog/8f2c-11ee', 'buyer')).toEqual([
+      { label: 'Katalog', href: '/catalog' },
+      { label: 'Detail pasokan' },
+    ])
+  })
+
+  it('keeps the section crumb for a role that has several', () => {
+    expect(breadcrumbsFor('/purchases', 'pengurus')).toEqual([
+      { label: 'Perdagangan' },
+      { label: 'Pembelian' },
+    ])
+  })
+
+  // A buyer cannot reach the cooperative's screens, so their trail says nothing
+  // about one -- the filtered groups are the ones searched.
+  it('returns nothing for a page the role cannot reach', () => {
+    expect(breadcrumbsFor('/dashboard', 'buyer')).toEqual([])
+  })
+
   // The prefix trap that isActivePath exists to avoid, reaching this far.
   it('returns nothing for a path no nav item owns', () => {
     expect(breadcrumbsFor('/plotsomething')).toEqual([])
