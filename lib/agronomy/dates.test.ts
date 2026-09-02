@@ -5,6 +5,13 @@ describe('date helpers', () => {
   it('builds UTC dates from ISO strings without local-time drift', () => {
     expect(toISODate(utcDate('2026-10-14'))).toBe('2026-10-14')
   })
+  it('takes the date part of a full timestamp', () => {
+    // The API returns responded_at/created_at as full ISO timestamps. Splitting
+    // one on '-' used to yield a NaN day, and the request inbox rendered its
+    // answered-on column as "NaN undefined NaN".
+    expect(toISODate(utcDate('2026-10-14T13:44:39.123Z'))).toBe('2026-10-14')
+    expect(Number.isNaN(utcDate('2026-10-14T13:44:39.123Z').getTime())).toBe(false)
+  })
   it('adds days across a month boundary', () => {
     expect(toISODate(addDays(utcDate('2026-10-30'), 5))).toBe('2026-11-04')
   })

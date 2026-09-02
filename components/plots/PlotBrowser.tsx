@@ -103,7 +103,7 @@ export function PlotBrowser({
     <>
       {/* Sticky, because the controls are useless once you have scrolled past
           them and the list is what you scroll. */}
-      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background px-4 py-3.5 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-card px-4 py-3.5 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="flex flex-wrap items-center gap-3">
           <input
             type="search"
@@ -111,7 +111,7 @@ export function PlotBrowser({
             onChange={e => setFilter(f => ({ ...f, query: e.target.value }))}
             placeholder="Cari lahan atau nama petani"
             aria-label="Cari lahan atau nama petani"
-            className="min-w-64 flex-1 rounded-xl border border-border bg-background px-3.5 py-2 text-sm
+            className="min-w-64 flex-1 rounded-xl border border-border bg-card px-3.5 py-2 text-sm
               outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
 
@@ -119,7 +119,7 @@ export function PlotBrowser({
             value={filter.sort}
             onChange={e => setFilter(f => ({ ...f, sort: e.target.value as SortKey }))}
             aria-label="Urutkan"
-            className="rounded-xl border border-border bg-background px-3.5 py-2 text-sm
+            className="rounded-xl border border-border bg-card px-3.5 py-2 text-sm
               outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             {SORTS.map(s => <option key={s.value} value={s.value}>Urut: {s.label}</option>)}

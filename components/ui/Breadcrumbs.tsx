@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const BREADCRUMB_MAP: Record<string, { group?: string; label: string }> = {
-  '/dashboard': { group: 'Ringkasan', label: 'Dasbor' },
+  '/dashboard': { group: 'Ringkasan', label: 'Dashboard' },
   '/plots': { group: 'Operasi', label: 'Lahan Koperasi' },
   '/requests': { group: 'Perdagangan', label: 'Pengajuan Hasil Panen' },
   '/purchases': { group: 'Perdagangan', label: 'Pembelian Kolektif' },

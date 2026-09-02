@@ -3,9 +3,24 @@
 
 const MS_DAY = 86_400_000
 
-// Parse a 'YYYY-MM-DD' string into midnight UTC on that day.
+/**
+ * Parse an ISO date into midnight UTC on that day.
+ *
+ * Takes the date part of anything ISO-8601, so a bare 'YYYY-MM-DD' and a full
+ * '2026-09-02T13:44:39.123Z' timestamp both work. That tolerance is not
+ * cosmetic: splitting a full timestamp on '-' yields ['2026','09','02T13:44…'],
+ * Number() of the last part is NaN, and Date.UTC with a NaN day produces an
+ * Invalid Date that formats as "NaN undefined NaN" -- which is exactly what
+ * the cooperative's request inbox printed in its answered-on column, because
+ * that one call site passed `responded_at` straight through while every other
+ * caller happened to .slice(0, 10) first.
+ *
+ * Discarding the time is correct rather than lossy here: this module is UTC-only
+ * by design so that a local timezone can never shift a day's weather onto the
+ * wrong date, and every date downstream is midnight UTC.
+ */
 export function utcDate(iso: string): Date {
-  const [y, m, d] = iso.split('-').map(Number)
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
   return new Date(Date.UTC(y, m - 1, d))
 }
 

@@ -1,98 +1,64 @@
-'use client'
-
-import {
-  Area,
-  Bar,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  LabelList,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import type { CSSProperties } from 'react'
 
 import { EmptyState } from '@/components/ui/EmptyState'
 import { formatNumberId } from '@/lib/format/number'
+import { MONTHS_ID } from '@/lib/harvest/format'
+import { cn } from '@/lib/utils'
 
 /**
- * Twelve weeks of projected tonnage, with the uncertainty made visible.
+ * Twelve weeks of projected tonnage, drawn as ranges rather than as bars.
  *
- * The shaded band is not decoration. A harvest window spanning several days
- * does not commit its tonnage to one week; the bar is the even-spread point
- * estimate and the band is the range between "certain to land here" and
- * "could all land here". Drawing only the bar would state a precision the
- * model does not have.
+ * A harvest window spanning several days does not commit its tonnage to one
+ * week, so every week here is an interval: the capsule runs from "certain to
+ * land in this week" to "could all land in this week", and the crossbar is the
+ * even-spread estimate inside it. That interval is the one claim Terrion makes
+ * which a planting-date calculator cannot — the product refuses to name a day
+ * anywhere else, and this is the same refusal drawn.
  *
- * Risk weeks carry the word "Padat" as well as a different fill, because
- * colour alone fails for a colour-blind reader and dies in greyscale the
- * moment someone prints this for a members' meeting. The word and the bar are
- * both gold: over capacity is a decision to make, which is the one thing gold
- * means anywhere in this product.
+ * It used to be a solid bar with the range behind it as a pale filled
+ * mountain. The mountain read as a gradient wash, and the bars read as certain
+ * quantities, which is exactly backwards: the tall thin capsules at the far
+ * end of the horizon ARE the message that the far end is soft.
+ *
+ * No chart library. Twelve static intervals on a linear axis is one div per
+ * week, and hanging recharts — and a client bundle — off a server-rendered
+ * page to draw them was the more expensive of two identical pictures.
  */
 
 export type ChartWeek = {
-  label: string
+  weekStart: Date
   expected: number
   min: number
   max: number
   risk: boolean
 }
 
-type Row = ChartWeek & { band: [number, number] }
-
-/**
- * Chart colours, read from the live palette.
- *
- * These were once --terrion-primary / --terrion-accent-strong /
- * --terrion-muted-2, which the palette rewrite renamed out from under them.
- * An undefined custom property in an SVG fill is not an error and has no
- * fallback: the declaration is invalid and the shape paints black, which is
- * how this chart spent a release drawing harvest tonnage as black slabs.
- * lib/theme/tokens.test.ts now fails the build rather than the eye.
- */
-const COLOR = {
-  bar: 'var(--chart-1)',    // green — a week within capacity
-  risk: 'var(--chart-2)',   // gold  — the only warm colour, so it means "act"
-  band: 'var(--terrion-green-100)',
+/** A round number at or above the tallest interval, for the top gridline. */
+function niceMax(value: number): number {
+  if (value <= 0) return 1
+  const magnitude = 10 ** Math.floor(Math.log10(value))
+  for (const step of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) {
+    if (value <= step * magnitude) return step * magnitude
+  }
+  return 10 * magnitude
 }
 
-// Recharts hands the label renderer one datum at a time; only risk weeks get a mark.
-function RiskMark(props: { x?: number; y?: number; width?: number; index?: number; rows?: Row[] }) {
-  const { x = 0, y = 0, width = 0, index = 0, rows = [] } = props
-  if (!rows[index]?.risk) return null
-  return (
-    <g transform={`translate(${x + width / 2}, ${y - 6})`}>
-      <text textAnchor="middle" className="fill-accent text-[10px] font-medium">
-        Padat
-      </text>
-    </g>
-  )
+/** Consecutive weeks sharing a month, so the axis can carry a calendar band. */
+function monthSpans(weeks: readonly ChartWeek[]) {
+  const spans: { month: number; count: number }[] = []
+  for (const week of weeks) {
+    const month = week.weekStart.getUTCMonth()
+    const last = spans.at(-1)
+    if (last && last.month === month) last.count += 1
+    else spans.push({ month, count: 1 })
+  }
+  return spans
 }
 
-function ChartTooltip({ active, payload }: { active?: boolean; payload?: { payload: Row }[] }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0].payload
-  return (
-    <div className="rounded-md border border-border bg-card px-3 py-2 text-xs shadow-sm">
-      <p className="font-medium text-foreground">{row.label}</p>
-      <p className="text-muted-foreground">
-        Perkiraan {formatNumberId(row.expected)} ton
-      </p>
-      <p className="text-muted-foreground">
-        Rentang {formatNumberId(row.min)}–{formatNumberId(row.max)} ton
-      </p>
-      {row.risk && <p className="mt-1 font-medium text-accent">Melebihi kapasitas</p>}
-    </div>
-  )
-}
+const TICKS = [1, 0.75, 0.5, 0.25, 0]
 
 export function ProjectionChart({ weeks }: { weeks: ChartWeek[] }) {
-  const rows: Row[] = weeks.map(w => ({ ...w, band: [w.min, w.max] }))
-  const hasAny = rows.some(r => r.max > 0)
-
-  if (!hasAny) {
+  if (!weeks.some(w => w.max > 0)) {
     return (
       <EmptyState
         title="Belum ada panen yang diproyeksikan"
@@ -101,51 +67,179 @@ export function ProjectionChart({ weeks }: { weeks: ChartWeek[] }) {
     )
   }
 
-  return (
-    // Grows to whatever room the card gives it, with 18rem as the floor. The
-    // dashboard sits it beside a taller column, and a fixed height there left
-    // a third of the card empty under the axis.
-    <div className="h-full min-h-72 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={rows} margin={{ top: 24, right: 8, bottom: 4, left: 0 }}>
-          <CartesianGrid stroke="var(--border)" vertical={false} />
-          <XAxis
-            dataKey="label"
-            tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
-            tickLine={false}
-            axisLine={{ stroke: 'var(--input)' }}
-            interval="preserveStartEnd"
-          />
-          <YAxis
-            tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
-            tickLine={false}
-            axisLine={false}
-            width={44}
-            label={{
-              value: 'ton',
-              position: 'insideTopLeft',
-              fontSize: 10,
-              fill: 'var(--muted-foreground)',
-            }}
-          />
-          <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--muted)', fillOpacity: 0.6 }} />
+  const axis = niceMax(Math.max(...weeks.map(w => w.max)))
+  const pct = (value: number) => (value / axis) * 100
 
-          <Area
-            dataKey="band"
-            stroke="none"
-            fill={COLOR.band}
-            fillOpacity={0.85}
-            isAnimationActive={false}
-            activeDot={false}
-          />
-          <Bar dataKey="expected" isAnimationActive={false} radius={[2, 2, 0, 0]}>
-            {rows.map((row, i) => (
-              <Cell key={i} fill={row.risk ? COLOR.risk : COLOR.bar} />
+  const peak = weeks.reduce((best, w) => (w.expected > best.expected ? w : best), weeks[0])
+  const flagged = weeks.filter(w => w.risk).length
+
+  return (
+    <figure
+      className="flex flex-col"
+      role="img"
+      aria-label={
+        `Proyeksi ${weeks.length} minggu. Puncak ${formatNumberId(peak.expected)} ton pada minggu ` +
+        `${peak.weekStart.getUTCDate()} ${MONTHS_ID[peak.weekStart.getUTCMonth()]}. ` +
+        (flagged > 0
+          ? `${flagged} minggu melewati kapasitas koperasi.`
+          : 'Tidak ada minggu yang melewati kapasitas.')
+      }
+    >
+      <div className="flex gap-2.5">
+        {/* The scale. Mono and right-aligned, so the digits stack — the one
+            thing a proportional face cannot do down a column. */}
+        <div className="relative h-52 w-7 shrink-0 sm:h-60">
+          <span className="absolute -top-4 right-0 text-[0.625rem] text-[var(--terrion-ink-faint)]">
+            ton
+          </span>
+          {TICKS.map(t => (
+            <span
+              key={t}
+              className="absolute right-0 -translate-y-1/2 font-mono text-[0.625rem] tabular-nums text-[var(--terrion-ink-faint)]"
+              style={{ top: `${(1 - t) * 100}%` }}
+            >
+              {formatNumberId(axis * t, axis < 10 ? 1 : 0)}
+            </span>
+          ))}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="relative h-52 sm:h-60">
+            {TICKS.map(t => (
+              <span
+                key={t}
+                aria-hidden
+                className={cn(
+                  'absolute inset-x-0 h-px',
+                  t === 0 ? 'bg-[var(--terrion-ink-faint)]' : 'bg-border',
+                )}
+                style={{ top: `${(1 - t) * 100}%` }}
+              />
             ))}
-            <LabelList dataKey="expected" content={<RiskMark rows={rows} />} />
-          </Bar>
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
+
+            <div className="absolute inset-0 flex items-stretch">
+              {weeks.map((week, i) => (
+                <div key={i} className="group/week relative flex-1">
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 rounded-sm group-hover/week:bg-muted"
+                  />
+
+                  {/* This week, marked once. The projection's whole subject is
+                      *when*, and a chart with no "now" on it is a list. */}
+                  {i === 0 && (
+                    <>
+                      <span
+                        aria-hidden
+                        className="absolute inset-y-0 left-0 w-px bg-[var(--terrion-green-500)]"
+                      />
+                      <span className="absolute top-0 left-1.5 text-[0.625rem] whitespace-nowrap text-[var(--terrion-green-600)]">
+                        minggu ini
+                      </span>
+                    </>
+                  )}
+
+                  <span
+                    aria-hidden
+                    className="grow-up absolute inset-x-0 bottom-0 top-0"
+                    style={{ '--grow-delay': `${i * 35}ms` } as CSSProperties}
+                  >
+                    <span
+                      className={cn(
+                        'absolute left-1/2 w-[52%] max-w-[18px] -translate-x-1/2 rounded-full',
+                        week.risk
+                          ? 'bg-[var(--terrion-gold-200)]'
+                          : 'bg-[var(--terrion-green-200)]',
+                      )}
+                      style={{
+                        bottom: `${pct(week.min)}%`,
+                        height: `max(${pct(week.max - week.min)}%, 3px)`,
+                      }}
+                    />
+                    <span
+                      className={cn(
+                        'absolute left-1/2 h-[5px] w-[52%] max-w-[18px] -translate-x-1/2 rounded-full',
+                        week.risk ? 'bg-accent' : 'bg-[var(--terrion-green-600)]',
+                      )}
+                      style={{ bottom: `calc(${pct(week.expected)}% - 2.5px)` }}
+                    />
+                  </span>
+
+                  {/* The word as well as the colour: gold alone fails for a
+                      reader who cannot separate it from green, and dies the
+                      moment somebody prints this for a members' meeting. */}
+                  {week.risk && (
+                    <span
+                      className="absolute inset-x-0 text-center text-[0.625rem] font-medium text-accent"
+                      style={{ bottom: `calc(${pct(week.max)}% + 5px)` }}
+                    >
+                      Padat
+                    </span>
+                  )}
+
+                  {/* Read on hover, not fetched on hover — every figure in here
+                      is already in the markup, so there is no tooltip runtime
+                      and no client component. */}
+                  <span
+                    className={cn(
+                      'pointer-events-none absolute bottom-full z-20 mb-1 hidden rounded-md border border-border bg-popover px-2.5 py-1.5 text-left whitespace-nowrap shadow-[var(--shadow-md)] group-hover/week:block',
+                      // The panel clips its own overflow, so a centred popover
+                      // on the last column loses half of itself to the panel's
+                      // right edge. The end weeks anchor to their own edge.
+                      i === weeks.length - 1
+                        ? 'right-0'
+                        : i === 0
+                          ? 'left-0'
+                          : 'left-1/2 -translate-x-1/2',
+                    )}
+                  >
+                    <span className="block text-[0.6875rem] font-medium text-foreground">
+                      Minggu {week.weekStart.getUTCDate()} {MONTHS_ID[week.weekStart.getUTCMonth()]}
+                    </span>
+                    <span className="block text-[0.6875rem] tabular-nums text-muted-foreground">
+                      Perkiraan {formatNumberId(week.expected)} ton
+                    </span>
+                    <span className="block text-[0.6875rem] tabular-nums text-[var(--terrion-ink-faint)]">
+                      Rentang {formatNumberId(week.min)}–{formatNumberId(week.max)} ton
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* The calendar band: day of month per week, month names under the
+              run of weeks they cover. A cooperative reads its season off a wall
+              calendar, and twelve repetitions of "7 Sep" is not one. */}
+          <div className="mt-2 flex">
+            {weeks.map((week, i) => (
+              <span
+                key={i}
+                className={cn(
+                  'flex-1 text-center font-mono text-[0.625rem] tabular-nums',
+                  i === 0
+                    ? 'font-medium text-[var(--terrion-green-700)]'
+                    : 'text-[var(--terrion-ink-faint)]',
+                )}
+              >
+                {week.weekStart.getUTCDate()}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-1.5 flex border-t border-border pt-1.5">
+            {monthSpans(weeks).map(span => (
+              <span
+                key={span.month}
+                className="border-l border-border pl-2 text-[0.6875rem] text-muted-foreground first:border-l-0 first:pl-0"
+                style={{ flexGrow: span.count, flexBasis: 0 }}
+              >
+                {MONTHS_ID[span.month]}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </figure>
   )
 }

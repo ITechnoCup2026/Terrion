@@ -60,7 +60,7 @@ export function THead({ children, className }: { children: ReactNode; className?
         // once the head is sticky and rows slide under it. Fully opaque, not
         // blurred: a translucent header lets the top row bleed through it at
         // exactly the moment the reader is trying to read the column name.
-        'sticky top-0 z-10 bg-muted text-left text-[0.6875rem] text-muted-foreground',
+        'sticky top-0 z-10 bg-muted text-left text-[0.6875rem] font-medium text-muted-foreground',
         '[&_th]:border-b [&_th]:border-border',
         'print:static',
         className,
@@ -76,7 +76,7 @@ export function TBody({ children, className }: { children: ReactNode; className?
     <tbody
       className={cn(
         '[&_tr]:border-b [&_tr]:border-border [&_tr:last-child]:border-0',
-        '[&_tr]:transition-colors [&_tr:hover]:bg-muted',
+        '[&_tr]:transition-colors [&_tr:hover]:bg-secondary/45',
         className,
       )}
     >

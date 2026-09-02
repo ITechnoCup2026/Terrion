@@ -1,35 +1,19 @@
 import { redirect } from 'next/navigation'
 
-import { CollisionAlert, type CollisionAlertData } from '@/components/dashboard/CollisionAlert'
-import { GroupPurchaseAlert } from '@/components/dashboard/GroupPurchaseAlert'
-import { ImpactPanel } from '@/components/dashboard/ImpactPanel'
-import { ProjectionChart, type ChartWeek } from '@/components/dashboard/ProjectionChart'
-import { UpcomingHarvests } from '@/components/dashboard/UpcomingHarvests'
-import { Card, CardHeader, MetricRow, type Metric } from '@/components/ui/Card'
-import { EmptyState } from '@/components/ui/EmptyState'
-import { Page, PageHeader, SectionHeading } from '@/components/ui/Page'
+import { DashboardView } from '@/components/dashboard/DashboardView'
 import { addDays } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
 import { loadDashboard } from '@/lib/dashboard/load'
-import { formatNumberId } from '@/lib/format/number'
-import { MONTHS_ID } from '@/lib/harvest/format'
 import { loadPlots } from '@/lib/plots/load'
 import { loadSeasonInputs, seasonRequirementLines } from '@/lib/rdkk/load'
 
-export const metadata = { title: 'Dasbor' }
+export const metadata = { title: 'Dashboard' }
 
 // The projection is a live read of every block; nothing here may be cached
 // into next season.
 export const dynamic = 'force-dynamic'
 
-// A week's bucket start, as an axis tick. This labels a seven-day bucket, not
-// any plot's harvest — a harvest date still only ever renders through
-// <HarvestWindow>.
-function weekTick(weekStart: Date): string {
-  return `${weekStart.getUTCDate()} ${MONTHS_ID[weekStart.getUTCMonth()]}`
-}
-
-const UPCOMING_SHOWN = 5
+const SEASON_LABEL = 'musim ini'
 
 export default async function DashboardPage() {
   const user = await currentAppUser()
@@ -41,141 +25,21 @@ export default async function DashboardPage() {
   // GET /api/dashboard is one projection covering the 12-week chart, the
   // collision detector's flagged weeks and lead pile-up, its staggering
   // suggestions, the coming week's harvests, and the four impact figures --
-  // all pre-computed, so this page is a mapping from that response to the
-  // props each widget already expects, not a re-computation of any of it.
+  // all pre-computed, so this page is a mapping from that response into the
+  // view, not a re-computation of any of it.
   const [dashboard, plots, rdkk] = await Promise.all([
     loadDashboard(),
     loadPlots(),
-    loadSeasonInputs({ label: 'musim ini', start: addDays(now, -365), end: now }),
+    loadSeasonInputs({ label: SEASON_LABEL, start: addDays(now, -365), end: now }),
   ])
 
-  const flaggedWeeks = new Set(dashboard.flagged.map(f => f.isoWeek))
-  const chartWeeks: ChartWeek[] = dashboard.weeks.map(w => ({
-    label: weekTick(w.weekStart),
-    expected: w.expectedTonnes,
-    min: w.minTonnes,
-    max: w.maxTonnes,
-    risk: flaggedWeeks.has(w.isoWeek),
-  }))
-
-  let alert: CollisionAlertData | null = null
-  if (dashboard.lead) {
-    const lead = dashboard.lead
-    const suggestion = dashboard.suggestions.find(
-      s => s.isoWeek === lead.isoWeek && s.commodityId === lead.commodityId,
-    ) ?? null
-
-    alert = {
-      isoWeek: lead.isoWeek,
-      commodityId: lead.commodityId,
-      weekStart: lead.weekStart,
-      commodityName: lead.commodityName,
-      tonnes: lead.tonnes,
-      basis: lead.basis,
-      threshold: lead.threshold,
-      plotCount: lead.plotCount,
-      totalPlots: plots.length,
-      // GET /api/dashboard names which blocks contribute (block_ids), not
-      // which plots -- and no contract endpoint maps a block id back to its
-      // plot's name and farmer without a per-plot lookup this page has no
-      // reason to make. The count above is real; the roster is not available.
-      contributingPlots: [],
-      suggestion: suggestion
-        ? { blockIds: suggestion.blockIds, shiftDays: suggestion.shiftDays, tonnesMoved: suggestion.tonnesMoved }
-        : null,
-    }
-  }
-
-  const upcomingRows = dashboard.upcoming.rows.slice(0, UPCOMING_SHOWN)
-
-  const peak = dashboard.weeks.reduce<typeof dashboard.weeks[number] | null>(
-    (best, w) => (best === null || w.expectedTonnes > best.expectedTonnes ? w : best), null)
-
-  // "Minggu berisiko" is the only figure here that asks for a decision, so it
-  // is the only one that carries the accent — and only when it is not zero.
-  const kpis: Metric[] = [
-    {
-      label: 'Panen 12 minggu',
-      value: `${formatNumberId(dashboard.weeks.reduce((s, w) => s + w.expectedTonnes, 0))} ton`,
-      hint: 'Total perkiraan seluruh lahan',
-    },
-    {
-      label: 'Minggu puncak',
-      value: peak ? `${formatNumberId(peak.expectedTonnes)} t` : '—',
-      hint: peak ? weekTick(peak.weekStart) : 'Belum ada proyeksi',
-    },
-    {
-      label: 'Minggu berisiko',
-      value: formatNumberId(flaggedWeeks.size),
-      hint: 'Melewati kapasitas koperasi',
-      tone: flaggedWeeks.size > 0 ? 'accent' : 'default',
-    },
-    {
-      label: 'Lahan',
-      value: formatNumberId(plots.length),
-      hint: 'Terdaftar di koperasi',
-    },
-  ]
-
   return (
-    // The page owns its padding now: the shell stopped applying any, so that
-    // the farm page can fill the screen without fighting a parent.
-    <Page width="wide" className="flex flex-col gap-6">
-      <PageHeader
-        title="Dasbor"
-        description="Proyeksi panen 12 minggu ke depan untuk seluruh lahan koperasi."
-      />
-
-      {/* Four figures, read in one line. They were four full-width slabs, so
-          the page opened with numbers stacked like paragraphs and the one
-          thing worth acting on sat below the fold. */}
-      <MetricRow items={kpis} />
-
-      {/* Full width, and directly under the figures: it is the single thing on
-          this page a board can act on. */}
-      {alert ? (
-        <CollisionAlert data={alert} />
-      ) : (
-        <EmptyState
-          title="Tidak ada penumpukan panen terdeteksi"
-          description="Tidak ada minggu yang melewati kapasitas koperasi dalam 12 minggu ke depan."
-        />
-      )}
-
-      {/* The chart is the evidence behind the alert, so it gets two thirds and
-          sits beside the things it is not evidence for. */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card as="section" className="flex flex-col lg:col-span-2">
-          <CardHeader
-            className="mb-4"
-            title="Proyeksi panen mingguan"
-            description="Batang menunjukkan perkiraan; area abu-abu menunjukkan rentang antara panen yang pasti jatuh di minggu itu dan yang mungkin seluruhnya jatuh di sana."
-          />
-          {/* min-h-0 so the chart can take the leftover height rather than
-              being pushed past the bottom of the card. */}
-          <div className="min-h-0 flex-1">
-            <ProjectionChart weeks={chartWeeks} />
-          </div>
-        </Card>
-
-        <div className="flex flex-col gap-4">
-          <UpcomingHarvests
-            rows={upcomingRows}
-            totalTonnes={dashboard.upcoming.totalTonnes}
-            hidden={dashboard.upcoming.rows.length - upcomingRows.length}
-          />
-          <GroupPurchaseAlert
-            totals={seasonRequirementLines(rdkk)}
-            plotCount={plots.length}
-            seasonLabel="musim ini"
-            commoditiesWithoutRates={rdkk.commoditiesWithoutRates}
-          />
-        </div>
-      </div>
-
-      {/* Last, because it looks backwards: what the cooperative already got
-          out of this, rather than what it must do next. */}
-      <ImpactPanel figures={dashboard.impact} />
-    </Page>
+    <DashboardView
+      dashboard={dashboard}
+      plotCount={plots.length}
+      rdkkTotals={seasonRequirementLines(rdkk)}
+      commoditiesWithoutRates={rdkk.commoditiesWithoutRates}
+      seasonLabel={SEASON_LABEL}
+    />
   )
 }

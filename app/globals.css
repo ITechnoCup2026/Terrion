@@ -21,6 +21,19 @@
    The rule that keeps this honest: nothing is tinted to look interesting. A
    panel earns colour by carrying a state, and a panel with no state is white.
 
+   That rule was right and the first pass applied it to death. Everything ended
+   up white on white, in one grey, at one weight, with shadows at three percent
+   -- 223 pieces of grey text against 155 of ink, and the six-colour crop
+   palette used fourteen times in the entire product. A page where nothing is
+   emphasised reads as a page where nothing matters.
+
+   Colour comes back through the DATA, never through ornament. A crop keeps its
+   own hue wherever it appears -- in a band on the ruler, a bar on a row, a
+   chip beside a name -- because that hue is an identifier a reader learns and
+   then navigates by. Status colour stays exactly as strict as before. The
+   difference between the two is the difference between a chart and a
+   decoration.
+
    Removed deliberately, and listed so it does not creep back:
      .glass-panel / .glow-* / backdrop blur as decoration — a frosted surface
        says "layer above", and nothing here is above anything
@@ -86,38 +99,50 @@
   --animate-rise: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-fade: fade 0.35s ease-out both;
   --animate-grow: grow 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-  --animate-band: band 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 :root {
-  /* Field greens. Only three steps are load-bearing — the wash behind an
-     active row, the fill of a band, and the ink of the mark itself. */
-  --terrion-green-50: #f2f7f3;
-  --terrion-green-100: #e2ede5;
-  --terrion-green-200: #c3dbc9;
-  --terrion-green-500: #3d8659;
-  --terrion-green-600: #2c6b46;
-  --terrion-green-700: #1f5c3f;
-  --terrion-green-900: #123526;
+  /* Field greens. The 500 is brighter than it was: it is the live green, the
+     one that appears on a dot, a positive badge, a chart series -- the places
+     that should look like something is growing rather than something is
+     archived. The deep 700 stays the ink green for buttons and marks. */
+  --terrion-green-50: #eef6f1;
+  --terrion-green-100: #d5e9dd;
+  --terrion-green-200: #b9d9c4;
+  --terrion-green-500: #2e9e5b;
+  --terrion-green-600: #24804a;
+  --terrion-green-700: #1a5f3c;
+  --terrion-green-900: #0e3524;
 
-  /* Harvest gold. Darkened from the brand board's sun so that it holds 4.5:1
-     on white as TEXT, because over-a-limit is nearly always a sentence rather
-     than a fill. */
+  /* Harvest gold. The 600 is the semantic one -- "at or over a limit" -- and
+     it is dark enough to hold 4.5:1 on white as TEXT, because over-a-limit is
+     nearly always a sentence rather than a fill. It was #b07a12, which reads
+     fine at 28px on a figure and failed AA at 12px on the collision alert's
+     own label. The 500 stays brighter for fills, where the contrast rule that
+     applies is the 3:1 one for large shapes. */
   --terrion-gold-50: #fbf4e4;
   --terrion-gold-200: #ecd7a2;
   --terrion-gold-500: #c68f1c;
-  --terrion-gold-600: #b07a12;
+  --terrion-gold-600: #9c6910;
 
   --terrion-sky-100: #dceaf2;
 
   /* Ink, warmed a few degrees towards green so it belongs to the palette
-     instead of being a pasted-in neutral. Three steps and no more: body,
-     secondary, and the meta line that is nearly furniture. */
-  --terrion-ink: #14211b;
-  --terrion-ink-soft: #5a6b62;
-  --terrion-ink-faint: #8a9891;
+     instead of being a pasted-in neutral. Three steps, and they are three
+     steps apart on purpose: the first pass set them so close together that
+     more than half the type on the site was the middle one and the page had no
+     anchor. --ink-faint was #8a9891, which is 3.4:1 on white -- below AA, and
+     used for twenty-eight pieces of real text. */
+  --terrion-ink: #0f1c16;
+  --terrion-ink-soft: #47574e;
+  --terrion-ink-faint: #617169;
 
-  --background: #ffffff;
+  /* Ground and paper. The page is a soft green-grey and the cards on it are
+     white, which is the whole of why a card now reads as an object -- a white
+     panel on a white page is a rectangle of hairlines, and no amount of
+     shadow tuning fixes that. Chrome (the rail, the top bar) is paper too, so
+     the frame is one white shape and the content sits in it. */
+  --background: #f5f8f6;
   --foreground: var(--terrion-ink);
   --card: #ffffff;
   --card-foreground: var(--terrion-ink);
@@ -126,13 +151,15 @@
 
   --primary: var(--terrion-green-700);
   --primary-foreground: #ffffff;
-  --secondary: var(--terrion-green-50);
+  /* Deep enough to be visibly green against the page ground. At the old value
+     the active nav item was the same colour as the page it sat on. */
+  --secondary: #e2f0e7;
   --secondary-foreground: var(--terrion-green-900);
 
-  /* The single recessed tint. A table head, a page ground behind a panel —
-     one step down from paper and nothing else. Barely green, so it never
+  /* The single recessed tint, and it recedes from PAPER, not from the page:
+     a table head inside a white card, a hovered row. Barely green, so it never
      reads as a status. */
-  --muted: #f6f8f6;
+  --muted: #f1f5f2;
   --muted-foreground: var(--terrion-ink-soft);
 
   --accent: var(--terrion-gold-600);
@@ -140,14 +167,14 @@
   --destructive: #a93226;
   --destructive-foreground: #ffffff;
 
-  --border: #e4e9e5;
-  --input: #cfd8d2;
+  --border: #dce4df;
+  --input: #c4d1c9;
   --ring: var(--terrion-green-600);
 
   /* Chart series: one hue with lightness steps, plus gold reserved for the
      series that is over a limit. Survives greyscale printing, which the RDKK
      workflow actually does. */
-  --chart-1: var(--terrion-green-700);
+  --chart-1: var(--terrion-green-600);
   --chart-2: var(--terrion-gold-600);
   --chart-3: var(--terrion-green-500);
   --chart-4: var(--terrion-ink-faint);
@@ -159,27 +186,27 @@
   --sidebar-foreground: var(--terrion-ink);
   --sidebar-primary: var(--terrion-green-700);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--terrion-green-50);
+  --sidebar-accent: #e2f0e7;
   --sidebar-accent-foreground: var(--terrion-green-900);
-  --sidebar-border: #e4e9e5;
+  --sidebar-border: #dce4df;
   --sidebar-ring: var(--terrion-green-600);
 
-  /* Shadows are for things that genuinely float: a popover, a command
-     palette, a dropdown. A panel that sits in the page gets a rule instead,
-     which is why this ladder starts at "almost nothing" and only the top two
-     rungs are visible at all. Tinted green rather than black — a neutral drop
-     shadow on this white reads as dirt. */
-  --shadow-xs: 0 1px 1px rgb(20 33 27 / 0.03);
-  --shadow-sm: 0 1px 2px rgb(20 33 27 / 0.04);
-  --shadow-md: 0 1px 2px rgb(20 33 27 / 0.04), 0 4px 12px rgb(20 33 27 / 0.06);
-  --shadow-lg: 0 2px 4px rgb(20 33 27 / 0.05), 0 12px 28px rgb(20 33 27 / 0.09);
-  --shadow-xl: 0 4px 8px rgb(20 33 27 / 0.06), 0 24px 48px rgb(20 33 27 / 0.12);
+  /* A card sitting on the page ground gets a real contact shadow now. The
+     first pass took these to three percent, which on a white-on-white layout
+     meant nothing on any screen was an object -- every panel was an outline.
+     Still soft, still tinted green rather than black (a neutral drop shadow on
+     this warm white reads as dirt), but present. */
+  --shadow-xs: 0 1px 2px rgb(15 28 22 / 0.05);
+  --shadow-sm: 0 1px 2px rgb(15 28 22 / 0.06), 0 1px 3px rgb(15 28 22 / 0.05);
+  --shadow-md: 0 1px 3px rgb(15 28 22 / 0.07), 0 4px 12px rgb(15 28 22 / 0.08);
+  --shadow-lg: 0 2px 4px rgb(15 28 22 / 0.07), 0 12px 28px rgb(15 28 22 / 0.11);
+  --shadow-xl: 0 4px 8px rgb(15 28 22 / 0.08), 0 24px 48px rgb(15 28 22 / 0.14);
 
 
   /* The canvas draws onto soil, not onto the page, so it cannot borrow
      --border: a line tuned to be visible on white disappears on brown. This
      is the one token that exists because a <canvas> cannot use a class. */
-  --canvas-grid: rgb(20 33 27 / 0.13);
+  --canvas-grid: rgb(15 28 22 / 0.14);
 
   /* Display sizes. Fluid rather than stepped: the landing headline has to
      hold the top of the screen at every width, and a breakpoint jump in the
@@ -238,7 +265,7 @@
   }
 
   ::selection {
-    background: var(--terrion-green-100);
+    background: #cfe8d9;
     color: var(--terrion-green-900);
   }
 }
@@ -261,12 +288,14 @@
     animation-delay: var(--rise-delay, 0ms);
   }
 
-  /* A harvest band drawing itself along the week ruler. The product's one
-     orchestrated moment, on the landing page only. */
-  .band {
-    animation: var(--animate-band);
-    animation-delay: var(--band-delay, 0ms);
-    transform-origin: left center;
+  /* A quantity rising to its value, from the axis it is measured from.
+     The projection uses it once, staggered left to right, so the page opens
+     with the wave arriving rather than with a picture that was already there.
+     One orchestrated moment; nothing else on these screens moves unasked. */
+  .grow-up {
+    transform-origin: bottom;
+    animation: var(--animate-grow);
+    animation-delay: var(--grow-delay, 0ms);
   }
 
   /* Scrollbars: present, thin, and the same green-grey as a rule, so a
@@ -306,12 +335,6 @@
   to   { transform: scaleY(1); }
 }
 
-/* A band drawing left to right along its ruler, the way a season arrives. */
-@keyframes band {
-  from { opacity: 0; transform: scaleX(0); }
-  to   { opacity: 1; transform: none; }
-}
-
 /* Somebody who has asked their system for less motion gets the final state
    immediately. Not a slower animation — none. */
 @media (prefers-reduced-motion: reduce) {
@@ -319,6 +342,11 @@
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    /* The delay too, not just the duration. A staggered entrance whose
+       duration is zeroed but whose delay survives still hides twelve bars for
+       a third of a second and then pops them in one at a time, which is the
+       animation this rule exists to switch off. */
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;

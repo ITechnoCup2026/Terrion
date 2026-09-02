@@ -42,7 +42,7 @@ export function MobileNav({ groups }: { groups: readonly NavGroup[] }) {
         aria-label="Navigasi utama"
         // pb for the home indicator on a gesture-navigation phone: without it
         // the last row of labels sits under the system bar.
-        className="shrink-0 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden print:hidden"
+        className="shrink-0 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden print:hidden"
       >
         <ul className="flex items-stretch">
           {primary.map(item => (

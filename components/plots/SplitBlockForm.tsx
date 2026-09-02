@@ -16,7 +16,7 @@ export type ReferenceVariety = { id: string; commodity_id: string; name: string 
 
 type FormValues = z.input<typeof splitBlockSchema>
 
-const field = 'w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm ' +
+const field = 'w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm ' +
   'outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
 const label = 'block text-xs font-medium text-muted-foreground mb-1'
 const errorText = 'mt-1 text-xs text-destructive'

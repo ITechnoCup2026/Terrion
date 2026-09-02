@@ -1,15 +1,17 @@
 import type { ReactNode } from 'react'
 
+import { Sparkbars } from '@/components/ui/Sparkbars'
 import { cn } from '@/lib/utils'
 
 /**
  * The one card surface.
  *
- * A hairline and white, with no shadow. A card only exists here to say "this
- * content is one object"; it is not floating above the page, and giving it a
- * drop shadow claims a depth the layout does not have. Once every panel had a
- * shadow, the ones that genuinely float — the command palette, a popover —
- * had nothing left to distinguish them.
+ * White paper on the page's green-grey ground, with a hairline and a contact
+ * shadow. It carried no shadow at all for a while, on the reasoning that a
+ * panel sitting in the page is not floating above it — true, but the page was
+ * also white, so every card was a rectangle of hairlines and no screen had an
+ * object on it. A sheet of paper on a desk casts a millimetre of shadow; that
+ * is what this is, and it is still far below the palette's floating rungs.
  *
  * `tone="alert"` is for a card that reports something over a limit. It is the
  * border that changes, never the fill: a tinted panel in a list of white ones
@@ -33,8 +35,8 @@ export function Card({
   return (
     <Tag
       className={cn(
-        'rounded-lg border bg-card',
-        tone === 'alert' ? 'border-accent/45' : 'border-border',
+        'rounded-lg border bg-card shadow-[var(--shadow-xs)]',
+        tone === 'alert' ? 'border-accent/60' : 'border-border',
         pad === 'sm' && 'p-3',
         pad === 'md' && 'p-4',
         pad === 'lg' && 'p-5 sm:p-6',
@@ -68,7 +70,7 @@ export function CardHeader({
   return (
     <div className={cn('flex flex-wrap items-start justify-between gap-x-4 gap-y-2', className)}>
       <div className="min-w-0">
-        <h2 className="text-sm font-medium text-foreground">{title}</h2>
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
         {description && (
           <p className="mt-1 max-w-prose text-xs leading-relaxed text-muted-foreground">
             {description}
@@ -86,6 +88,19 @@ export type Metric = {
   /** One line naming what the figure counts, when the label cannot. */
   hint?: ReactNode
   /**
+   * The series the figure summarises, drawn beside it.
+   *
+   * Optional and honestly so: "Lahan" is a count with no shape, and inventing
+   * a sparkline for it would be drawing a picture of nothing. A figure that
+   * has a series shows it; a figure that does not, does not.
+   */
+  series?: {
+    values: readonly number[]
+    /** The bucket this figure is naming — the peak week, usually. */
+    highlight?: number
+    flagged?: readonly boolean[]
+  }
+  /**
    * `accent` is for the one figure on the row that is a call to action — a
    * count of risky weeks, a pile-up. At most one per row: a row where every
    * tile is emphasised is a row where none is.
@@ -102,11 +117,17 @@ export type Metric = {
  * these figures are one statement about one cooperative, and a ledger's
  * column rules say that where four containers cannot.
  *
- * The icons are gone too. A scale, a rising line, a warning triangle and a
+ * The icons are gone. A scale, a rising line, a warning triangle and a
  * seedling in a coloured chip added a second thing to decode above every
  * figure without telling the reader anything the label did not already say —
  * and dressed the whole row in gradient at the exact moment the page wanted to
  * be read quickly.
+ *
+ * What replaced them earns its place: where a figure summarises a series, the
+ * series is drawn next to it. That is not decoration standing in for an icon,
+ * it is the second half of the sentence — "63 tonnes" and "all of it in week
+ * nine" are different facts, and the row used to be able to say only the
+ * first.
  */
 export function MetricRow({
   items,
@@ -118,7 +139,7 @@ export function MetricRow({
   return (
     <dl
       className={cn(
-        'grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-4',
+        'grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-xs)] sm:grid-cols-4',
         className,
       )}
     >
@@ -136,17 +157,33 @@ export function MetricRow({
           )}
         >
           <dt className="text-xs text-muted-foreground">{item.label}</dt>
-          <dd
-            className={cn(
-              'mt-1.5 text-2xl leading-none font-medium tracking-tight tabular-nums',
-              // Gold is the whole signal. No fill, no chip, no border — the
-              // figure itself is the thing that needs a decision, so the
-              // figure itself is what changes colour.
-              item.tone === 'accent' ? 'text-accent' : 'text-foreground',
+
+          {/* Figure left, its shape right. Stacking the sparkline under the
+              number instead would make every tile two rows taller and push the
+              alert below the fold on a laptop, which is the one thing this
+              page cannot afford. */}
+          <div className="mt-1.5 flex items-end justify-between gap-3">
+            <dd
+              className={cn(
+                'text-[1.75rem] leading-none font-semibold tracking-tight tabular-nums',
+                // Gold is the whole signal. No fill, no chip, no border — the
+                // figure itself is the thing that needs a decision, so the
+                // figure itself is what changes colour.
+                item.tone === 'accent' ? 'text-accent' : 'text-foreground',
+              )}
+            >
+              {item.value}
+            </dd>
+
+            {item.series && (
+              <Sparkbars
+                values={item.series.values}
+                highlight={item.series.highlight}
+                flagged={item.series.flagged}
+                className="w-20 shrink-0"
+              />
             )}
-          >
-            {item.value}
-          </dd>
+          </div>
           {item.hint && (
             <p className="mt-2 text-[0.6875rem] leading-snug text-[var(--terrion-ink-faint)]">
               {item.hint}
@@ -179,7 +216,7 @@ export function MessageCard({
 }) {
   return (
     <Card pad="lg" className={cn('text-center', className)}>
-      <p className="text-base font-medium text-foreground">{title}</p>
+      <p className="text-base font-semibold text-foreground">{title}</p>
       {children && (
         <div className="mx-auto mt-2 max-w-prose text-sm leading-relaxed text-muted-foreground">
           {children}
