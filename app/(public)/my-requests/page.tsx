@@ -9,7 +9,7 @@ import { currentAppUser } from '@/lib/auth/session'
 import { loadCommodities } from '@/lib/commodities/load'
 import { loadSupplyRequests } from '@/lib/supply-requests/load'
 
-export const metadata = { title: 'Permintaan Saya & Status Kontrak' }
+export const metadata = { title: 'Permintaan saya' }
 
 // The whole point of the page is the status, and a cooperative can change it
 // at any moment. A cached answer here would tell a buyer they are still
@@ -34,11 +34,11 @@ export default async function MyRequestsPage() {
   return (
     <Page className="flex flex-col gap-6">
       <PageHeader
-        title="Permintaan Saya & Status Kontrak"
-        description="Pantau status jawaban pengurus koperasi atas pengajuan kontrak pasokan Anda (Disetujui/ACC, Menunggu, atau Ditolak)."
+        title="Permintaan saya"
+        description="Status jawaban pengurus koperasi atas pengajuan kontrak pasokan Anda: diterima, menunggu, atau ditolak."
         actions={
           <Link href="/catalog" className={buttonVariants({ variant: 'outline' })}>
-            Jelajahi Katalog Pasokan
+            Jelajahi katalog pasokan
           </Link>
         }
       />

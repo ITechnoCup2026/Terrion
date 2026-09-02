@@ -97,7 +97,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       {
         href: '/my-requests',
         label: 'Permintaan Saya',
-        hint: 'Status pengajuan kontrak pasokan Anda (ACC / Menunggu / Ditolak)',
+        hint: 'Status pengajuan kontrak pasokan Anda: diterima, menunggu, ditolak',
         icon: ClipboardList,
         roles: ['buyer'],
       },

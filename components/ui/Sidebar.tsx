@@ -42,7 +42,8 @@ export function Sidebar({
   collapsed: boolean
   /** The cooperative identity block, which the shell owns. */
   header: React.ReactNode
-  footer: React.ReactNode
+  /** Optional: the account control lives in the top bar, not down here. */
+  footer?: React.ReactNode
 }) {
   const pathname = usePathname()
 
@@ -116,9 +117,9 @@ export function Sidebar({
         ))}
       </div>
 
-      <div className={cn('shrink-0 border-t border-border', collapsed ? 'p-2' : 'p-2')}>
-        {footer}
-      </div>
+      {footer && (
+        <div className="shrink-0 border-t border-border p-2">{footer}</div>
+      )}
     </nav>
   )
 }
