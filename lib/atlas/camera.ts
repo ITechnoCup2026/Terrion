@@ -112,10 +112,3 @@ export function clampView(view: View): View {
     : Math.min(Math.max(view.y, WORLD.y), WORLD.y + WORLD.h - view.h)
   return { ...view, x, y }
 }
-
-/** How far in the camera is, 0 at the full country and 1 at the closest zoom. */
-export function zoomFraction(view: View): number {
-  const maxSpan = Math.max(WORLD.w, WORLD.h)
-  if (view.w >= maxSpan) return 0
-  return Math.min(1, Math.log(maxSpan / view.w) / Math.log(maxSpan / MIN_SPAN))
-}

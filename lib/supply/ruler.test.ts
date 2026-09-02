@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { utcDate } from '@/lib/agronomy/dates'
 import type { Listing } from '@/lib/catalog/listings'
-import { monthTicks, RULER_MAX_ROWS, supplyRows } from '@/lib/landing/ruler'
+import { monthTicks, RULER_MAX_ROWS, supplyRows } from '@/lib/supply/ruler'
 
 /** A listing carrying only the fields the ruler reads. */
 function listing(commodityName: string, start: string, end: string, tonnes: number): Listing {
