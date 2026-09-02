@@ -42,7 +42,7 @@ export function MobileNav({ groups }: { groups: readonly NavGroup[] }) {
         aria-label="Navigasi utama"
         // pb for the home indicator on a gesture-navigation phone: without it
         // the last row of labels sits under the system bar.
-        className="shrink-0 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden print:hidden"
+        className="shrink-0 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden print:hidden"
       >
         <ul className="flex items-stretch">
           {primary.map(item => (
@@ -72,10 +72,10 @@ export function MobileNav({ groups }: { groups: readonly NavGroup[] }) {
 
       <Dialog.Root open={sheetOpen} onOpenChange={setSheetOpen}>
         <Dialog.Portal>
-          <Dialog.Backdrop className="fixed inset-0 z-50 bg-foreground/25 backdrop-blur-[2px] transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+          <Dialog.Backdrop className="fixed inset-0 z-50 bg-foreground/20 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
           <Dialog.Popup
             className={cn(
-              'fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-border bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]',
+              'fixed inset-x-0 bottom-0 z-50 rounded-t-xl border-t border-border bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]',
               'shadow-[var(--shadow-xl)] transition-transform duration-250 ease-[cubic-bezier(0.22,1,0.36,1)]',
               'data-[starting-style]:translate-y-full data-[ending-style]:translate-y-full',
             )}
@@ -83,7 +83,7 @@ export function MobileNav({ groups }: { groups: readonly NavGroup[] }) {
             {/* The grab handle is the affordance that says this came from the
                 bottom and goes back there. */}
             <div aria-hidden className="mx-auto mb-3 h-1 w-9 rounded-full bg-border" />
-            <Dialog.Title className="text-sm font-semibold text-foreground">
+            <Dialog.Title className="text-sm font-medium text-foreground">
               Semua halaman
             </Dialog.Title>
 
@@ -98,11 +98,11 @@ export function MobileNav({ groups }: { groups: readonly NavGroup[] }) {
                       onClick={() => setSheetOpen(false)}
                       aria-current={active ? 'page' : undefined}
                       className={cn(
-                        'interactive flex items-center gap-3 rounded-xl p-3',
+                        'interactive flex items-center gap-3 rounded-md p-3',
                         active ? 'bg-secondary' : 'hover:bg-muted',
                       )}
                     >
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                         <Icon aria-hidden className="size-4" />
                       </span>
                       <span className="min-w-0">

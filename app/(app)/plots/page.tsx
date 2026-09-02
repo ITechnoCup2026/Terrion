@@ -1,4 +1,3 @@
-import { CalendarClock, LayoutGrid, Maximize2, Sprout } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 
@@ -62,22 +61,19 @@ export default async function PlotsPage() {
   const soon = addDays(now, 30)
   const dueSoon = summaries.filter(s => s.nextWindow && s.nextWindow.start <= soon).length
   const kpis: Metric[] = [
-    { label: 'Lahan', value: formatNumberId(summaries.length), icon: Sprout },
+    { label: 'Lahan', value: formatNumberId(summaries.length) },
     {
       label: 'Luas total',
       value: `${formatNumberId(summaries.reduce((s, p) => s + p.areaHa, 0))} ha`,
-      icon: Maximize2,
     },
     {
       label: 'Blok aktif',
       value: formatNumberId(summaries.reduce((s, p) => s + p.blockCount, 0)),
-      icon: LayoutGrid,
     },
     {
       label: 'Panen 30 hari',
       value: formatNumberId(dueSoon),
       hint: 'Lahan yang jatuh tempo',
-      icon: CalendarClock,
       // The one figure on this row with a deadline attached to it.
       tone: dueSoon > 0 ? 'accent' : 'default',
     },

@@ -44,7 +44,7 @@ export function GroupPurchaseAlert({
       className={cn('rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-xs)]', className)}
       aria-labelledby="rdkk-heading"
     >
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         Pembelian bersama
       </p>
 

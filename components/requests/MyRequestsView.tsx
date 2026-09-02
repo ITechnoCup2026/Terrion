@@ -2,22 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import {
-  CheckCircle2,
-  Clock,
-  Search,
-  XCircle,
-  RotateCcw,
-  Store,
-  Calendar,
-  Building2,
-  FileText,
-  TrendingUp,
-} from 'lucide-react'
+import { Building2, Calendar, Search, Store } from 'lucide-react'
 
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
+import { Badge } from '@/components/ui/Badge'
 import { buttonVariants } from '@/components/ui/button'
-import { Card } from '@/components/ui/Card'
+import { Card, MetricRow, type Metric } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SegmentedControl } from '@/components/ui/DataTable'
 import { utcDate } from '@/lib/agronomy/dates'
@@ -111,6 +101,23 @@ export function MyRequestsView({
     })
   }, [sortedRequests, statusFilter, searchQuery, commodityMap, cooperativeMap])
 
+  const summary: Metric[] = [
+    { label: 'Total permintaan', value: stats.total },
+    {
+      label: 'Disetujui',
+      value: stats.accepted,
+      hint: stats.acceptedTonnes > 0
+        ? `${formatNumberId(stats.acceptedTonnes)} ton disetujui koperasi`
+        : undefined,
+    },
+    {
+      label: 'Menunggu jawaban',
+      value: stats.pending,
+      tone: stats.pending > 0 ? 'accent' : 'default',
+    },
+    { label: 'Ditolak', value: stats.declined },
+  ]
+
   if (requests.length === 0) {
     return (
       <EmptyState
@@ -119,7 +126,7 @@ export function MyRequestsView({
         action={
           <Link href="/catalog" className={buttonVariants({ size: 'lg' })}>
             <Store className="mr-2 size-4" />
-            Jelajahi Katalog Pasokan
+            Jelajahi katalog pasokan
           </Link>
         }
       />
@@ -128,67 +135,10 @@ export function MyRequestsView({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Metric Summary Cards */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="flex items-center gap-3.5 p-4 transition-all hover:border-foreground/20">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <FileText className="size-5" />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">Total Permintaan</p>
-            <p className="font-mono text-2xl font-bold tracking-tight text-foreground">
-              {stats.total}
-            </p>
-          </div>
-        </Card>
-
-        <Card className="flex items-center gap-3.5 p-4 border-emerald-200/60 bg-emerald-50/30 dark:border-emerald-900/40 dark:bg-emerald-950/20 transition-all">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
-            <CheckCircle2 className="size-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <p className="text-xs font-medium text-emerald-800 dark:text-emerald-300">
-                Disetujui (ACC)
-              </p>
-              {stats.acceptedTonnes > 0 && (
-                <span className="text-[0.65rem] font-semibold text-emerald-600 dark:text-emerald-400">
-                  · {formatNumberId(stats.acceptedTonnes)} ton
-                </span>
-              )}
-            </div>
-            <p className="font-mono text-2xl font-bold tracking-tight text-emerald-900 dark:text-emerald-100">
-              {stats.accepted}
-            </p>
-          </div>
-        </Card>
-
-        <Card className="flex items-center gap-3.5 p-4 border-amber-200/60 bg-amber-50/30 dark:border-amber-900/40 dark:bg-amber-950/20 transition-all">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-            <Clock className="size-5" />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
-              Menunggu Jawaban
-            </p>
-            <p className="font-mono text-2xl font-bold tracking-tight text-amber-900 dark:text-amber-100">
-              {stats.pending}
-            </p>
-          </div>
-        </Card>
-
-        <Card className="flex items-center gap-3.5 p-4 border-red-200/60 bg-red-50/30 dark:border-red-900/40 dark:bg-red-950/20 transition-all">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
-            <XCircle className="size-5" />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-red-800 dark:text-red-300">Ditolak</p>
-            <p className="font-mono text-2xl font-bold tracking-tight text-red-900 dark:text-red-100">
-              {stats.declined}
-            </p>
-          </div>
-        </Card>
-      </div>
+      {/* The same figure row the cooperative side uses, rather than four
+          tinted cards with glyph chips. Only "menunggu" is gold: it is the
+          one count that is waiting on somebody to act. */}
+      <MetricRow items={summary} />
 
       {/* Control Bar: Filters & Search */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
@@ -220,7 +170,7 @@ export function MyRequestsView({
 
       {/* Request Cards Grid */}
       {filteredRequests.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border py-12 text-center">
+        <div className="rounded-lg border border-dashed border-border py-12 text-center">
           <p className="text-sm font-medium text-foreground">
             Tidak ada permintaan dengan kriteria filter saat ini
           </p>
@@ -279,43 +229,25 @@ function RequestItemCard({
   district?: string
   style: ReturnType<typeof commodityStyle>
 }) {
-  const isAccepted = request.status === 'accepted'
-  const isDeclined = request.status === 'declined'
-  const isPending = request.status === 'pending'
-
   return (
-    <Card className="overflow-hidden p-0 transition-all hover:border-foreground/20 hover:shadow-md">
-      {/* Header bar with status badge & commodity accent */}
-      <div
-        className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3"
-        style={{ backgroundColor: style.tint }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-background/80 shadow-xs backdrop-blur-sm">
-            <svg
-              aria-hidden
-              viewBox="0 0 24 24"
-              className="size-5"
-              fill="none"
-              stroke={style.hue}
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d={style.glyph} />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-base font-bold tracking-tight text-foreground">
-              {commodityName}
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Pengajuan: <span className="font-mono font-medium text-foreground">{formatNumberId(request.volumeKg / 1000)} ton</span>
-            </p>
-          </div>
+    <Card className="interactive overflow-hidden p-0 hover:border-input">
+      {/* The crop keeps its colour as the band across the top edge, the same
+          device the catalogue and the plot list use. It used to be a tinted
+          slab holding a glyph on a frosted plate, which spent the widest strip
+          of the card on an illustration of the word beside it. */}
+      <span aria-hidden className="block h-1 w-full" style={{ background: style.hue }} />
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3.5">
+        <div>
+          <h3 className="text-[0.9375rem] font-medium text-foreground">{commodityName}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Pengajuan{' '}
+            <span className="tabular-nums text-foreground">
+              {formatNumberId(request.volumeKg / 1000)} ton
+            </span>
+          </p>
         </div>
 
-        {/* Prominent Status Badge */}
         <StatusBadge status={request.status} />
       </div>
 
@@ -356,48 +288,13 @@ function RequestItemCard({
 
         {/* Notes & Delivery preference */}
         {request.notes && (
-          <div className="rounded-xl bg-muted/60 p-3 text-xs">
-            <p className="font-semibold text-foreground">Catatan / Preferensi Pengiriman:</p>
-            <p className="mt-0.5 whitespace-pre-line text-muted-foreground">{request.notes}</p>
+          <div className="rounded-md border border-border p-3 text-xs">
+            <p className="font-medium text-foreground">Catatan dan preferensi pengiriman</p>
+            <p className="mt-1 whitespace-pre-line text-muted-foreground">{request.notes}</p>
           </div>
         )}
 
-        {/* Actionable Status Callout Banner */}
-        {isAccepted && (
-          <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 p-3.5 text-xs text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200">
-            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-            <div>
-              <p className="font-semibold">Pengajuan Disetujui (ACC)!</p>
-              <p className="mt-0.5 leading-relaxed">
-                Koperasi telah menerima pengajuan kontrak pasokan ini. Silakan melakukan koordinasi langsung dengan pengurus koperasi mengenai teknis logistik dan serah terima.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {isDeclined && (
-          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50/80 p-3.5 text-xs text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
-            <XCircle className="mt-0.5 size-4 shrink-0 text-red-600 dark:text-red-400" />
-            <div>
-              <p className="font-semibold">Pengajuan Ditolak</p>
-              <p className="mt-0.5 leading-relaxed">
-                Koperasi belum dapat memenuhi alokasi tonase untuk minggu panen terpilih saat ini. Anda dapat menjelajahi penawaran pasokan minggu atau lokasi lain di katalog.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {isPending && (
-          <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
-            <Clock className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-            <div>
-              <p className="font-semibold">Menunggu Peninjauan Koperasi</p>
-              <p className="mt-0.5 leading-relaxed">
-                Permintaan sedang berada dalam antrean tinjauan pengurus koperasi. Status akan diperbarui secara otomatis begitu koperasi memberikan jawaban.
-              </p>
-            </div>
-          </div>
-        )}
+        <StatusNote status={request.status} />
 
         {/* Timestamps Footer */}
         <div className="flex items-center justify-between border-t border-border pt-3 text-[0.7rem] text-muted-foreground">
@@ -415,35 +312,63 @@ function RequestItemCard({
   )
 }
 
+/**
+ * The buyer's view of a request's state.
+ *
+ * Routed through the shared <Badge> rather than four hand-rolled pills, so a
+ * buyer and a pengurus looking at the same request see the same colour for the
+ * same word. It used to shout in capitals with a pulsing clock on "menunggu" —
+ * an animation on a state that is not changing, in a list where most rows are
+ * in exactly that state.
+ */
+const STATUS_NOTE: Record<SupplyRequest['status'], { rule: string; title: string; body: string } | null> = {
+  accepted: {
+    rule: 'border-l-[var(--terrion-green-700)]',
+    title: 'Koperasi menerima pengajuan ini',
+    body: 'Hubungi pengurus koperasi untuk menyepakati teknis logistik dan serah terima.',
+  },
+  declined: {
+    rule: 'border-l-destructive',
+    title: 'Koperasi menolak pengajuan ini',
+    body: 'Alokasi tonase untuk minggu panen yang dipilih tidak tersedia. Cari minggu atau lokasi lain di katalog.',
+  },
+  pending: {
+    rule: 'border-l-accent',
+    title: 'Menunggu jawaban koperasi',
+    body: 'Pengurus koperasi belum meninjau permintaan ini. Statusnya berubah di sini begitu mereka menjawab.',
+  },
+  withdrawn: null,
+}
+
+/**
+ * What the status means, in a sentence.
+ *
+ * One block keyed by status, ruled on its leading edge in the colour that
+ * status already owns. It was three separate tinted panels, each with its own
+ * icon and its own background, which put a filled coloured slab on every card
+ * in a list where every card has a status.
+ */
+function StatusNote({ status }: { status: SupplyRequest['status'] }) {
+  const note = STATUS_NOTE[status]
+  if (!note) return null
+
+  return (
+    <div className={cn('border-l-2 pl-3.5', note.rule)}>
+      <p className="text-xs font-medium text-foreground">{note.title}</p>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{note.body}</p>
+    </div>
+  )
+}
+
 function StatusBadge({ status }: { status: SupplyRequest['status'] }) {
   switch (status) {
     case 'accepted':
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-          <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-          DISETUJUI (ACC)
-        </span>
-      )
+      return <Badge tone="positive">Disetujui</Badge>
     case 'declined':
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-red-300 bg-red-100 px-3 py-1 text-xs font-bold text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
-          <XCircle className="size-3.5 text-red-600 dark:text-red-400" />
-          DITOLAK
-        </span>
-      )
+      return <Badge tone="negative">Ditolak</Badge>
     case 'pending':
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
-          <Clock className="size-3.5 text-amber-600 dark:text-amber-400 animate-pulse" />
-          MENUNGGU JAWABAN
-        </span>
-      )
+      return <Badge tone="warning">Menunggu jawaban</Badge>
     case 'withdrawn':
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-          <RotateCcw className="size-3.5" />
-          DITARIK
-        </span>
-      )
+      return <Badge tone="neutral">Ditarik</Badge>
   }
 }

@@ -103,7 +103,7 @@ export function PlotBrowser({
     <>
       {/* Sticky, because the controls are useless once you have scrolled past
           them and the list is what you scroll. */}
-      <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 lg:-mx-8 border-b border-border bg-background/85 px-4 sm:px-6 lg:px-8 py-3.5 backdrop-blur-md shadow-xs">
+      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background px-4 py-3.5 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="flex flex-wrap items-center gap-3">
           <input
             type="search"

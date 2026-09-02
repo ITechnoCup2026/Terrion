@@ -34,13 +34,13 @@ export function Topbar({
   const crumbs = breadcrumbsFor(pathname)
 
   return (
-    <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/85 px-3 backdrop-blur-md sm:px-4 print:hidden">
+    <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background px-3 sm:px-4 print:hidden">
       <button
         type="button"
         onClick={onToggleCollapse}
         aria-expanded={!collapsed}
         aria-label={collapsed ? 'Lebarkan navigasi' : 'Ciutkan navigasi'}
-        className="interactive hidden size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground md:flex"
+        className="interactive hidden size-8 shrink-0 items-center justify-center rounded-md text-[var(--terrion-ink-faint)] hover:bg-muted hover:text-foreground md:flex"
       >
         {collapsed
           ? <PanelLeftOpen aria-hidden className="size-4" />
@@ -50,18 +50,17 @@ export function Topbar({
       <Breadcrumbs crumbs={crumbs} />
 
       <div className="ml-auto flex shrink-0 items-center gap-2.5">
-        {/* Wiradana Status Connection Pill */}
-
-
         <button
           type="button"
           onClick={onOpenSearch}
-          className="interactive flex h-9 items-center gap-2 rounded-xl border border-border bg-background px-2.5 text-muted-foreground hover:border-input hover:bg-muted hover:text-foreground sm:w-56"
+          className="interactive flex h-8 items-center gap-2 rounded-md border border-border bg-background px-2.5 text-[var(--terrion-ink-faint)] hover:border-input hover:bg-muted hover:text-foreground sm:w-56"
           aria-label="Cari halaman"
         >
           <Search aria-hidden className="size-4 shrink-0" />
-          <span className="hidden text-xs font-medium sm:block">Cari di sistem…</span>
-          <kbd className="ml-auto hidden rounded border border-border px-1.5 py-0.5 font-mono text-[0.65rem] font-semibold sm:block">
+          <span className="hidden text-xs sm:block">Cari halaman…</span>
+          {/* A key cap, not a data label — the one place mono is about a
+              literal keystroke rather than a figure in a column. */}
+          <kbd className="ml-auto hidden rounded border border-border px-1 py-0.5 font-mono text-[0.625rem] sm:block">
             Ctrl K
           </kbd>
         </button>
@@ -83,7 +82,7 @@ function Breadcrumbs({ crumbs }: { crumbs: ReturnType<typeof breadcrumbsFor> }) 
           return (
             <li key={`${crumb.label}-${index}`} className="flex min-w-0 items-center gap-1.5">
               {index > 0 && (
-                <ChevronRight aria-hidden className="size-3.5 shrink-0 text-muted-foreground/60" />
+                <ChevronRight aria-hidden className="size-3.5 shrink-0 text-border" />
               )}
               {/* The group name is a label, not a place: there is no page for
                   "Perdagangan", so it is never a link and it is the first
@@ -91,7 +90,7 @@ function Breadcrumbs({ crumbs }: { crumbs: ReturnType<typeof breadcrumbsFor> }) 
               {crumb.href ? (
                 <Link
                   href={crumb.href}
-                  className="interactive truncate text-muted-foreground hover:text-foreground"
+                  className="interactive truncate text-[var(--terrion-ink-faint)] hover:text-foreground"
                 >
                   {crumb.label}
                 </Link>
@@ -99,7 +98,7 @@ function Breadcrumbs({ crumbs }: { crumbs: ReturnType<typeof breadcrumbsFor> }) 
                 <span
                   className={cn(
                     'truncate',
-                    last ? 'font-medium text-foreground' : 'hidden text-muted-foreground sm:inline',
+                    last ? 'font-medium text-foreground' : 'hidden text-[var(--terrion-ink-faint)] sm:inline',
                   )}
                 >
                   {crumb.label}

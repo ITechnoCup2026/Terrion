@@ -89,34 +89,31 @@ export function AppShell({
   const openSearch = useCallback(() => setSearchOpen(true), [])
   useCommandShortcut(openSearch)
 
-  const coopShort = cooperative ? cooperative.name.slice(0, 2).toUpperCase() : 'KOP'
-
+  // The workspace block. No badge chip: gold in this product means "over a
+  // limit", and a cooperative's own initials are not a warning. Collapsed, the
+  // mark alone is the identity; expanded, the name is, and it is set as plain
+  // text because a name in a tinted card reads as a status.
   const workspace = collapsed ? (
-    <div className="flex justify-center py-1" title={cooperative?.name ?? 'Koperasi'}>
-      <span className="tenant-badge font-black text-xs size-8 flex items-center justify-center rounded-lg bg-[var(--terrion-gold-500)] text-[var(--terrion-green-900)]">
-        {coopShort}
-      </span>
+    <div className="flex justify-center" title={cooperative?.name ?? 'Koperasi'}>
+      <Logo size={24} withWordmark={false} />
     </div>
   ) : (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2.5 px-2 pt-1">
-        <Logo size={28} withWordmark={false} />
-        <span className="font-extrabold text-lg tracking-tight text-white">Terrion</span>
-      </div>
-      <div className="sb-tenant-card">
-        <span className="tenant-badge">
-          {coopShort}
+      <div className="flex items-center gap-2 px-1">
+        <Logo size={22} withWordmark={false} />
+        <span className="text-[0.9375rem] font-semibold tracking-tight text-foreground">
+          Terrion
         </span>
-        <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-xs font-bold text-white">
-            {cooperative?.name ?? 'Koperasi'}
+      </div>
+      <div className="min-w-0 border-t border-border px-1 pt-2.5 leading-tight">
+        <p className="truncate text-[0.8125rem] font-medium text-foreground">
+          {cooperative?.name ?? 'Koperasi'}
+        </p>
+        {cooperative && (
+          <p className="mt-0.5 truncate text-[0.6875rem] text-[var(--terrion-ink-faint)]">
+            {cooperative.village}, {cooperative.district}
           </p>
-          {cooperative && (
-            <p className="truncate text-[0.65rem] text-white/60 mt-0.5">
-              {cooperative.village}, {cooperative.district}
-            </p>
-          )}
-        </div>
+        )}
       </div>
     </div>
   )
@@ -124,7 +121,7 @@ export function AppShell({
   const avatar = (
     <span
       aria-hidden
-      className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--terrion-gold-500)] text-[0.75rem] font-black text-[var(--terrion-green-900)] shadow-xs"
+      className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[0.6875rem] font-medium text-secondary-foreground"
     >
       {initials}
     </span>
@@ -136,11 +133,11 @@ export function AppShell({
       {signOutButton}
     </div>
   ) : (
-    <div className="flex items-center gap-2.5 px-1 py-1">
+    <div className="flex items-center gap-2 px-1 py-0.5">
       {avatar}
       <div className="min-w-0 flex-1 leading-tight">
-        <p className="truncate text-xs font-bold text-white">{userName}</p>
-        <p className="truncate text-[0.68rem] text-white/60 capitalize">{roleLabel(role)}</p>
+        <p className="truncate text-[0.75rem] font-medium text-foreground">{userName}</p>
+        <p className="truncate text-[0.6875rem] text-[var(--terrion-ink-faint)]">{roleLabel(role)}</p>
       </div>
       {signOutButton}
     </div>
@@ -170,7 +167,7 @@ export function AppShell({
             dragged everywhere the cards themselves are not. */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-between gap-3 p-3">
           <div className="pointer-events-auto flex items-start gap-2">
-            <div className="rounded-xl border border-border bg-background/85 px-3 py-2 shadow-[var(--shadow-lg)] backdrop-blur-md">
+            <div className="rounded-lg border border-border bg-background px-3 py-2 shadow-[var(--shadow-md)]">
               {workspace}
             </div>
 
@@ -179,7 +176,7 @@ export function AppShell({
               onClick={() => setNavOpen(o => !o)}
               aria-expanded={navOpen}
               aria-label={navOpen ? 'Sembunyikan navigasi' : 'Tampilkan navigasi'}
-              className="interactive flex size-9 items-center justify-center rounded-xl border border-border bg-background/85 text-muted-foreground shadow-[var(--shadow-lg)] backdrop-blur-md hover:text-foreground"
+              className="interactive flex size-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground shadow-[var(--shadow-md)] hover:text-foreground"
             >
               {navOpen
                 ? <PanelLeftClose aria-hidden className="size-4" />
@@ -187,7 +184,7 @@ export function AppShell({
             </button>
           </div>
 
-          <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-border bg-background/85 px-3 py-2 shadow-[var(--shadow-lg)] backdrop-blur-md">
+          <div className="pointer-events-auto flex items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-2 shadow-[var(--shadow-md)]">
             {avatar}
             <p className="hidden text-xs text-muted-foreground sm:block">{userName}</p>
             {signOutButton}
@@ -244,7 +241,7 @@ function FloatingNav({
   return (
     <nav
       aria-label="Navigasi utama"
-      className="absolute top-16 left-3 z-40 flex flex-col gap-1 rounded-xl border border-border bg-background/85 p-1.5 shadow-[var(--shadow-lg)] backdrop-blur-md"
+      className="absolute top-16 left-3 z-40 flex flex-col gap-px rounded-lg border border-border bg-background p-1.5 shadow-[var(--shadow-md)]"
     >
       {groups.flatMap((group, groupIndex) => [
         groupIndex > 0 && (
@@ -261,10 +258,10 @@ function FloatingNav({
               aria-label={item.label}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'interactive flex size-9 items-center justify-center rounded-lg',
+                'interactive flex size-9 items-center justify-center rounded-md',
                 active
                   ? 'bg-secondary text-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  : 'text-[var(--terrion-ink-faint)] hover:bg-muted hover:text-foreground',
               )}
             >
               <Icon aria-hidden className="size-4" />

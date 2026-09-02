@@ -36,7 +36,7 @@ export function TableFrame({
   return (
     <div
       className={cn(
-        'w-full overflow-auto rounded-xl border border-border bg-card',
+        'w-full overflow-auto rounded-lg border border-border bg-card',
         // print:overflow-visible, or the RDKK form is clipped to one screen.
         'print:overflow-visible print:rounded-none print:border-0',
         className,
@@ -57,8 +57,10 @@ export function THead({ children, className }: { children: ReactNode; className?
     <thead
       className={cn(
         // The tint plus the bottom rule is what separates the head from row one
-        // once the head is sticky and rows slide under it.
-        'sticky top-0 z-10 bg-muted/60 text-left text-xs text-muted-foreground backdrop-blur-sm',
+        // once the head is sticky and rows slide under it. Fully opaque, not
+        // blurred: a translucent header lets the top row bleed through it at
+        // exactly the moment the reader is trying to read the column name.
+        'sticky top-0 z-10 bg-muted text-left text-[0.6875rem] text-muted-foreground',
         '[&_th]:border-b [&_th]:border-border',
         'print:static',
         className,
@@ -73,8 +75,8 @@ export function TBody({ children, className }: { children: ReactNode; className?
   return (
     <tbody
       className={cn(
-        '[&_tr]:border-b [&_tr]:border-border/60 [&_tr:last-child]:border-0',
-        '[&_tr]:transition-colors [&_tr:hover]:bg-muted/35',
+        '[&_tr]:border-b [&_tr]:border-border [&_tr:last-child]:border-0',
+        '[&_tr]:transition-colors [&_tr:hover]:bg-muted',
         className,
       )}
     >
@@ -106,7 +108,7 @@ export function Th({
     <th
       scope="col"
       className={cn(
-        'px-3 py-2.5 font-medium whitespace-nowrap',
+        'px-4 py-2.5 font-normal whitespace-nowrap',
         numeric && 'text-right',
         className,
       )}
@@ -129,7 +131,7 @@ export function Td({
 } & React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td
-      className={cn('px-3 py-2.5 align-top', numeric && 'text-right tabular-nums whitespace-nowrap', className)}
+      className={cn('px-4 py-3 align-top', numeric && 'text-right tabular-nums whitespace-nowrap', className)}
       {...rest}
     >
       {children}
@@ -167,7 +169,7 @@ export function SortableTh({
         type="button"
         onClick={onSort}
         className={cn(
-          'interactive inline-flex w-full items-center gap-1 px-3 py-2.5 hover:text-foreground',
+          'interactive inline-flex w-full items-center gap-1 px-4 py-2.5 hover:text-foreground',
           numeric && 'justify-end',
           active && 'text-foreground',
         )}
@@ -244,7 +246,7 @@ export function SegmentedControl<T extends string>({
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className="inline-flex flex-wrap items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5"
+      className="inline-flex flex-wrap items-center gap-0.5 rounded-md border border-border bg-muted p-0.5"
     >
       {options.map(option => {
         const active = option.value === value
@@ -256,9 +258,9 @@ export function SegmentedControl<T extends string>({
             aria-selected={active}
             onClick={() => onChange(option.value)}
             className={cn(
-              'interactive inline-flex items-center gap-1.5 rounded-[calc(var(--radius-lg)-0.25rem)] px-2.5 py-1 text-[0.8rem] font-medium',
+              'interactive inline-flex items-center gap-1.5 rounded-[calc(var(--radius-md)-0.125rem)] px-2.5 py-1 text-[0.8125rem]',
               active
-                ? 'bg-card text-foreground shadow-[var(--shadow-xs)]'
+                ? 'bg-card font-medium text-foreground shadow-[var(--shadow-sm)]'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
@@ -267,7 +269,7 @@ export function SegmentedControl<T extends string>({
               <span
                 className={cn(
                   'rounded-full px-1.5 text-[0.65rem] tabular-nums',
-                  active ? 'bg-secondary text-secondary-foreground' : 'bg-border/60 text-muted-foreground',
+                  active ? 'bg-secondary text-secondary-foreground' : 'bg-border text-muted-foreground',
                 )}
               >
                 {option.count}
