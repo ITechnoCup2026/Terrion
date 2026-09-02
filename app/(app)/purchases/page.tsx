@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation'
 import { CreateOrderButton } from '@/components/commerce/CreateOrderButton'
 import { Badge } from '@/components/ui/Badge'
 import { buttonVariants } from '@/components/ui/button'
-import { Card } from '@/components/ui/Card'
+import { Card, CardHeader } from '@/components/ui/Card'
+import { Table, TableFrame, TBody, Td, Th, THead } from '@/components/ui/DataTable'
 import { Page, PageHeader } from '@/components/ui/Page'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { addDays } from '@/lib/agronomy/dates'
@@ -68,39 +69,49 @@ export default async function PurchasesPage() {
         />
       ) : (
         <>
-          <Card>
-            <div className="flex flex-wrap items-baseline justify-between gap-3">
-              <p className="text-sm font-semibold text-foreground">Kebutuhan musim ini</p>
-              <p className="text-xs text-muted-foreground">
-                {rdkk.rows.length} anggota · karung {KG_PER_SACK} kg
-              </p>
-            </div>
+          <Card pad="none">
+            <CardHeader
+              className="p-4"
+              title="Kebutuhan musim ini"
+              description="Diagregasi dari setiap tanam yang tercatat 12 bulan terakhir."
+              actions={
+                <span className="text-xs text-muted-foreground">
+                  {rdkk.rows.length} anggota · karung {KG_PER_SACK} kg
+                </span>
+              }
+            />
 
-            <table className="mt-3 w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                  <th className="pb-2 font-medium">Pupuk</th>
-                  <th className="pb-2 text-right font-medium">Kebutuhan</th>
-                  <th className="pb-2 text-right font-medium">Pesan</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lines.map(l => (
-                  <tr key={l.item} className="border-b border-border/50 last:border-0">
-                    <td className="py-2 font-medium uppercase text-foreground">{l.item}</td>
-                    <td className="py-2 text-right tabular-nums text-muted-foreground">
-                      {formatNumberId(l.quantityKg / 1000)} ton
-                    </td>
-                    <td className="py-2 text-right tabular-nums text-foreground">
-                      {formatNumberId(l.quantity, 0)} karung
-                    </td>
+            {/* The frame runs edge to edge inside the card, so the header rule
+                spans the panel rather than floating inside a padded box. */}
+            <TableFrame className="rounded-none border-x-0 border-b-0">
+              <Table>
+                <THead>
+                  <tr>
+                    <Th>Pupuk</Th>
+                    <Th numeric>Kebutuhan</Th>
+                    <Th numeric>Pesan</Th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </THead>
+                <TBody>
+                  {lines.map(l => (
+                    <tr key={l.item}>
+                      <Td className="font-medium uppercase text-foreground">{l.item}</Td>
+                      <Td numeric className="text-muted-foreground">
+                        {formatNumberId(l.quantityKg / 1000)} ton
+                      </Td>
+                      <Td numeric className="text-foreground">
+                        {formatNumberId(l.quantity, 0)} karung
+                      </Td>
+                    </tr>
+                  ))}
+                </TBody>
+              </Table>
+            </TableFrame>
+
+            <div className="p-4 pt-3">
 
             {/* Rounding up is a decision, not an accident, so it is stated. */}
-            <p className="mt-3 text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Jumlah karung dibulatkan ke atas — pupuk tidak dijual per kilogram,
               dan memesan kurang lebih berisiko daripada memesan lebih.
             </p>
@@ -128,6 +139,7 @@ export default async function PurchasesPage() {
                 melihat kebutuhan musim ini di atas.
               </p>
             )}
+            </div>
           </Card>
 
           {overCap.length > 0 && (
@@ -155,44 +167,49 @@ export default async function PurchasesPage() {
       )}
 
       {orders.length > 0 && (
-        <Card>
-          <p className="text-sm font-semibold text-foreground">Riwayat pesanan kelompok</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Ke mana pesanan yang sudah dibuat pergi -- setiap klik &ldquo;Buat pesanan kelompok&rdquo;
-            di atas menambah satu baris di sini.
-          </p>
+        <Card pad="none">
+          <CardHeader
+            className="p-4"
+            title="Riwayat pesanan kelompok"
+            description="Ke mana pesanan yang sudah dibuat pergi — setiap klik “Buat pesanan kelompok” di atas menambah satu baris di sini."
+            actions={
+              <span className="text-xs text-muted-foreground">{orders.length} pesanan</span>
+            }
+          />
 
-          <table className="mt-3 w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                <th className="pb-2 font-medium">Tanggal</th>
-                <th className="pb-2 font-medium">Musim</th>
-                <th className="pb-2 font-medium">Isi</th>
-                <th className="pb-2 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map(order => (
-                <tr key={order.id} className="border-b border-border/50 last:border-0">
-                  <td className="py-2 align-top text-muted-foreground">
-                    {formatDateId(order.createdAt)}
-                  </td>
-                  <td className="py-2 align-top text-foreground">{order.seasonLabel}</td>
-                  <td className="py-2 align-top text-muted-foreground">
-                    {order.lines.map(l => `${formatNumberId(l.quantity, 0)} ${l.unit} ${l.item}`).join(', ')}
-                  </td>
-                  <td className="py-2 align-top">
-                    <Badge tone={ORDER_STATUS_TONE[order.status]}>
-                      {ORDER_STATUS_LABEL[order.status]}
-                    </Badge>
-                  </td>
+          <TableFrame className="rounded-none border-x-0 border-b-0" maxHeight="24rem">
+            <Table>
+              <THead>
+                <tr>
+                  <Th>Tanggal</Th>
+                  <Th>Musim</Th>
+                  <Th>Isi</Th>
+                  <Th>Status</Th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </THead>
+              <TBody>
+                {orders.map(order => (
+                  <tr key={order.id}>
+                    <Td className="whitespace-nowrap text-muted-foreground">
+                      {formatDateId(order.createdAt)}
+                    </Td>
+                    <Td className="text-foreground">{order.seasonLabel}</Td>
+                    <Td className="text-muted-foreground">
+                      {order.lines.map(l => `${formatNumberId(l.quantity, 0)} ${l.unit} ${l.item}`).join(', ')}
+                    </Td>
+                    <Td>
+                      <Badge tone={ORDER_STATUS_TONE[order.status]}>
+                        {ORDER_STATUS_LABEL[order.status]}
+                      </Badge>
+                    </Td>
+                  </tr>
+                ))}
+              </TBody>
+            </Table>
+          </TableFrame>
 
           {orders.every(o => o.status === 'draft') && (
-            <p className="mt-3 text-xs text-muted-foreground">
+            <p className="border-t border-border p-4 text-xs text-muted-foreground">
               Semua pesanan di sini masih draf: belum ada transisi ke pemasok di sistem ini
               hari ini, jadi status bergerak lewat kesepakatan di luar platform sampai fitur
               itu ada.

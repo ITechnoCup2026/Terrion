@@ -1,3 +1,4 @@
+import { Scale, Sprout, TrendingUp, TriangleAlert } from 'lucide-react'
 import { redirect } from 'next/navigation'
 
 import { CollisionAlert, type CollisionAlertData } from '@/components/dashboard/CollisionAlert'
@@ -5,7 +6,7 @@ import { GroupPurchaseAlert } from '@/components/dashboard/GroupPurchaseAlert'
 import { ImpactPanel } from '@/components/dashboard/ImpactPanel'
 import { ProjectionChart, type ChartWeek } from '@/components/dashboard/ProjectionChart'
 import { UpcomingHarvests } from '@/components/dashboard/UpcomingHarvests'
-import { Card, MetricRow } from '@/components/ui/Card'
+import { Card, CardHeader, MetricRow, type Metric } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Page, PageHeader, SectionHeading } from '@/components/ui/Page'
 import { addDays } from '@/lib/agronomy/dates'
@@ -91,17 +92,34 @@ export default async function DashboardPage() {
   const peak = dashboard.weeks.reduce<typeof dashboard.weeks[number] | null>(
     (best, w) => (best === null || w.expectedTonnes > best.expectedTonnes ? w : best), null)
 
-  const kpis = [
+  // "Minggu berisiko" is the only figure here that asks for a decision, so it
+  // is the only one that carries the accent — and only when it is not zero.
+  const kpis: Metric[] = [
     {
       label: 'Panen 12 minggu',
       value: `${formatNumberId(dashboard.weeks.reduce((s, w) => s + w.expectedTonnes, 0))} ton`,
+      hint: 'Total perkiraan seluruh lahan',
+      icon: Scale,
     },
     {
       label: 'Minggu puncak',
-      value: peak ? `${weekTick(peak.weekStart)} · ${formatNumberId(peak.expectedTonnes)} t` : '—',
+      value: peak ? `${formatNumberId(peak.expectedTonnes)} t` : '—',
+      hint: peak ? weekTick(peak.weekStart) : 'Belum ada proyeksi',
+      icon: TrendingUp,
     },
-    { label: 'Minggu berisiko', value: formatNumberId(flaggedWeeks.size) },
-    { label: 'Lahan', value: formatNumberId(plots.length) },
+    {
+      label: 'Minggu berisiko',
+      value: formatNumberId(flaggedWeeks.size),
+      hint: 'Melewati kapasitas koperasi',
+      icon: TriangleAlert,
+      tone: flaggedWeeks.size > 0 ? 'accent' : 'default',
+    },
+    {
+      label: 'Lahan',
+      value: formatNumberId(plots.length),
+      hint: 'Terdaftar di koperasi',
+      icon: Sprout,
+    },
   ]
 
   return (
@@ -133,11 +151,11 @@ export default async function DashboardPage() {
           sits beside the things it is not evidence for. */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card as="section" className="flex flex-col lg:col-span-2">
-          <SectionHeading>Proyeksi panen mingguan</SectionHeading>
-          <p className="mt-1 mb-4 text-xs text-muted-foreground">
-            Batang menunjukkan perkiraan; area abu-abu menunjukkan rentang antara panen
-            yang pasti jatuh di minggu itu dan yang mungkin seluruhnya jatuh di sana.
-          </p>
+          <CardHeader
+            className="mb-4"
+            title="Proyeksi panen mingguan"
+            description="Batang menunjukkan perkiraan; area abu-abu menunjukkan rentang antara panen yang pasti jatuh di minggu itu dan yang mungkin seluruhnya jatuh di sana."
+          />
           {/* min-h-0 so the chart can take the leftover height rather than
               being pushed past the bottom of the card. */}
           <div className="min-h-0 flex-1">

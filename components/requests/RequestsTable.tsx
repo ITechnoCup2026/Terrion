@@ -6,6 +6,17 @@ import { respondToRequest } from '@/app/actions/supply-request'
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/button'
+import {
+  SegmentedControl,
+  SortableTh,
+  Table,
+  TableFrame,
+  TableToolbar,
+  TBody,
+  Td,
+  Th,
+  THead,
+} from '@/components/ui/DataTable'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { utcDate } from '@/lib/agronomy/dates'
 import { INBOX_EMPTY, requestBuyerLabel } from '@/lib/catalog/copy'
@@ -122,22 +133,31 @@ export function RequestsTable({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-1.5">
-        {STATUS_FILTERS.map(filter => (
-          <Button
-            key={filter}
-            type="button"
-            size="sm"
-            variant={statusFilter === filter ? 'default' : 'outline'}
-            onClick={() => setStatusFilter(filter)}
-          >
-            {STATUS_LABEL[filter]}
-          </Button>
-        ))}
-      </div>
+      {/* Each tab carries its own count, so a pengurus can see there are three
+          waiting without opening the filter to find out. */}
+      <TableToolbar
+        meta={
+          <span>
+            {sorted.length} dari {rows.length} permintaan
+          </span>
+        }
+      >
+        <SegmentedControl
+          ariaLabel="Saring menurut status"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={STATUS_FILTERS.map(filter => ({
+            value: filter,
+            label: STATUS_LABEL[filter],
+            count: filter === 'all' ? rows.length : rows.filter(r => r.status === filter).length,
+          }))}
+        />
+      </TableToolbar>
 
       {selectedPending.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
+        // Sticky, because a bulk selection made at row 30 is answered by a bar
+        // that had scrolled off the top of the frame.
+        <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 rounded-lg border border-accent/30 bg-[color-mix(in_oklch,var(--accent)_8%,var(--card))] px-3 py-2 text-sm text-foreground shadow-[var(--shadow-xs)]">
           <span>{selectedPending.length} permintaan dipilih</span>
           <Button size="sm" disabled={isPending} onClick={() => respond(selectedPending, 'accepted')}>
             Terima terpilih
@@ -156,11 +176,13 @@ export function RequestsTable({
           Tidak ada permintaan berstatus {STATUS_LABEL[statusFilter].toLowerCase()}.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/30 text-left text-xs text-muted-foreground">
-                <th className="w-9 px-3 py-2">
+        // Capped rather than unbounded: the inbox grows without limit, and the
+        // sticky header is only useful if the rows scroll under it.
+        <TableFrame maxHeight="min(38rem, 65vh)">
+          <Table>
+            <THead>
+              <tr>
+                <Th className="w-9">
                   <input
                     type="checkbox"
                     className="accent-primary"
@@ -169,31 +191,31 @@ export function RequestsTable({
                     aria-label="Pilih semua yang menunggu"
                     onChange={() => setSelected(allPendingSelected ? new Set() : new Set(pendingIds))}
                   />
-                </th>
-                <SortHeader
-                  label="Komoditas" columnKey="commodity"
-                  activeKey={sortKey} desc={sortDesc} onSort={toggleSort}
+                </Th>
+                <SortableTh
+                  label="Komoditas" active={sortKey === 'commodity'} desc={sortDesc}
+                  onSort={() => toggleSort('commodity')}
                 />
-                <th className="px-3 py-2 font-medium">Pembeli</th>
-                <SortHeader
-                  label="Volume" columnKey="volume"
-                  activeKey={sortKey} desc={sortDesc} onSort={toggleSort}
+                <Th>Pembeli</Th>
+                <SortableTh
+                  label="Volume" numeric active={sortKey === 'volume'} desc={sortDesc}
+                  onSort={() => toggleSort('volume')}
                 />
-                <SortHeader
-                  label="Jendela panen" columnKey="window"
-                  activeKey={sortKey} desc={sortDesc} onSort={toggleSort}
+                <SortableTh
+                  label="Jendela panen" active={sortKey === 'window'} desc={sortDesc}
+                  onSort={() => toggleSort('window')}
                 />
-                <SortHeader
-                  label="Status" columnKey="status"
-                  activeKey={sortKey} desc={sortDesc} onSort={toggleSort}
+                <SortableTh
+                  label="Status" active={sortKey === 'status'} desc={sortDesc}
+                  onSort={() => toggleSort('status')}
                 />
-                <th className="px-3 py-2 font-medium">Aksi</th>
+                <Th>Aksi</Th>
               </tr>
-            </thead>
-            <tbody>
+            </THead>
+            <TBody>
               {sorted.map(r => (
-                <tr key={r.id} className="border-b border-border/50 last:border-0">
-                  <td className="px-3 py-2 align-top">
+                <tr key={r.id} data-selected={selected.has(r.id) || undefined} className="data-selected:bg-secondary/40">
+                  <Td>
                     {r.status === 'pending' && (
                       <input
                         type="checkbox"
@@ -203,29 +225,29 @@ export function RequestsTable({
                         onChange={() => toggleSelected(r.id)}
                       />
                     )}
-                  </td>
-                  <td className="px-3 py-2 align-top font-medium text-foreground">
+                  </Td>
+                  <Td className="font-medium text-foreground">
                     {commodityName.get(r.commodityId) ?? 'Komoditas'}
-                  </td>
-                  <td className="max-w-64 px-3 py-2 align-top text-muted-foreground">
+                  </Td>
+                  <Td className="max-w-64 text-muted-foreground">
                     {requestBuyerLabel(r.buyerName, r.buyerOrganisation)}
                     {r.notes && (
                       <p className="mt-0.5 line-clamp-2 whitespace-pre-line text-xs">{r.notes}</p>
                     )}
-                  </td>
-                  <td className="px-3 py-2 align-top tabular-nums text-foreground">
+                  </Td>
+                  <Td numeric className="text-foreground">
                     {formatNumberId(r.volumeKg / 1000)} ton
-                  </td>
-                  <td className="px-3 py-2 align-top">
+                  </Td>
+                  <Td>
                     <HarvestWindow
                       size="sm"
                       week={{ start: utcDate(r.windowStart), end: utcDate(r.windowEnd), basis: 'observed' }}
                     />
-                  </td>
-                  <td className="px-3 py-2 align-top">
+                  </Td>
+                  <Td>
                     <Badge tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</Badge>
-                  </td>
-                  <td className="min-w-40 px-3 py-2 align-top">
+                  </Td>
+                  <Td className="min-w-40">
                     {r.status === 'pending' ? (
                       <div className="flex flex-col gap-1">
                         <div className="flex gap-2">
@@ -248,37 +270,13 @@ export function RequestsTable({
                         {r.respondedAt ? formatDateId(utcDate(r.respondedAt)) : '—'}
                       </span>
                     )}
-                  </td>
+                  </Td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
+        </TableFrame>
       )}
     </div>
-  )
-}
-
-function SortHeader({
-  label, columnKey, activeKey, desc, onSort,
-}: {
-  label: string
-  columnKey: SortKey
-  activeKey: SortKey
-  desc: boolean
-  onSort: (key: SortKey) => void
-}) {
-  const active = columnKey === activeKey
-  return (
-    <th className="px-3 py-2 font-medium">
-      <button
-        type="button"
-        onClick={() => onSort(columnKey)}
-        className="inline-flex items-center gap-1 hover:text-foreground"
-      >
-        {label}
-        {active && <span aria-hidden>{desc ? '▼' : '▲'}</span>}
-      </button>
-    </th>
   )
 }

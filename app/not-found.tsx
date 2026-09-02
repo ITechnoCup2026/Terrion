@@ -3,29 +3,33 @@ import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { MessageCard } from '@/components/ui/Card'
 import { Page } from '@/components/ui/Page'
+import { isBackendDown } from '@/lib/api/client'
+import { homeFor } from '@/lib/auth/display'
+import { currentAppUser, type AppUser } from '@/lib/auth/session'
 
-/**
- * The 404, in Indonesian.
- *
- * Reached most often by a shared catalogue link whose harvest week has passed:
- * listings are derived from the projection, so a URL that resolved last month
- * legitimately stops existing. That is not a broken link and should not read
- * like one -- it says the listing is gone and points back at the catalogue.
- */
-export default function NotFound() {
+export default async function NotFound() {
+  let user: AppUser | null = null
+  try {
+    user = await currentAppUser()
+  } catch (error) {
+    if (!isBackendDown(error)) throw error
+  }
+
+  const target = user ? homeFor(user.role) : '/'
+  const actionLabel = user?.role === 'buyer' ? 'Lihat katalog' : user ? 'Ke dasbor' : 'Kembali ke beranda'
+
   return (
     <Page className="flex flex-1 items-center justify-center">
       <MessageCard
         className="w-full"
         title="Halaman tidak ditemukan"
         action={
-          <Link href="/catalog" className={buttonVariants()}>
-            Lihat katalog
+          <Link href={target} className={buttonVariants()}>
+            {actionLabel}
           </Link>
         }
       >
-        Halaman ini mungkin sudah dipindahkan, atau listing panennya sudah lewat.
-        Katalog hanya menampilkan panen yang diproyeksikan dalam 12 minggu ke depan.
+        Halaman ini mungkin sudah dipindahkan atau tidak tersedia.
       </MessageCard>
     </Page>
   )

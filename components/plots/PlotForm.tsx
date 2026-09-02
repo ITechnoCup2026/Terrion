@@ -30,6 +30,8 @@ type Props = {
   /** Cooperative's own coordinates, so the first pin starts nearby. */
   origin: { lat: number; lng: number }
   seasonShortcuts: { label: string; date: string }[]
+  onSuccess?: (plotId: string, plotName: string) => void
+  onCancel?: () => void
 }
 
 type FormValues = z.input<typeof createPlotSchema>
@@ -45,7 +47,7 @@ const emptyPlanting = { commodityId: '', varietyId: '', plantingDate: '', areaHa
 const ha = (n: number) => n.toFixed(2).replace('.', ',')
 
 export function PlotForm({
-  commodities, varieties, previous, registered, origin, seasonShortcuts,
+  commodities, varieties, previous, registered, origin, seasonShortcuts, onSuccess, onCancel,
 }: Props) {
   const router = useRouter()
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -113,7 +115,11 @@ export function PlotForm({
     try {
       const result = await createPlot(values)
       if (!result.ok) { setSubmitError(result.message); return }
-      router.push(`/plots/${result.data.plotId}`)
+      if (onSuccess) {
+        onSuccess(result.data.plotId, values.plotName)
+      } else {
+        router.push(`/plots/${result.data.plotId}`)
+      }
     } catch {
       setSubmitError('Tidak bisa menghubungi server. Periksa koneksi Anda, lalu coba lagi.')
     }
@@ -257,9 +263,16 @@ export function PlotForm({
         <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{submitError}</p>
       )}
 
-      <Button type="submit" size="lg" disabled={isSubmitting}>
-        {isSubmitting ? 'Menyimpan…' : 'Simpan lahan'}
-      </Button>
+      <div className="flex items-center gap-3 pt-2">
+        <Button type="submit" size="lg" disabled={isSubmitting}>
+          {isSubmitting ? 'Menyimpan…' : 'Simpan lahan'}
+        </Button>
+        {onCancel && (
+          <Button type="button" variant="ghost" size="lg" onClick={onCancel} disabled={isSubmitting}>
+            Batal
+          </Button>
+        )}
+      </div>
     </form>
   )
 }

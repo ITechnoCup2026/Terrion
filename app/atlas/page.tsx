@@ -2,7 +2,10 @@ import Link from 'next/link'
 
 import { Atlas } from '@/components/atlas/Atlas'
 import { Logo } from '@/components/ui/Logo'
+import { isBackendDown } from '@/lib/api/client'
 import { loadAtlasCooperatives } from '@/lib/atlas/load'
+import { homeFor } from '@/lib/auth/display'
+import { currentAppUser, type AppUser } from '@/lib/auth/session'
 
 // It counts real cooperatives, so it cannot be baked at build time.
 export const dynamic = 'force-dynamic'
@@ -12,56 +15,59 @@ export const metadata = {
   description: 'Peta sebaran koperasi tani yang memetakan lahannya di Terrion.',
 }
 
-/**
- * The Atlas, given the whole screen.
- *
- * It used to be a section on the landing page: a map you could not drag, in a
- * box a third of the height of the window, under a headline. A map that small
- * cannot be explored, and a landing page is not the place to explore one --
- * so it is a page of its own now, and the landing page links to it.
- *
- * Deliberately NOT inside the (public) route group. That layout gives every
- * page a sticky header and a footer, and a map that fills the viewport cannot
- * live under a header without either scrolling or being cropped. The chrome
- * here floats over the map instead, the same decision the farm page made.
- *
- * Still public. No session is read here or in the loader.
- */
 export default async function AtlasPage() {
+  let user: AppUser | null = null
+  try {
+    user = await currentAppUser()
+  } catch (error) {
+    if (!isBackendDown(error)) throw error
+  }
+
   const cooperatives = await loadAtlasCooperatives()
+  const homeTarget = user ? homeFor(user.role) : '/'
+  
+  let returnLabel = 'Kembali ke beranda'
+  if (user) {
+    returnLabel = user.role === 'buyer' ? 'Kembali ke Katalog' : 'Kembali ke Dasbor'
+  }
+
+  const showCatalog = !user || user.role === 'buyer'
 
   return (
     <div className="relative h-dvh w-full overflow-hidden">
       <Atlas cooperatives={cooperatives} variant="full" />
 
-      {/* Floating chrome, bottom-right: the map's own controls hold the top
-          right, the breadcrumb the top left, and the legend the bottom left. */}
+      {/* Floating chrome, bottom-right */}
       <div className="absolute right-4 bottom-4 z-30 flex items-center gap-2">
+        {user?.role === 'buyer' && (
+          <Link
+            href="/my-requests"
+            className="interactive rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-xs text-white/70 backdrop-blur-md hover:bg-black/60 hover:text-white"
+          >
+            Permintaan Saya
+          </Link>
+        )}
+        {showCatalog && (
+          <Link
+            href="/catalog"
+            className="interactive rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-xs text-white/70 backdrop-blur-md hover:bg-black/60 hover:text-white"
+          >
+            Katalog
+          </Link>
+        )}
         <Link
-          href="/catalog"
-          className="interactive rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-xs text-white/70 backdrop-blur-md hover:bg-black/60 hover:text-white"
+          href={homeTarget}
+          className="interactive rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-xs text-white/90 backdrop-blur-md hover:bg-black/60 hover:text-white"
         >
-          Katalog
-        </Link>
-        <Link
-          href="/"
-          className="interactive rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-xs text-white/70 backdrop-blur-md hover:bg-black/60 hover:text-white"
-        >
-          Kembali ke beranda
+          {returnLabel}
         </Link>
       </div>
 
-      {/* Top-centre: the map keeps its breadcrumb top-left and its camera
-          controls top-right, so this is the one place left. Hidden on narrow
-          screens, where those two already meet in the middle.
-
-          The wordmark's ink is `text-foreground`, which is dark — correct
-          everywhere else in the product and wrong on this near-black ground,
-          so the plate overrides it. */}
+      {/* Top-centre logo link */}
       <Link
-        href="/"
+        href={homeTarget}
         className="interactive absolute top-4 left-1/2 z-30 hidden -translate-x-1/2 rounded-xl border border-white/10 bg-black/45 px-3 py-1.5 backdrop-blur-md md:block [&_span]:text-white"
-        aria-label="Terrion, kembali ke beranda"
+        aria-label={`Terrion, ${returnLabel.toLowerCase()}`}
       >
         <Logo />
       </Link>

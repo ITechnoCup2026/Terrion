@@ -1,8 +1,8 @@
 'use client'
 
-import { Building2, Lock, Sprout, User, UserCog } from 'lucide-react'
+import { Lock, Mail, Sprout } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Suspense, useState } from 'react'
 
 import { signIn } from '@/app/actions/login'
@@ -11,10 +11,11 @@ import { AuthShowcasePanel } from '@/components/auth/AuthShowcasePanel'
 import { AuthField, AuthPasswordField } from '@/components/auth/fields'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/Logo'
+import { homeFor } from '@/lib/auth/display'
 
-/** The sign-in page. Role and cooperative come back in the login response
- *  itself -- POST /api/auth/login answers with a UserResponse -- not from the
- *  form: the "masuk sebagai" tabs are a label, never an input. */
+/** The sign-in page. The role comes back in the login response itself --
+ *  POST /api/auth/login answers with a UserResponse -- so a single login form
+ *  authenticates all users and routes them to their corresponding home. */
 export default function LoginPage() {
   return (
     <main className="grid min-h-dvh lg:grid-cols-2">
@@ -77,25 +78,9 @@ export default function LoginPage() {
   )
 }
 
-type LoginRole = 'koperasi' | 'pengurus' | 'pembeli'
-
-const roleCopy: Record<LoginRole, { label: string; placeholder: string; icon: typeof Building2 }> = {
-  koperasi: { label: 'Koperasi', placeholder: 'nama@koperasi.id', icon: Building2 },
-  pengurus: { label: 'Pengurus', placeholder: 'pengurus@koperasi.id', icon: UserCog },
-  pembeli: { label: 'Pembeli', placeholder: 'nama@perusahaan.co.id', icon: User },
-}
-
-const loginRoles = Object.keys(roleCopy) as LoginRole[]
-
 function LoginForm() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const requestedRole = searchParams.get('role')
-  const initialRole = loginRoles.includes(requestedRole as LoginRole)
-    ? (requestedRole as LoginRole)
-    : 'koperasi'
 
-  const [role, setRole] = useState<LoginRole>(initialRole)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -111,10 +96,8 @@ function LoginForm() {
         setError(result.message)
         return
       }
-      // Where they land follows the role the backend just returned, not the
-      // tab they picked. A buyer has no cooperative, so /dashboard would only
-      // answer 403 -- the catalogue is the thing they signed in for.
-      router.push(result.role === 'buyer' ? '/catalog' : '/dashboard')
+      // Where they land follows the role the backend returned
+      router.push(homeFor(result.role))
       router.refresh()
     } catch {
       setError('Tidak bisa menghubungi server. Periksa koneksi Anda, lalu coba lagi.')
@@ -135,47 +118,15 @@ function LoginForm() {
         style={{ background: 'color-mix(in oklch, var(--terrion-gold-500), transparent 88%)' }}
       />
 
-      {/* Koperasi and pembeli sign in against the same form, but the two
-          audiences never think of themselves as filling in the same box --
-          the tabs are just a label, not a different flow underneath. */}
-      <div
-        role="tablist"
-        aria-label="Masuk sebagai"
-        className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1"
-      >
-        {loginRoles.map(key => {
-          const isActive = role === key
-          const Icon = roleCopy[key].icon
-          return (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => setRole(key)}
-              className={
-                'interactive flex flex-col items-center gap-1 rounded-md py-1.5 text-sm font-medium ' +
-                (isActive
-                  ? 'bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground')
-              }
-            >
-              <Icon aria-hidden className={'size-3.5 transition-colors ' + (isActive ? 'text-primary' : '')} />
-              {roleCopy[key].label}
-            </button>
-          )
-        })}
-      </div>
-
       <AuthField
-        icon={roleCopy[role].icon}
+        icon={Mail}
         label="Email"
         type="email"
         value={email}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
         required
         autoComplete="email"
-        placeholder={roleCopy[role].placeholder}
+        placeholder="nama@email.com"
       />
 
       <AuthPasswordField
@@ -202,3 +153,4 @@ function LoginForm() {
     </form>
   )
 }
+

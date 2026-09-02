@@ -43,7 +43,11 @@ export async function signUpBuyer(raw: unknown): Promise<SignupResult> {
     })
 
     if (result.outcome === 'signed_in') {
-      const signedIn = await signIn({ email, password })
+      // `as: 'buyer'` because this form only ever creates buyers -- koperasi
+      // accounts are made by the pengelola after verification. If the backend
+      // ever answered with another role for an account it just registered
+      // here, the sign-in refusing is the right outcome, not a silent one.
+      const signedIn = await signIn({ email, password, as: 'buyer' })
       if (!signedIn.ok) return { outcome: 'error', message: signedIn.message }
       return { outcome: 'signed_in' }
     }

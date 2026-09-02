@@ -47,30 +47,30 @@ export function StatTile({
     // was two.
     <div
       className={cn(
-        'rounded-xl border p-4',
+        'rounded-xl border p-4 transition-all duration-200',
         empty
-          ? 'border-dashed border-border bg-muted/25'
-          : 'border-border bg-card shadow-[var(--shadow-xs)]',
+          ? 'border-dashed border-border/80 bg-muted/20'
+          : 'border-border bg-card shadow-[var(--shadow-xs)] card-lift hover:border-primary/30',
         className,
       )}
     >
-      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
 
       {empty ? (
-        <p className="mt-1.5 text-sm text-muted-foreground italic">Belum ada data musim ini</p>
+        <p className="mt-2 text-xs text-muted-foreground/80 italic">Belum ada data musim ini</p>
       ) : (
-        <p className="mt-1.5 flex items-baseline gap-1">
-          <span className="text-2xl font-semibold tabular-nums text-foreground">
+        <p className="mt-2 flex items-baseline gap-1.5">
+          <span className="text-2xl font-bold tracking-tight tabular-nums text-foreground">
             {formatValue ? formatValue(value) : formatNumberId(value, decimals)}
           </span>
-          {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
+          {unit && <span className="text-xs font-medium text-muted-foreground">{unit}</span>}
         </p>
       )}
 
       {/* Provenance of a number that is not there is noise -- while the tile is
           empty its own unlock condition is the more useful sentence. */}
       {(empty ? emptyHint ?? hint : hint) && (
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2 text-[0.72rem] leading-relaxed text-muted-foreground">
           {empty ? emptyHint ?? hint : hint}
         </p>
       )}

@@ -1,37 +1,32 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { Filter, Layers, Sprout, Store } from 'lucide-react'
 
 import { ListingCard } from '@/components/commerce/ListingCard'
 import { buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Page, PageHeader } from '@/components/ui/Page'
+import { isBackendDown } from '@/lib/api/client'
+import { currentAppUser, type AppUser } from '@/lib/auth/session'
 import { CATALOG_EMPTY, FILTERS_EMPTY } from '@/lib/catalog/copy'
 import type { ListingFilters } from '@/lib/catalog/listings'
 import { loadCatalogListings } from '@/lib/catalog/load'
 
-export const metadata = { title: 'Katalog pasokan' }
-
-// No route-segment caching here: this page reads searchParams for its filters,
-// which is a dynamic API, so the page renders per request whatever a revalidate
-// export claimed. The expensive part -- one projection per cooperative -- is
-// cached inside loadCatalogListings instead, which is the layer that can be.
+export const metadata = { title: 'Katalog Pasokan Panen' }
 
 const field =
-  'interactive h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground hover:border-ring/40 focus:border-ring focus:outline-none'
+  'interactive h-9 rounded-xl border border-input bg-background/80 px-3 text-xs font-medium text-foreground hover:border-primary/40 focus:border-ring focus:outline-none transition-colors'
 
-// A single search param as a string, ignoring repeats.
 function one(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
 }
 
-// A labeled filter field. The label sits above the control instead of relying
-// on aria-label alone: a buyer scanning the bar for "which one is province"
-// should not have to hover each control to find out.
-function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: ReactNode }) {
+function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={htmlFor} className="text-[0.7rem] font-medium text-muted-foreground">
+      <label htmlFor={htmlFor} className="text-[0.7rem] font-semibold tracking-wide text-muted-foreground uppercase">
         {label}
       </label>
       {children}
@@ -44,6 +39,17 @@ export default async function CatalogPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
+  let user: AppUser | null = null
+  try {
+    user = await currentAppUser()
+  } catch (error) {
+    if (!isBackendDown(error)) throw error
+  }
+
+  if (user && user.role !== 'buyer') {
+    redirect('/dashboard')
+  }
+
   const params = await searchParams
 
   const filters: ListingFilters = {
@@ -56,9 +62,6 @@ export default async function CatalogPage({
     filters.commodityId || filters.province || filters.weeksAhead || filters.minTonnes,
   )
 
-  // Two calls only when a filter narrows the view: the header's "penawaran"
-  // count and the empty-state's "nothing exists vs nothing matches" both need
-  // the unfiltered total, which /api/catalog's own hourly cache makes cheap.
   const { listings, commodities, provinces } = await loadCatalogListings()
   const shown = hasActiveFilter
     ? (await loadCatalogListings(filters)).listings
@@ -67,40 +70,41 @@ export default async function CatalogPage({
   return (
     <Page width="wide">
       <PageHeader
-        title="Katalog pasokan"
+        title="Katalog Pasokan Panen"
         description={
           <>
-            Panen yang diproyeksikan koperasi dalam 12 minggu ke depan. Setiap kartu
-            adalah satu komoditas pada satu minggu panen — pilih satu untuk mengajukan
-            kontrak pasokan.
+            Panen yang diproyeksikan oleh koperasi petani dalam 12 minggu ke depan. Pilih komoditas panen untuk mengajukan kontrak pasokan secara langsung.
           </>
         }
         actions={
-          /* A quiet scale-setter: it tells a first-time buyer this is a real,
-             populated market before they touch a single filter. */
-          <Card pad="none" className="flex gap-4 px-4 py-2.5">
-            <div>
-              <p className="font-mono text-lg font-medium leading-none text-foreground">
-                {listings.length}
-              </p>
-              <p className="mt-1 text-[0.7rem] text-muted-foreground">penawaran</p>
+          <Card pad="none" className="flex gap-4 border-emerald-200/50 bg-emerald-50/40 p-3 dark:border-emerald-900/30 dark:bg-emerald-950/20">
+            <div className="flex items-center gap-2 px-1">
+              <Store className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <div>
+                <p className="font-mono text-lg font-bold leading-none text-foreground">
+                  {listings.length}
+                </p>
+                <p className="mt-0.5 text-[0.68rem] font-medium text-muted-foreground">penawaran</p>
+              </div>
             </div>
             <div className="w-px bg-border" aria-hidden />
-            <div>
-              <p className="font-mono text-lg font-medium leading-none text-foreground">
-                {commodities.length}
-              </p>
-              <p className="mt-1 text-[0.7rem] text-muted-foreground">komoditas</p>
+            <div className="flex items-center gap-2 px-1">
+              <Sprout className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <div>
+                <p className="font-mono text-lg font-bold leading-none text-foreground">
+                  {commodities.length}
+                </p>
+                <p className="mt-0.5 text-[0.68rem] font-medium text-muted-foreground">komoditas</p>
+              </div>
             </div>
           </Card>
         }
       />
 
-      {/* A filter bar, not a form card: it sticks under the header so a buyer
-          deep in the grid can narrow without scrolling back up. */}
+      {/* Glassmorphic Sticky Filter Bar */}
       <form
         method="get"
-        className="sticky top-[var(--public-header)] z-30 -mx-4 mt-6 flex flex-wrap items-end gap-3 border-y border-border bg-background/90 px-4 py-3 shadow-sm backdrop-blur-md"
+        className="sticky top-[var(--public-header)] z-30 -mx-4 mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-border/80 bg-background/85 px-4 py-3.5 shadow-sm backdrop-blur-md"
       >
         <Field label="Komoditas" htmlFor="f-komoditas">
           <select id="f-komoditas" name="komoditas" defaultValue={filters.commodityId ?? ''} className={field}>
@@ -116,48 +120,46 @@ export default async function CatalogPage({
           </select>
         </Field>
 
-        <Field label="Rentang waktu" htmlFor="f-minggu">
+        <Field label="Rentang Waktu" htmlFor="f-minggu">
           <select id="f-minggu" name="minggu" defaultValue={String(filters.weeksAhead ?? '')} className={field}>
-            <option value="">Semua minggu</option>
+            <option value="">Semua minggu panen</option>
             <option value="4">4 minggu ke depan</option>
             <option value="8">8 minggu ke depan</option>
           </select>
         </Field>
 
-        <Field label="Min. tonase" htmlFor="f-ton">
+        <Field label="Min. Tonase" htmlFor="f-ton">
           <input
             id="f-ton" name="minTon" type="number" min="0" step="0.1"
-            className={`${field} w-28`} placeholder="0"
+            className={`${field} w-28`} placeholder="0 ton"
             defaultValue={filters.minTonnes ?? ''}
           />
         </Field>
 
-        <button type="submit" className={buttonVariants({ size: 'lg' })}>
-          Terapkan
+        <button type="submit" className={buttonVariants({ size: 'default' })}>
+          <Filter className="mr-1.5 size-3.5" />
+          Terapkan Filter
         </button>
 
         {hasActiveFilter && (
-          <Link href="/catalog" className={buttonVariants({ variant: 'ghost', size: 'lg' })}>
-            Hapus filter
+          <Link href="/catalog" className={buttonVariants({ variant: 'ghost', size: 'default' })}>
+            Hapus Filter
           </Link>
         )}
 
-        {/* The count is the filter's own feedback: without it, narrowing to
-            nothing looks identical to the page failing to load. */}
         <p className="ml-auto self-center text-xs text-muted-foreground" aria-live="polite">
-          <span className="font-medium text-foreground">{shown.length}</span> dari {listings.length} penawaran
+          Menampilkan <span className="font-semibold text-foreground">{shown.length}</span> dari {listings.length} pasokan
         </p>
       </form>
 
       {shown.length === 0 ? (
-        // "Nothing matches" and "nothing exists" are different facts.
         <EmptyState
           className="mt-8"
           {...(listings.length === 0 ? CATALOG_EMPTY : FILTERS_EMPTY)}
           action={
             hasActiveFilter && (
               <Link href="/catalog" className={buttonVariants({ variant: 'outline', size: 'lg' })}>
-                Hapus semua filter
+                Reset Filter
               </Link>
             )
           }
