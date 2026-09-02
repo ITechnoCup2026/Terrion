@@ -2,25 +2,46 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { AtlasPanel, type RegionListItem } from '@/components/atlas/AtlasPanel'
+import { MAP, SUPPLY_RAMP } from '@/components/atlas/palette'
 import type { AtlasCooperative } from '@/lib/atlas/load'
 import {
+  peakTonnes, regionKey, supplyByProvince, supplyByRegency, supplyStep,
+  type RegionSupply,
+} from '@/lib/atlas/supply'
+import {
   clampView, formatView, panBy, parseView, touchDistance, wheelFactor,
-  zoomAt, zoomFraction, type View,
+  zoomAt, type View,
 } from '@/lib/atlas/camera'
 import {
   INDONESIA_BBOX, fitViewBox, geometryToPath, padBbox, project, type Bbox,
 } from '@/lib/atlas/projection'
+import type { Listing } from '@/lib/catalog/listings'
 import { cn } from '@/lib/utils'
-
-import { FarmView } from './FarmView'
 
 /**
  * The Atlas: Indonesia, drilled into.
  *
- * Country -> province -> regency -> one cooperative's farm, each step a zoom
+ * Country -> province -> regency -> one cooperative's land, each step a zoom
  * rather than a page. The zoom is the navigation: keeping the same shapes on
  * screen and moving the camera is what makes the levels feel like one place
  * instead of four screens that happen to be linked.
+ *
+ * WHAT THE COLOUR MEANS. The map shades each region by the tonnage its
+ * cooperatives have projected over the catalogue's twelve-week horizon, from
+ * the same projection the dashboard chart and the public catalogue draw. It
+ * used to shade by a hash of the region's NAME into one of six near-blacks --
+ * texture that looked like data and meant nothing -- while the only real
+ * signal, "is there a cooperative here", was one bit. A buyer opening the
+ * Atlas can now see where supply actually is, which is the question they came
+ * with.
+ *
+ * WHY IT IS PAPER. It was a near-black map with six translucent black pills
+ * floating in five corners. Three things changed by inverting it: a green ramp
+ * on white can encode quantity, which the same ramp on near-black cannot; the
+ * chrome could stop floating and become one docked panel with real structure;
+ * and the product's own ground everywhere else -- the dashboard, the RDKK form
+ * a cooperative prints -- is paper.
  *
  * Mechanically it is one `viewBox` moved around. SVG will not transition
  * `viewBox` on its own, so flights are stepped with requestAnimationFrame on
@@ -36,7 +57,7 @@ import { FarmView } from './FarmView'
  * the camera moves.
  *
  * Everything is public. No session is read anywhere in this component or the
- * loader behind it.
+ * loaders behind it.
  */
 
 type Feature = {
@@ -54,52 +75,27 @@ const FLIGHT_MS = 780
  *  it must not also select whatever is under it. */
 const DRAG_SLOP_PX = 4
 
-// A stable shade per region, so the map has texture without implying data the
-// Atlas does not have. Ink-green rather than the grey-green it was: on the
-// near-black ground, a desaturated grey read as "no data available" instead of
-// "land". Regions WITH cooperatives are coloured separately, and that contrast
-// is the only thing on the map carrying meaning.
-function idleTint(seed: string): string {
-  let h = 0
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0
-  const lightness = 12 + (Math.abs(h) % 6)
-  return `hsl(158 16% ${lightness}%)`
-}
-
-/** The colours the map is drawn in. Fixed rather than themed: this is a dark
- *  surface in both themes, and half of it is meaning. */
-const MAP = {
-  ground: '#0d1512',
-  idleHover: 'hsl(158 16% 26%)',
-  idleStroke: 'rgb(255 255 255 / 0.08)',
-  coop: 'rgb(21 128 61 / 0.55)',
-  coopHover: 'rgb(34 197 94 / 0.72)',
-  coopStroke: 'rgb(74 222 128 / 0.5)',
-  active: 'rgb(22 163 74 / 0.32)',
-  activeStroke: 'rgb(187 247 208 / 0.9)',
-  // Harvest gold. The pin used to be the same green as the land under it,
-  // which was the worst legibility problem on the map: the one mark carrying
-  // a cooperative's position was camouflaged against the region that has one.
-  pin: '#e8b021',
-  pinRing: '#0d1512',
-} as const
-
 /** The opening camera: the whole country at a wide aspect. A constant, not a
- *  ref read during render -- the first flight or gesture replaces it, and it
- *  depends on nothing. Views are never mutated in place, so every instance
- *  sharing this object is safe. */
+ *  ref read during render -- the mount fit below replaces it with one measured
+ *  against the real element. Views are never mutated in place, so every
+ *  instance sharing this object is safe. */
 const INITIAL_VIEW = clampView(parseView(fitViewBox(INDONESIA_BBOX, 16 / 10)))
 const INITIAL_VIEWBOX = formatView(INITIAL_VIEW)
 
-export type AtlasVariant = 'card' | 'full'
-
 export function Atlas({
-  cooperatives, variant = 'card',
+  cooperatives,
+  listings,
+  homeHref,
+  homeLabel,
+  showCatalog,
 }: {
   cooperatives: AtlasCooperative[]
-  /** 'card' sits in a page; 'full' fills whatever its parent gives it, for
-   *  the dedicated /atlas route where the map IS the page. */
-  variant?: AtlasVariant
+  /** The public catalogue, which is what the shading is of. Empty is a fine
+   *  state: the map falls back to naming where cooperatives are. */
+  listings: Listing[]
+  homeHref: string
+  homeLabel: string
+  showCatalog: boolean
 }) {
   const [provinces, setProvinces] = useState<Feature[]>([])
   const [regencies, setRegencies] = useState<Feature[]>([])
@@ -107,11 +103,9 @@ export function Atlas({
   const [province, setProvince] = useState<Feature | null>(null)
   const [regency, setRegency] = useState<Feature | null>(null)
   const [hovered, setHovered] = useState<string | null>(null)
+  const [hoveredCoop, setHoveredCoop] = useState<string | null>(null)
   const [farmId, setFarmId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  // Only for the zoom readout, and only updated when a gesture ends -- so the
-  // number can be shown without putting the camera back into React.
-  const [zoomShown, setZoomShown] = useState(0)
 
   const svgRef = useRef<SVGSVGElement>(null)
   const frameRef = useRef<number>(0)
@@ -122,7 +116,7 @@ export function Atlas({
   const viewRef = useRef<View>(INITIAL_VIEW)
 
   /**
-   * The one place the camera is written — and with it, the pins.
+   * The one place the camera is written — and with it, the pins and labels.
    *
    * A pin has to be the same size on screen at every zoom, and there are only
    * two honest ways to do that. One is a non-scaling stroke, which is what
@@ -131,48 +125,102 @@ export function Atlas({
    * box was sixteen degrees across, and at deep zoom the round caps came out
    * as a lozenge rather than a dot.
    *
-   * The other is to counter-scale the pin against the camera, which is this.
-   * The pins are ordinary filled circles with radii in PIXELS; scaling the
-   * group by units-per-pixel turns those radii into whatever number of degrees
-   * currently makes a pixel. Filled circles are round, hit-test as circles,
-   * and measure as themselves.
+   * The other is to counter-scale against the camera, which is this. Anything
+   * marked [data-map-scale] is positioned in map coordinates and drawn in
+   * PIXELS; scaling the group by units-per-pixel turns those numbers into
+   * whatever count of degrees currently makes a pixel. Filled circles stay
+   * round, hit-test as circles, and measure as themselves; text stays the same
+   * size however far in the camera goes.
    */
   const writeView = useCallback((next: View) => {
     viewRef.current = next
     const svg = svgRef.current
     if (!svg) return
     svg.setAttribute('viewBox', formatView(next))
-    syncPins(svg, next)
+    syncScaled(svg, next)
   }, [])
 
-  // Pins are re-rendered by React whenever the level changes, which drops the
-  // transform this writes. Re-applying after every render is cheap — a
-  // cooperative list is tens of elements, not thousands.
+  // Marks are re-rendered by React whenever the level or hover changes, which
+  // drops the transform this writes. Re-applying after every render is cheap —
+  // a cooperative list is tens of elements, not thousands.
   useEffect(() => {
     const svg = svgRef.current
-    if (svg) syncPins(svg, viewRef.current)
+    if (svg) syncScaled(svg, viewRef.current)
   })
 
-  // Which regions actually have a cooperative. Matched on name because the
-  // cooperative table stores names, not BPS codes.
-  const coopsByProvince = useMemo(() => {
-    const m = new Map<string, AtlasCooperative[]>()
-    for (const c of cooperatives) {
-      const key = c.province.toLowerCase()
-      m.set(key, [...(m.get(key) ?? []), c])
-    }
-    return m
-  }, [cooperatives])
+  /**
+   * Keep the camera's shape matched to the element's.
+   *
+   * INITIAL_VIEW is fitted to a guessed 16:10 so the server has something to
+   * render, but the panel takes a third of the width and a phone stacks the
+   * two — the real aspect is never the guess. Two different jobs, and both
+   * were missing:
+   *
+   *   the first fit   until the element has a size there is nothing to fit to.
+   *                   A mount-time measurement is not enough on its own: an
+   *                   element that is still 0x0 when effects run (a minimised
+   *                   window, a tab restored in the background) would keep the
+   *                   guessed view forever.
+   *
+   *   every resize    a viewBox fitted to yesterday's aspect crops the country
+   *                   as soon as the window changes shape, and crossing the
+   *                   `lg` breakpoint changes it a lot. Here the WIDTH and the
+   *                   centre are held and the height is re-derived, so the
+   *                   reader keeps looking at whatever they were looking at
+   *                   instead of being thrown back to the whole country.
+   */
+  const fittedRef = useRef(false)
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
 
-  const coopsByRegency = useMemo(() => {
-    const m = new Map<string, AtlasCooperative[]>()
-    for (const c of cooperatives) {
-      // "Kabupaten Subang" in the app, "Subang" in the boundary data.
-      const key = c.district.replace(/^(kabupaten|kota)\s+/i, '').toLowerCase()
-      m.set(key, [...(m.get(key) ?? []), c])
-    }
-    return m
-  }, [cooperatives])
+    const observer = new ResizeObserver(() => {
+      const rect = svg.getBoundingClientRect()
+      if (!rect.width || !rect.height) return
+      const aspect = rect.width / rect.height
+
+      if (!fittedRef.current) {
+        fittedRef.current = true
+        writeView(clampView(parseView(fitViewBox(padBbox(INDONESIA_BBOX, 0.02), aspect))))
+        return
+      }
+
+      const view = viewRef.current
+      const height = view.w / aspect
+      writeView(clampView({ ...view, y: view.y + (view.h - height) / 2, h: height }))
+    })
+
+    observer.observe(svg)
+    return () => observer.disconnect()
+  }, [writeView])
+
+  // ---- what is where ------------------------------------------------------
+  //
+  // Cooperatives and supply are indexed by the same normalised region key, so
+  // "Kabupaten Subang" in the app and "Subang" in the boundary data land in
+  // the same bucket. Every lookup below goes through regionKey.
+  const coopsByProvince = useMemo(() => groupBy(cooperatives, c => regionKey(c.province)), [cooperatives])
+  const coopsByRegency = useMemo(() => groupBy(cooperatives, c => regionKey(c.district)), [cooperatives])
+
+  const provinceSupply = useMemo(
+    () => supplyByProvince(cooperatives, listings), [cooperatives, listings])
+  const regencySupply = useMemo(
+    () => supplyByRegency(cooperatives, listings), [cooperatives, listings])
+
+  // The shading scale is relative to the heaviest region AT THE LEVEL BEING
+  // LOOKED AT. Scaling regency shades against the national peak would render
+  // every regency inside one province as the same faint tint.
+  const peak = useMemo(
+    () => peakTonnes((level === 'country' ? provinceSupply : regencySupply).values()),
+    [level, provinceSupply, regencySupply])
+
+  const national = useMemo<RegionSupply>(() => ({
+    cooperatives: cooperatives.length,
+    plots: cooperatives.reduce((s, c) => s + c.plotCount, 0),
+    hectares: cooperatives.reduce((s, c) => s + c.hectares, 0),
+    tonnes: listings.reduce((s, l) => s + l.tonnes, 0),
+    listings,
+  }), [cooperatives, listings])
 
   // Animate the camera to a bounding box rather than snapping to it.
   const flyTo = useCallback((box: Bbox) => {
@@ -189,7 +237,6 @@ export function Atlas({
     // trip to it.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       writeView(target)
-      setZoomShown(zoomFraction(target))
       return
     }
 
@@ -204,7 +251,6 @@ export function Atlas({
         h: from.h + (target.h - from.h) * e,
       })
       if (t < 1) frameRef.current = requestAnimationFrame(step)
-      else setZoomShown(zoomFraction(target))
     }
     frameRef.current = requestAnimationFrame(step)
   }, [writeView])
@@ -249,7 +295,6 @@ export function Atlas({
       cancelAnimationFrame(frameRef.current)
       const { fx, fy } = fractionOf(e.clientX, e.clientY)
       writeView(zoomAt(viewRef.current, wheelFactor(e.deltaY), fx, fy))
-      setZoomShown(zoomFraction(viewRef.current))
     }
 
     const active = new Map<number, PointerEvent>()
@@ -309,24 +354,21 @@ export function Atlas({
       writeView(panBy(viewRef.current, dx, dy))
     }
 
-    const onPointerUp = (e: PointerEvent) => {
-      active.delete(e.pointerId)
-      if (active.size < 2) pinchStart = null
-      if (active.size === 0) {
-        last = null
-        captured = false
-        setZoomShown(zoomFraction(viewRef.current))
-        // A drag that ends over a province must not also select it.
-        if (travelled > DRAG_SLOP_PX) {
-          const swallow = (click: MouseEvent) => {
-            click.stopPropagation()
-            svg.removeEventListener('click', swallow, true)
-          }
-          svg.addEventListener('click', swallow, true)
-          // If no click follows -- a touch drag, usually -- take the trap out
-          // again rather than swallowing the next real one.
-          setTimeout(() => svg.removeEventListener('click', swallow, true), 0)
+    const onPointerUp = () => {
+      active.clear()
+      pinchStart = null
+      last = null
+      captured = false
+      // A drag that ends over a province must not also select it.
+      if (travelled > DRAG_SLOP_PX) {
+        const swallow = (click: MouseEvent) => {
+          click.stopPropagation()
+          svg.removeEventListener('click', swallow, true)
         }
+        svg.addEventListener('click', swallow, true)
+        // If no click follows -- a touch drag, usually -- take the trap out
+        // again rather than swallowing the next real one.
+        setTimeout(() => svg.removeEventListener('click', swallow, true), 0)
       }
     }
 
@@ -349,7 +391,6 @@ export function Atlas({
   const stepZoom = useCallback((factor: number) => {
     cancelAnimationFrame(frameRef.current)
     writeView(zoomAt(viewRef.current, factor, 0.5, 0.5))
-    setZoomShown(zoomFraction(viewRef.current))
   }, [writeView])
 
   // Enter a province: fetch its regencies, then fly.
@@ -392,7 +433,7 @@ export function Atlas({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      if (farmId) { setFarmId(null); return }
+      if (farmId) return                    // the farm view owns Escape while open
       if (level === 'regency') goProvince()
       else if (level === 'province') goCountry()
     }
@@ -400,228 +441,269 @@ export function Atlas({
     return () => window.removeEventListener('keydown', onKey)
   }, [level, farmId, goProvince, goCountry])
 
+  // ---- what this level shows ---------------------------------------------
+
+  const shapes = level === 'country' ? provinces : regencies
+  const supplyOf = level === 'country' ? provinceSupply : regencySupply
+  const coopsOf = level === 'country' ? coopsByProvince : coopsByRegency
+  const activeName = regency?.properties.name ?? province?.properties.name ?? null
+
   // Pins are drawn only for the level being looked at, so the country view is
   // not a cloud of markers nobody can hit.
   const visibleCoops = useMemo(() => {
     if (level === 'country') return cooperatives
     if (level === 'province' && province) {
-      return coopsByProvince.get(province.properties.name.toLowerCase()) ?? []
+      return coopsByProvince.get(regionKey(province.properties.name)) ?? []
     }
     if (level === 'regency' && regency) {
-      return coopsByRegency.get(regency.properties.name.toLowerCase()) ?? []
+      return coopsByRegency.get(regionKey(regency.properties.name)) ?? []
     }
     return []
   }, [level, province, regency, cooperatives, coopsByProvince, coopsByRegency])
 
-  const shapes = level === 'country' ? provinces : regencies
-  const activeName = regency?.properties.name ?? province?.properties.name ?? null
+  /**
+   * Region names, placed where that region's cooperatives actually are.
+   *
+   * The map carried no labels at all: you could not tell which province you
+   * were looking at without hovering it. Only regions with cooperatives are
+   * named -- labelling all thirty-eight would bury the handful that matter --
+   * and the anchor is the mean of their pins rather than the bounding box's
+   * centre, which for a shape like Sulawesi lands in the sea. Putting the name
+   * where the data is also happens to be what the name is about.
+   */
+  const labels = useMemo(() => {
+    if (level === 'regency') return []
+    return shapes.flatMap(f => {
+      const coops = coopsOf.get(regionKey(f.properties.name))
+      if (!coops?.length) return []
+      const points = coops.map(c => project([c.lng, c.lat]))
+      return [{
+        key: f.properties.code + f.properties.name,
+        name: f.properties.name,
+        x: points.reduce((s, p) => s + p.x, 0) / points.length,
+        y: points.reduce((s, p) => s + p.y, 0) / points.length,
+      }]
+    })
+  }, [level, shapes, coopsOf])
+
+  /** The panel's ranked list of places to go next. */
+  const regionList = useMemo<RegionListItem[]>(() => {
+    if (level === 'regency') return []
+    return shapes
+      .flatMap(f => {
+        const supply = supplyOf.get(regionKey(f.properties.name))
+        if (!supply) return []
+        return [{
+          key: regionKey(f.properties.name),
+          name: f.properties.name,
+          cooperatives: supply.cooperatives,
+          tonnes: supply.tonnes,
+        }]
+      })
+      .sort((a, b) => b.tonnes - a.tonnes || a.name.localeCompare(b.name))
+  }, [level, shapes, supplyOf])
+
+  /**
+   * The figures for what is SELECTED, which is not always the level being
+   * drawn.
+   *
+   * Standing in a province, the map draws regencies -- so `supplyOf` is the
+   * regency index -- but the thing the panel is describing is still the
+   * province. Reading the selection out of `supplyOf` therefore looked
+   * "Jawa Barat" up among the regencies, missed, and reported a province with
+   * a cooperative and sixty tonnes projected as 0 koperasi, 0 lahan, belum
+   * ada. Each level is read from its own index.
+   */
+  const selected: RegionSupply = useMemo(() => {
+    if (regency) return regencySupply.get(regionKey(regency.properties.name)) ?? EMPTY_REGION
+    if (province) return provinceSupply.get(regionKey(province.properties.name)) ?? EMPTY_REGION
+    return national
+  }, [regency, province, regencySupply, provinceSupply, national])
+
+  const openRegionByKey = useCallback((key: string) => {
+    const feature = shapes.find(f => regionKey(f.properties.name) === key)
+    if (!feature) return
+    if (level === 'country') void openProvince(feature)
+    else openRegency(feature)
+  }, [shapes, level, openProvince, openRegency])
 
   return (
-    <div
-      className={cn(
-        'relative w-full overflow-hidden',
-        variant === 'full'
-          ? 'h-full'
-          : 'h-[85vh] min-h-[32rem] rounded-lg border border-border',
-      )}
-      style={{ background: MAP.ground }}
-    >
-      <svg
-        ref={svgRef}
-        viewBox={INITIAL_VIEWBOX}
-        preserveAspectRatio="xMidYMid meet"
-        className="size-full cursor-grab touch-none active:cursor-grabbing"
-        role="img"
-        aria-label="Peta sebaran koperasi di Indonesia"
-      >
-        <g>
-          {shapes.map(f => {
-            const key = `${f.properties.code}-${f.properties.name}`
-            const hasCoops = level === 'country'
-              ? coopsByProvince.has(f.properties.name.toLowerCase())
-              : coopsByRegency.has(f.properties.name.toLowerCase())
-            const isHovered = hovered === key
-            const isActive = activeName === f.properties.name
+    <div className="flex h-full w-full flex-col-reverse overflow-hidden lg:flex-row">
+      <AtlasPanel
+        level={level}
+        provinceName={province?.properties.name ?? null}
+        regencyName={regency?.properties.name ?? null}
+        region={selected}
+        regions={regionList}
+        cooperatives={visibleCoops}
+        farmId={farmId}
+        homeHref={homeHref}
+        homeLabel={homeLabel}
+        showCatalog={showCatalog}
+        onGoCountry={goCountry}
+        onGoProvince={goProvince}
+        onOpenRegion={openRegionByKey}
+        onOpenFarm={setFarmId}
+        onCloseFarm={() => setFarmId(null)}
+        onHoverCooperative={setHoveredCoop}
+      />
 
-            return (
-              <path
-                key={key}
-                d={geometryToPath(f.geometry)}
-                fill={
-                  isActive ? MAP.active
-                  : hasCoops ? (isHovered ? MAP.coopHover : MAP.coop)
-                  : (isHovered ? MAP.idleHover : idleTint(f.properties.name))
-                }
-                stroke={
-                  isActive ? MAP.activeStroke
-                  : hasCoops ? MAP.coopStroke
-                  : MAP.idleStroke
-                }
-                strokeWidth={isActive ? 1.5 : 1}
-                vectorEffect="non-scaling-stroke"
-                // A region with no cooperative is not clickable, and says so
-                // with the cursor rather than by silently doing nothing.
-                // No cursor class when there is nothing to click: the shape
-                // then inherits the svg's own grab cursor, which is the truth
-                // -- an empty region is still something you can drag.
-                className={cn('transition-[fill] duration-200', hasCoops && 'cursor-pointer')}
-                onMouseEnter={() => setHovered(key)}
-                onMouseLeave={() => setHovered(h => (h === key ? null : h))}
-                onClick={() => {
-                  if (!hasCoops) return
-                  if (level === 'country') void openProvince(f)
-                  else openRegency(f)
-                }}
-              />
-            )
-          })}
+      <div className="relative min-h-0 flex-1" style={{ background: MAP.water }}>
+        <svg
+          ref={svgRef}
+          viewBox={INITIAL_VIEWBOX}
+          preserveAspectRatio="xMidYMid meet"
+          className="size-full cursor-grab touch-none active:cursor-grabbing"
+          role="img"
+          aria-label="Peta sebaran pasokan koperasi di Indonesia"
+        >
+          <g>
+            {shapes.map(f => {
+              const key = `${f.properties.code}-${f.properties.name}`
+              const supply = supplyOf.get(regionKey(f.properties.name))
+              const isHovered = hovered === key
+              const isActive = activeName === f.properties.name
 
-          {visibleCoops.map(c => {
-            const { x, y } = project([c.lng, c.lat])
-            return (
+              return (
+                <path
+                  key={key}
+                  d={geometryToPath(f.geometry)}
+                  fill={supply ? SUPPLY_RAMP[supplyStep(supply.tonnes, peak)] : MAP.land}
+                  stroke={
+                    isActive ? MAP.activeStroke
+                    : isHovered && supply ? MAP.hoverStroke
+                    : MAP.landStroke
+                  }
+                  strokeWidth={isActive ? 1.75 : 1}
+                  vectorEffect="non-scaling-stroke"
+                  // A region with no cooperative is not clickable, and says so
+                  // with the cursor rather than by silently doing nothing.
+                  // No cursor class when there is nothing to click: the shape
+                  // then inherits the svg's own grab cursor, which is the truth
+                  // -- an empty region is still something you can drag.
+                  className={cn('transition-[fill,stroke] duration-200', supply && 'cursor-pointer')}
+                  onMouseEnter={() => setHovered(key)}
+                  onMouseLeave={() => setHovered(h => (h === key ? null : h))}
+                  onClick={() => {
+                    if (!supply) return
+                    if (level === 'country') void openProvince(f)
+                    else openRegency(f)
+                  }}
+                />
+              )
+            })}
+
+            {labels.map(label => (
               <g
-                key={c.id}
-                data-pin=""
-                data-x={x}
-                data-y={y}
-                transform={`translate(${x} ${y})`}
-                className="cursor-pointer"
-                onClick={() => setFarmId(c.id)}
+                key={label.key}
+                data-map-scale=""
+                data-x={label.x}
+                data-y={label.y}
+                className="pointer-events-none"
               >
-                <title>{c.name}</title>
-                {/* Radii in PIXELS: the group is counter-scaled against the
-                    camera in syncPins, so these are the sizes on screen at any
-                    zoom. An invisible target first, and it is not optional --
-                    the visible dot is 16px across, which is a nine-pixel radius
-                    to aim at, and a pin that small reads as unclickable. */}
-                <circle r={17} fill="transparent" />
-                <circle r={8} fill={MAP.pin} opacity={0.22} />
-                <circle r={4.5} fill={MAP.pinRing} />
-                <circle r={3} fill={MAP.pin} />
+                {/* paint-order puts the halo behind the glyphs, so one element
+                    is both the label and its own knockout — legible on white
+                    sea, on white land and on the deepest green alike. */}
+                <text
+                  textAnchor="middle"
+                  y={-13}
+                  fontSize={11}
+                  fontWeight={500}
+                  fill={MAP.pin}
+                  stroke={MAP.pinHalo}
+                  strokeWidth={3.5}
+                  strokeLinejoin="round"
+                  style={{ paintOrder: 'stroke' }}
+                >
+                  {label.name}
+                </text>
               </g>
-            )
-          })}
-        </g>
-      </svg>
+            ))}
 
-      {/* ---- breadcrumb ---- */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-wrap items-center gap-2 p-4">
-        <nav
-          aria-label="Tingkat wilayah"
-          className="pointer-events-auto flex items-center gap-1 rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-xs text-white/70 backdrop-blur-md"
-        >
-          <button onClick={goCountry} className="interactive rounded-full px-2 py-0.5 hover:bg-white/10 hover:text-white">
-            Indonesia
-          </button>
-          {province && (
-            <>
-              <span aria-hidden className="text-white/30">/</span>
-              <button onClick={goProvince} className="interactive rounded-full px-2 py-0.5 hover:bg-white/10 hover:text-white">
-                {province.properties.name}
-              </button>
-            </>
-          )}
-          {regency && (
-            <>
-              <span aria-hidden className="text-white/30">/</span>
-              <span className="px-2 py-0.5 text-white">{regency.properties.name}</span>
-            </>
-          )}
-        </nav>
+            {visibleCoops.map(c => {
+              const { x, y } = project([c.lng, c.lat])
+              const lit = hoveredCoop === c.id
+              return (
+                <g
+                  key={c.id}
+                  data-map-scale=""
+                  data-x={x}
+                  data-y={y}
+                  className="cursor-pointer"
+                  onClick={() => setFarmId(c.id)}
+                >
+                  <title>{c.name}</title>
+                  {/* Radii in PIXELS: the group is counter-scaled against the
+                      camera in syncScaled, so these are the sizes on screen at
+                      any zoom. An invisible target first, and it is not
+                      optional -- the visible dot is 10px across, which is a
+                      five-pixel radius to aim at, and a pin that small reads
+                      as unclickable. */}
+                  <circle r={17} fill="transparent" />
+                  <circle r={lit ? 7.5 : 5.5} fill={MAP.pinHalo} />
+                  <circle r={lit ? 5 : 3.25} fill={MAP.pin} />
+                </g>
+              )
+            })}
+          </g>
+        </svg>
 
-        {level !== 'country' && (
-          <span className="pointer-events-none rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-[0.7rem] text-white/50 backdrop-blur-md">
-            Esc untuk kembali
-          </span>
-        )}
-      </div>
-
-      {/* ---- camera controls ----
-           + and - are the zoom, and stay glyphs: they are arithmetic, and
-           every map ever made uses them. The reset was a "⤢", which is not --
-           it is a symbol the reader has to guess at. It says what it does now,
-           which is why it sits beside the stack rather than inside it. */}
-      <div className="absolute top-4 right-4 flex items-start gap-1">
-        <button
-          type="button"
-          onClick={goCountry}
-          className="interactive rounded-xl border border-white/10 bg-black/45 px-3 py-1.5 text-xs text-white/70 backdrop-blur-md hover:bg-black/60 hover:text-white"
-        >
-          Seluruh Indonesia
-        </button>
-        <div className="flex flex-col gap-1 rounded-xl border border-white/10 bg-black/45 p-1 backdrop-blur-md">
+        {/* The only chrome left over the map. Zoom is arithmetic, so + and −
+            stay glyphs; everything else that used to float here — breadcrumb,
+            reset, legend, counts, links — is the panel's job now. */}
+        <div className="absolute right-4 bottom-4 flex flex-col overflow-hidden rounded-md border border-border bg-background shadow-[var(--shadow-md)]">
           <CameraButton label="Perbesar" onClick={() => stepZoom(1 / 1.6)}>+</CameraButton>
+          <span aria-hidden className="h-px bg-border" />
           <CameraButton label="Perkecil" onClick={() => stepZoom(1.6)}>−</CameraButton>
         </div>
-      </div>
 
-      {/* ---- legend / counts ---- */}
-      <div className="pointer-events-none absolute bottom-4 left-4 rounded-xl border border-white/10 bg-black/45 p-3 text-xs text-white/70 backdrop-blur-md">
-        <p className="font-medium text-white">
-          {cooperatives.length} koperasi terdaftar
-        </p>
-        <p className="mt-0.5">
-          {cooperatives.reduce((s, c) => s + c.plotCount, 0)} lahan ·{' '}
-          {cooperatives.reduce((s, c) => s + c.hectares, 0).toFixed(1).replace('.', ',')} ha terpetakan
-        </p>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <span className="flex items-center gap-1.5">
-            <span aria-hidden className="size-2 rounded-sm" style={{ background: MAP.coop }} />
-            ada koperasi
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span aria-hidden className="size-2 rounded-sm" style={{ background: idleTint('x') }} />
-            belum ada
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span aria-hidden className="size-2 rounded-full" style={{ background: MAP.pin }} />
-            lokasi koperasi
-          </span>
-        </div>
-        {/* A bar rather than a number: "zoom 0,43" means nothing, but how far
-            along a track the camera sits is read at a glance. */}
-        <div className="mt-2 h-1 w-28 overflow-hidden rounded-full bg-white/10">
+        {loading && (
           <div
-            className="h-full rounded-full bg-white/45 transition-[width] duration-200"
-            style={{ width: `${Math.round(zoomShown * 100)}%` }}
-          />
-        </div>
+            className="absolute inset-0 grid place-items-center"
+            style={{ background: MAP.water }}
+          >
+            <p className="text-sm text-muted-foreground">Memuat peta…</p>
+          </div>
+        )}
+
+        {level === 'province' && regencies.length === 0 && !loading && (
+          <p className="pointer-events-none absolute bottom-4 left-4 max-w-xs rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground shadow-[var(--shadow-sm)]">
+            Batas kabupaten tidak tersedia untuk provinsi ini.
+          </p>
+        )}
       </div>
-
-      {loading && (
-        <div className="absolute inset-0 grid place-items-center" style={{ background: MAP.ground }}>
-          <p className="text-sm text-white/50">Memuat peta…</p>
-        </div>
-      )}
-
-      {level === 'province' && regencies.length === 0 && !loading && (
-        <p className="pointer-events-none absolute right-4 bottom-4 rounded-lg border border-white/10 bg-black/45 px-3 py-2 text-xs text-white/60 backdrop-blur-md">
-          Batas kabupaten tidak tersedia untuk provinsi ini.
-        </p>
-      )}
-
-      {farmId && (
-        <FarmView key={farmId} cooperativeId={farmId} onClose={() => setFarmId(null)} />
-      )}
     </div>
   )
 }
 
+const EMPTY_REGION: RegionSupply = {
+  cooperatives: 0, plots: 0, hectares: 0, tonnes: 0, listings: [],
+}
+
+function groupBy<T>(items: readonly T[], key: (item: T) => string): Map<string, T[]> {
+  const map = new Map<string, T[]>()
+  for (const item of items) {
+    const k = key(item)
+    map.set(k, [...(map.get(k) ?? []), item])
+  }
+  return map
+}
+
 /**
- * Sizes every pin against the current camera, so each is the same number of
- * screen pixels however far in the map is zoomed.
+ * Sizes every pin and label against the current camera, so each is the same
+ * number of screen pixels however far in the map is zoomed.
  */
-function syncPins(svg: SVGSVGElement, view: View) {
+function syncScaled(svg: SVGSVGElement, view: View) {
   const width = svg.clientWidth
   if (!width) return
   const unitsPerPx = view.w / width
-  for (const pin of svg.querySelectorAll<SVGGElement>('[data-pin]')) {
-    const { x, y } = pin.dataset
-    pin.setAttribute('transform', `translate(${x} ${y}) scale(${unitsPerPx})`)
+  for (const mark of svg.querySelectorAll<SVGGElement>('[data-map-scale]')) {
+    const { x, y } = mark.dataset
+    mark.setAttribute('transform', `translate(${x} ${y}) scale(${unitsPerPx})`)
   }
 }
 
-/** One square control on the map's own dark chrome. */
+/** One control on the map's own chrome. */
 function CameraButton({
   label, onClick, children,
 }: {
@@ -635,7 +717,7 @@ function CameraButton({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="interactive grid size-7 place-items-center rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white"
+      className="interactive grid size-8 place-items-center text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
     >
       {children}
     </button>

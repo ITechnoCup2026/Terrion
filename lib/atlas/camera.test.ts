@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  MIN_SPAN, WORLD, clampView, formatView, panBy, parseView, wheelFactor, zoomAt, zoomFraction,
+  MIN_SPAN, WORLD, clampView, formatView, panBy, parseView, wheelFactor, zoomAt,
 } from './camera'
 
 // A view sitting comfortably inside the world, so clamping is not what is
@@ -105,17 +105,5 @@ describe('clampView', () => {
     const wide = { x: -999, y: inner.y, w: WORLD.w * 2, h: inner.h }
     const clamped = clampView(wide)
     expect(clamped.x + clamped.w / 2).toBeCloseTo(WORLD.x + WORLD.w / 2, 9)
-  })
-})
-
-describe('zoomFraction', () => {
-  it('is 0 at the whole country and 1 at the closest zoom', () => {
-    const span = Math.max(WORLD.w, WORLD.h)
-    expect(zoomFraction({ ...inner, w: span })).toBe(0)
-    expect(zoomFraction({ ...inner, w: MIN_SPAN })).toBeCloseTo(1, 9)
-  })
-
-  it('never reports more than fully zoomed in', () => {
-    expect(zoomFraction({ ...inner, w: MIN_SPAN / 10 })).toBe(1)
   })
 })

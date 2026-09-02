@@ -1,4 +1,4 @@
-// The arithmetic behind the landing page's supply ruler.
+// The rule behind every supply ruler in the product.
 //
 // Here rather than in the component for the same reason `lib/harvest/format`
 // is: it is a rule, it has edge cases, and a rule with edge cases that lives

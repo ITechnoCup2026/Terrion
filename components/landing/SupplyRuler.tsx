@@ -1,7 +1,7 @@
 import { isoWeekStart } from '@/lib/agronomy/dates'
 import type { Listing } from '@/lib/catalog/listings'
 import { formatNumberId } from '@/lib/format/number'
-import { monthTicks, RULER_WEEKS, supplyRows } from '@/lib/landing/ruler'
+import { monthTicks, RULER_WEEKS, supplyRows } from '@/lib/supply/ruler'
 
 /**
  * Twelve weeks of national supply, as bands on a calendar.
@@ -38,24 +38,29 @@ export function SupplyRuler({
   return (
     <figure className={className}>
       <div className="overflow-hidden rounded-lg border border-border bg-card">
-        {/* The month scale. Absolutely positioned rather than a grid, because
-            a month is not a whole number of weeks and rounding it to one puts
-            the label a few days from the boundary it names.
+        {/* The month scale. Absolutely positioned within its track rather
+            than laid out on a grid, because a month is not a whole number of
+            weeks and rounding it to one puts the label a few days from the
+            boundary it names.
 
-            The margins have to match the row below exactly -- the label column
-            on the left and the tonnage column on the right. Miss the right one
-            and the scale is stretched over the tonnage column, which walks
-            every month name a few days later than the week it labels. */}
-        <div className="relative ml-24 h-7 border-b border-border sm:mr-20 sm:ml-36">
-          {ticks.map(tick => (
-            <span
-              key={tick.label}
-              className="absolute top-2 -translate-x-1/2 text-[0.6875rem] text-[var(--terrion-ink-faint)] first:translate-x-0"
-              style={{ left: `${tick.left}%` }}
-            >
-              {tick.label}
-            </span>
-          ))}
+            It carries the same spacers as the rows below rather than margins
+            tuned to match them: the first version matched only the left one,
+            and the scale stretched across the tonnage column and walked every
+            month name a few days late. */}
+        <div className="flex h-7 items-center border-b border-border">
+          <span aria-hidden className="w-24 shrink-0 sm:w-36" />
+          <span className="relative h-full flex-1">
+            {ticks.map(tick => (
+              <span
+                key={tick.label}
+                className="absolute top-2 -translate-x-1/2 text-[0.6875rem] text-[var(--terrion-ink-faint)] first:translate-x-0"
+                style={{ left: `${tick.left}%` }}
+              >
+                {tick.label}
+              </span>
+            ))}
+          </span>
+          <span aria-hidden className="hidden w-20 shrink-0 sm:block" />
         </div>
 
         <ul>
