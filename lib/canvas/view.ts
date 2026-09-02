@@ -63,3 +63,26 @@ export function fitView(
     offsetY: (h - rows * cellPx * scale) / 2,
   }
 }
+
+/**
+ * Keeps one axis of the camera from panning past the edge of the world.
+ *
+ * World smaller than the viewport (zoomed out past a 1:1 fit): centred and
+ * locked, there is nowhere to pan. World bigger: the near edge may never
+ * cross the viewport's own edge, which is the same rule Stardew/Hay Day/COC
+ * cameras use -- the picture always fills the screen, never runs out into
+ * blank canvas.
+ */
+export function clampOffset(offset: number, worldSize: number, viewportSize: number): number {
+  if (worldSize <= viewportSize) return (viewportSize - worldSize) / 2
+  return Math.min(0, Math.max(viewportSize - worldSize, offset))
+}
+
+/** Clamps both axes of a view against the world's pixel size at its current scale. */
+export function clampView(view: View, worldW: number, worldH: number, w: number, h: number): View {
+  return {
+    scale: view.scale,
+    offsetX: clampOffset(view.offsetX, worldW * view.scale, w),
+    offsetY: clampOffset(view.offsetY, worldH * view.scale, h),
+  }
+}

@@ -7,7 +7,7 @@ import type { PlotSummary } from './summary'
 const window = (start: string) => ({
   start: new Date(start), end: new Date(start), confidence: 0.8 as const,
   gddAccumulated: 500, gddRequired: 1000, stage: 2 as never,
-  basis: 'observed' as const, plausibility: 'ok' as const, cumulativeGdd: [],
+  basis: 'observed' as const, plausibility: 'ok' as const, cumulativeGdd: [], projectedFrom: null,
 })
 
 const plot = (over: Partial<PlotSummary>): PlotSummary => ({

@@ -11,7 +11,7 @@ import {
 import type { TerrainSheets } from '@/lib/canvas/sheets'
 import type { TerrainLayout } from '@/lib/terrain/generate'
 import {
-  fitView, pinchScale, scaleStep, snapScale, WHEEL_STEP, type View,
+  clampView, fitView, pinchScale, scaleStep, snapScale, WHEEL_STEP, type View,
 } from '@/lib/canvas/view'
 import { tileAt, type TileHit } from '@/lib/canvas/hittest'
 
@@ -140,6 +140,10 @@ export function PlotCanvas({
       viewRef.current = initialView
         ?? fitView(fullCols, fullRows, cellPx, w, h, scaleStep(dpr))
     }
+    // Every write to viewRef (drag, pinch, wheel, resize) lands here before it
+    // is ever drawn, so this is the one place the world's edge has to be
+    // enforced rather than in each gesture handler separately.
+    viewRef.current = clampView(viewRef.current, fullCols * cellPx, fullRows * cellPx, w, h)
     const v = viewRef.current
 
     ctx.setTransform(dpr * v.scale, 0, 0, dpr * v.scale, dpr * v.offsetX, dpr * v.offsetY)

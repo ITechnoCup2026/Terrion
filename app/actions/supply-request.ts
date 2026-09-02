@@ -64,6 +64,12 @@ export async function respondToRequest(raw: unknown): Promise<ActionResult<void>
       if (error instanceof ApiError && error.code === 'request_not_found') {
         throw new ExpectedFailure('Permintaan ini sudah tidak ada, atau bukan milik koperasi Anda.')
       }
+      if (error instanceof ApiError && error.code === 'allocation_exceeded') {
+        throw new ExpectedFailure(
+          'Menerima permintaan ini akan membuat total tonase yang diterima melebihi proyeksi ' +
+          'panen jendela ini. Tolak permintaan ini, atau tunggu proyeksi berikutnya.',
+        )
+      }
       throw error
     }
   })

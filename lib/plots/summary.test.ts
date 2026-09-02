@@ -19,7 +19,7 @@ const projection = (
 const window = (start: string, end: string): HarvestWindow => ({
   start: utcDate(start), end: utcDate(end), confidence: 0.8,
   gddAccumulated: 100, gddRequired: 200, stage: 2,
-  basis: 'observed', plausibility: 'ok', cumulativeGdd: [],
+  basis: 'observed', plausibility: 'ok', cumulativeGdd: [], projectedFrom: null,
 })
 
 describe('summarisePlots', () => {

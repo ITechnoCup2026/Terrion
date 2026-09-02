@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 import { createInputOrder } from '@/app/actions/input-order'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/button'
  * error boundary, which is far more alarming than "there is nothing to order".
  */
 export function CreateOrderButton({ disabled }: { disabled?: boolean }) {
+  const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -22,6 +24,10 @@ export function CreateOrderButton({ disabled }: { disabled?: boolean }) {
     try {
       const result = await createInputOrder()
       if (!result.ok) setError(result.message)
+      // The new draft otherwise sits invisible: nothing on this Server
+      // Component page re-fetches on its own just because a Client
+      // Component next to it finished a request.
+      else router.refresh()
     } catch {
       setError('Tidak bisa menghubungi server. Periksa koneksi Anda, lalu coba lagi.')
     } finally {
