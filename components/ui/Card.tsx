@@ -1,4 +1,3 @@
-import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
@@ -6,16 +5,14 @@ import { cn } from '@/lib/utils'
 /**
  * The one card surface.
  *
- * The product had two, used interchangeably: `rounded-lg border bg-card` with
- * no shadow on purchases, requests and every message screen, and `rounded-xl
- * … shadow-[var(--shadow-xs)]` on the dashboard and plot list. Both are
- * defensible; having both is not, because a reader moving from the dashboard
- * to purchases sees the corners and the lift change under content that is
- * doing the same job. This is the second one — the tinted hairline shadow
- * gives a white card on a white page an edge that a 1px border alone does not.
+ * A hairline and white, with no shadow. A card only exists here to say "this
+ * content is one object"; it is not floating above the page, and giving it a
+ * drop shadow claims a depth the layout does not have. Once every panel had a
+ * shadow, the ones that genuinely float — the command palette, a popover —
+ * had nothing left to distinguish them.
  *
  * `tone="alert"` is for a card that reports something over a limit. It is the
- * border that changes, never the fill: a red panel in a list of white ones
+ * border that changes, never the fill: a tinted panel in a list of white ones
  * shouts before it has been read, and on these screens the thing being flagged
  * is usually information, not an error.
  */
@@ -36,11 +33,11 @@ export function Card({
   return (
     <Tag
       className={cn(
-        'rounded-xl border bg-card shadow-[var(--shadow-xs)]',
-        tone === 'alert' ? 'border-destructive/40' : 'border-border',
+        'rounded-lg border bg-card',
+        tone === 'alert' ? 'border-accent/45' : 'border-border',
         pad === 'sm' && 'p-3',
         pad === 'md' && 'p-4',
-        pad === 'lg' && 'p-4 sm:p-6',
+        pad === 'lg' && 'p-5 sm:p-6',
         className,
       )}
       {...rest}
@@ -54,11 +51,8 @@ export function Card({
  * A card's own title bar: what this panel is, one line on what it holds, and
  * the controls that belong to it.
  *
- * Every panel in the product was opening with `<p class="text-sm font-semibold">`
- * followed by an optional `<p class="text-xs text-muted-foreground">`, six
- * times, with the gap between them different each time. A panel that states
- * its own name is what makes a dense screen scannable — an ERP is read by
- * jumping between headings, not by reading down.
+ * A panel that states its own name is what makes a dense screen scannable — an
+ * ERP is read by jumping between headings, not by reading down.
  */
 export function CardHeader({
   title,
@@ -74,9 +68,11 @@ export function CardHeader({
   return (
     <div className={cn('flex flex-wrap items-start justify-between gap-x-4 gap-y-2', className)}>
       <div className="min-w-0">
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        <h2 className="text-sm font-medium text-foreground">{title}</h2>
         {description && (
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
+          <p className="mt-1 max-w-prose text-xs leading-relaxed text-muted-foreground">
+            {description}
+          </p>
         )}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
@@ -89,24 +85,28 @@ export type Metric = {
   value: ReactNode
   /** One line naming what the figure counts, when the label cannot. */
   hint?: ReactNode
-  /** A glyph for the tile's corner — the fastest way to tell four apart. */
-  icon?: LucideIcon
-  /** Optional trend badge info (+12%, -5%, etc.) */
-  trend?: {
-    value: string
-    positive?: boolean
-  }
   /**
    * `accent` is for the one figure on the row that is a call to action — a
    * count of risky weeks, a pile-up. At most one per row: a row where every
    * tile is emphasised is a row where none is.
    */
-  tone?: 'default' | 'accent' | 'success' | 'warning'
+  tone?: 'default' | 'accent'
 }
 
 /**
- * A row of headline figures — the four numbers that open the dashboard and the
- * plot list.
+ * A row of headline figures — the four numbers that open the dashboard, the
+ * plot list and the requests inbox.
+ *
+ * One ruled row, not four cards. Four separately bordered, separately
+ * shadowed boxes read as four unrelated objects that happen to be adjacent;
+ * these figures are one statement about one cooperative, and a ledger's
+ * column rules say that where four containers cannot.
+ *
+ * The icons are gone too. A scale, a rising line, a warning triangle and a
+ * seedling in a coloured chip added a second thing to decode above every
+ * figure without telling the reader anything the label did not already say —
+ * and dressed the whole row in gradient at the exact moment the page wanted to
+ * be read quickly.
  */
 export function MetricRow({
   items,
@@ -116,68 +116,44 @@ export function MetricRow({
   className?: string
 }) {
   return (
-    <dl className={cn('grid grid-cols-2 gap-4 sm:grid-cols-4', className)}>
-      {items.map(item => {
-        const Icon = item.icon
-        const accent = item.tone === 'accent'
-        const isSuccess = item.tone === 'success'
-        const isWarning = item.tone === 'warning'
-        return (
-          <Card
-            key={item.label}
-            pad="none"
+    <dl
+      className={cn(
+        'grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-4',
+        className,
+      )}
+    >
+      {items.map(item => (
+        <div
+          key={item.label}
+          className={cn(
+            'p-4 sm:p-5',
+            // Cell rules rather than four bordered boxes. On a phone the row
+            // folds to two columns, so the second pair needs a rule above it
+            // that the four-across layout must not keep.
+            'even:border-l even:border-border',
+            '[&:nth-child(n+3)]:border-t [&:nth-child(n+3)]:border-border',
+            'sm:[&:nth-child(n+2)]:border-l sm:[&:nth-child(n+3)]:border-t-0',
+          )}
+        >
+          <dt className="text-xs text-muted-foreground">{item.label}</dt>
+          <dd
             className={cn(
-              'group/metric relative overflow-hidden p-4 sm:p-5 transition-all duration-200 card-lift',
-              accent && 'border-accent/40 bg-accent/5',
-              isSuccess && 'border-emerald-500/30 bg-emerald-500/5',
-              isWarning && 'border-amber-500/30 bg-amber-500/5',
+              'mt-1.5 text-2xl leading-none font-medium tracking-tight tabular-nums',
+              // Gold is the whole signal. No fill, no chip, no border — the
+              // figure itself is the thing that needs a decision, so the
+              // figure itself is what changes colour.
+              item.tone === 'accent' ? 'text-accent' : 'text-foreground',
             )}
           >
-            <div className="flex items-center justify-between gap-2 mb-3">
-              {Icon && (
-                <div
-                  className={cn(
-                    'flex size-10 items-center justify-center rounded-xl transition-transform duration-200 group-hover/metric:scale-105 shadow-xs',
-                    accent
-                      ? 'bg-[var(--terrion-gold-500)] text-white'
-                      : isSuccess
-                      ? 'bg-emerald-600 text-white'
-                      : isWarning
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-primary/10 text-primary',
-                  )}
-                >
-                  <Icon aria-hidden className="size-5" />
-                </div>
-              )}
-              {item.trend && (
-                <span
-                  className={cn(
-                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold',
-                    item.trend.positive
-                      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                      : 'bg-rose-500/10 text-rose-700 dark:text-rose-400',
-                  )}
-                >
-                  {item.trend.positive ? '↑' : '↓'} {item.trend.value}
-                </span>
-              )}
-            </div>
-
-            <dt className="text-xs font-semibold text-muted-foreground">
-              {item.label}
-            </dt>
-
-            <dd className="mt-1 text-2xl font-extrabold tracking-tight tabular-nums text-foreground">
-              {item.value}
-            </dd>
-
-            {item.hint && (
-              <p className="mt-1 text-[0.72rem] text-muted-foreground leading-tight">{item.hint}</p>
-            )}
-          </Card>
-        )
-      })}
+            {item.value}
+          </dd>
+          {item.hint && (
+            <p className="mt-2 text-[0.6875rem] leading-snug text-[var(--terrion-ink-faint)]">
+              {item.hint}
+            </p>
+          )}
+        </div>
+      ))}
     </dl>
   )
 }
@@ -203,14 +179,16 @@ export function MessageCard({
 }) {
   return (
     <Card pad="lg" className={cn('text-center', className)}>
-      <p className="text-base font-semibold text-foreground">{title}</p>
+      <p className="text-base font-medium text-foreground">{title}</p>
       {children && (
         <div className="mx-auto mt-2 max-w-prose text-sm leading-relaxed text-muted-foreground">
           {children}
         </div>
       )}
       {action && <div className="mt-5 flex justify-center">{action}</div>}
-      {footnote && <div className="mt-4 text-xs text-muted-foreground">{footnote}</div>}
+      {footnote && (
+        <div className="mt-4 text-xs text-[var(--terrion-ink-faint)]">{footnote}</div>
+      )}
     </Card>
   )
 }

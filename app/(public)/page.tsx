@@ -3,11 +3,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Archipelago } from "@/components/landing/Archipelago";
+import { SupplyRuler } from "@/components/landing/SupplyRuler";
 import { buttonVariants } from "@/components/ui/button";
 import { isBackendDown } from "@/lib/api/client";
 import { loadAtlasCooperativesIfUp } from "@/lib/atlas/load";
 import { homeFor } from "@/lib/auth/display";
 import { currentAppUser, type AppUser } from "@/lib/auth/session";
+import type { Listing } from "@/lib/catalog/listings";
+import { loadCatalogListings } from "@/lib/catalog/load";
 import { formatNumberId } from "@/lib/format/number";
 import { cn } from "@/lib/utils";
 
@@ -20,27 +23,42 @@ export const metadata = {
     "Proyeksi panen, agregasi kebutuhan pupuk dan katalog pasokan untuk koperasi tani.",
 };
 
+/**
+ * The four things Terrion derives from one recorded planting.
+ *
+ * Not numbered. They are four parallel outputs of the same input, not four
+ * steps of a process, and 01/02/03 down the side of a list that is not a
+ * sequence tells the reader something untrue about how the product works.
+ */
 const DERIVED = [
   {
-    metric: "L1 · L2",
     title: "Perkiraan waktu panen",
-    body: "Rentang tanggal per blok, dari akumulasi suhu dan cuaca nyata — bukan hitungan hari sejak tanam.",
+    body: "Rentang tanggal per blok, dari akumulasi suhu dan cuaca yang benar-benar terjadi — bukan hitungan hari sejak tanam.",
   },
   {
-    metric: "L3",
     title: "Peringatan penumpukan",
-    body: "Minggu ketika terlalu banyak lahan panen bersamaan, dengan saran pergeseran tanam yang konkret.",
+    body: "Minggu ketika terlalu banyak lahan panen bersamaan, dengan saran pergeseran tanam yang bisa langsung diterapkan.",
   },
   {
-    metric: "RDKK",
-    title: "Kebutuhan pupuk",
-    body: "Agregasi per anggota, lengkap dengan acuan dosis resmi dan penanda batas subsidi 2 ha.",
+    title: "Kebutuhan pupuk (RDKK)",
+    body: "Agregasi per anggota, lengkap dengan acuan dosis resmi dan penanda batas subsidi dua hektare.",
   },
   {
-    metric: "Katalog",
-    title: "Pasokan yang terlihat",
-    body: "Proyeksi panen koperasi tampil sebagai katalog yang bisa diajukan pembeli langsung.",
+    title: "Katalog pasokan",
+    body: "Proyeksi panen koperasi tampil sebagai katalog yang bisa diajukan pembeli secara langsung.",
   },
+];
+
+const FOR_BUYERS: [string, string][] = [
+  ["Katalog terbuka", "Proyeksi panen koperasi, tanpa perlu masuk lebih dulu."],
+  [
+    "Rentang, bukan janji",
+    "Setiap tonase dan tanggal tampil sebagai rentang, dengan dasar perhitungannya.",
+  ],
+  [
+    "Ajukan langsung",
+    "Permintaan kontrak masuk ke koperasi yang bersangkutan, tanpa perantara.",
+  ],
 ];
 
 export default async function LandingPage() {
@@ -60,6 +78,17 @@ export default async function LandingPage() {
   // array is the different, sayable claim that nobody has registered yet.
   const cooperatives = await loadAtlasCooperativesIfUp();
 
+  // The hero draws real supply. If the catalogue cannot be reached the ruler
+  // simply is not there and the headline stands on its own -- a landing page
+  // that renders a fabricated chart when the backend is down is lying in the
+  // one place the product's whole claim is honesty about uncertainty.
+  let listings: Listing[] = [];
+  try {
+    listings = (await loadCatalogListings()).listings;
+  } catch (error) {
+    if (!isBackendDown(error)) throw error;
+  }
+
   const plots = cooperatives?.reduce((s, c) => s + c.plotCount, 0) ?? 0;
   const hectares = cooperatives?.reduce((s, c) => s + c.hectares, 0) ?? 0;
   const provinces = new Set(
@@ -68,59 +97,32 @@ export default async function LandingPage() {
 
   return (
     <div className="flex w-full flex-1 flex-col">
-      <div className="flex min-h-[calc(100dvh-var(--public-header))] flex-col">
-        <section className="relative isolate flex flex-1 items-center overflow-hidden px-4 py-12 sm:py-16">
-          <Archipelago
-            provincesWithCooperatives={provinces}
-            className="absolute inset-x-0 top-1/2 -z-10 h-[125%] w-full -translate-y-1/2"
-          />
-          <div
-            aria-hidden
-            className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_50%_42%_at_center,var(--background)_45%,transparent_100%)]"
-          />
-
-          <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 text-center">
+      {/* The hero is left-aligned against the ruler beneath it. Centred
+          headline, centred paragraph, centred button pair is the shape every
+          landing page arrives in; here the type and the chart share one left
+          edge, so the page reads as an instrument panel rather than a poster. */}
+      <section className="px-4 pt-14 pb-16 sm:pt-20 sm:pb-20">
+        <div className="mx-auto w-full max-w-5xl">
+          <div className="max-w-3xl">
             {cooperatives && (
-              <p className="rise inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
-                <span aria-hidden className="relative flex size-1.5">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
-                </span>
+              <p className="text-[0.8125rem] text-muted-foreground">
                 {cooperatives.length === 0
                   ? "Belum ada koperasi terdaftar"
-                  : `${formatNumberId(cooperatives.length)} koperasi · ${provinces.size} provinsi`}
+                  : `${formatNumberId(cooperatives.length)} koperasi terdaftar di ${formatNumberId(provinces.size)} provinsi`}
               </p>
             )}
 
-            <h1
-              className="rise text-[length:var(--text-display-sm)] leading-[1.04] font-bold tracking-tight text-balance text-foreground sm:text-[length:var(--text-display)]"
-              style={{ ["--rise-delay" as string]: "60ms" }}
-            >
-              Satu tanggal tanam,{" "}
-              <span className="relative whitespace-nowrap">
-                <span className="relative z-10">seluruh gambaran</span>
-                <span
-                  aria-hidden
-                  className="absolute inset-x-0 bottom-1 -z-0 h-3 rounded-sm bg-accent/25 sm:bottom-2 sm:h-5"
-                />
-              </span>{" "}
-              pasokan
+            <h1 className="mt-4 max-w-[19ch] text-[length:var(--text-display-sm)] leading-[1.08] tracking-tight text-foreground sm:text-[length:var(--text-display)]">
+              Satu tanggal tanam, seluruh gambaran pasokan.
             </h1>
 
-            <p
-              className="rise max-w-xl text-base leading-relaxed text-pretty text-muted-foreground"
-              style={{ ["--rise-delay" as string]: "120ms" }}
-            >
-              Koperasi mencatat lahan anggotanya sebagai diagram lahan. Dari satu
-              data itu Terrion menurunkan perkiraan waktu panen, peringatan
-              penumpukan panen, agregasi kebutuhan pupuk, dan katalog pasokan yang
-              bisa dilihat pembeli.
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
+              Koperasi mencatat lahan anggotanya sebagai diagram blok. Dari satu
+              catatan itu Terrion menurunkan waktu panen, peringatan penumpukan,
+              kebutuhan pupuk, dan katalog pasokan yang bisa dilihat pembeli.
             </p>
 
-            <div
-              className="rise flex flex-wrap justify-center gap-3"
-              style={{ ["--rise-delay" as string]: "180ms" }}
-            >
+            <div className="mt-7 flex flex-wrap gap-3">
               <Link
                 href="/atlas"
                 className={cn(buttonVariants({ size: "lg" }), "interactive")}
@@ -138,127 +140,130 @@ export default async function LandingPage() {
               </Link>
             </div>
           </div>
-        </section>
 
-        {cooperatives && (
-          <section className="shrink-0 border-y border-border bg-secondary/40">
-            <dl className="mx-auto grid w-full max-w-5xl grid-cols-2 divide-border px-4 py-6 sm:grid-cols-4 sm:divide-x">
-              {[
-                { label: "Koperasi", value: formatNumberId(cooperatives.length) },
-                { label: "Provinsi", value: formatNumberId(provinces.size) },
-                { label: "Lahan terpetakan", value: formatNumberId(plots) },
-                { label: "Hektare", value: formatNumberId(hectares) },
-              ].map((stat) => (
-                <div key={stat.label} className="px-2 py-2 text-center">
-                  <dt className="text-xs text-muted-foreground">{stat.label}</dt>
-                  <dd className="mt-0.5 text-2xl font-semibold tabular-nums text-foreground">
-                    {stat.value}
+          <SupplyRuler listings={listings} className="mt-12 sm:mt-14" />
+        </div>
+      </section>
+
+      {cooperatives && (
+        <section className="px-4">
+          <dl className="mx-auto grid w-full max-w-5xl grid-cols-2 overflow-hidden rounded-lg border border-border sm:grid-cols-4">
+            {[
+              { label: "Koperasi", value: formatNumberId(cooperatives.length) },
+              { label: "Provinsi", value: formatNumberId(provinces.size) },
+              { label: "Lahan terpetakan", value: formatNumberId(plots) },
+              { label: "Hektare", value: formatNumberId(hectares) },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className={cn(
+                  "p-4 sm:p-5",
+                  "even:border-l even:border-border",
+                  "[&:nth-child(n+3)]:border-t [&:nth-child(n+3)]:border-border",
+                  "sm:[&:nth-child(n+2)]:border-l sm:[&:nth-child(n+3)]:border-t-0",
+                )}
+              >
+                <dt className="text-xs text-muted-foreground">{stat.label}</dt>
+                <dd className="mt-1.5 text-2xl leading-none font-medium tracking-tight tabular-nums text-foreground">
+                  {stat.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
+      <section className="px-4 py-20 sm:py-24">
+        <div className="mx-auto w-full max-w-5xl">
+          <div className="max-w-3xl">
+            <h2 className="text-2xl leading-tight tracking-tight text-foreground sm:text-3xl">
+              Kader mencatat sekali di lahan. Empat hal di bawah ini diturunkan
+              dari catatan itu.
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Tanggal tanam, luas, varietas — sekitar 40 detik per blok, dari
+              telepon genggam, di tempat.
+            </p>
+          </div>
+
+          <dl className="mt-10 grid overflow-hidden rounded-lg border border-border sm:grid-cols-2">
+            {DERIVED.map((d) => (
+              <div
+                key={d.title}
+                className={cn(
+                  "p-5 sm:p-6",
+                  "[&:not(:first-child)]:border-t [&:not(:first-child)]:border-border",
+                  "sm:[&:nth-child(n+3)]:border-t sm:[&:nth-child(2)]:border-t-0",
+                  "sm:even:border-l sm:even:border-border",
+                )}
+              >
+                <dt className="text-[0.9375rem] font-medium text-foreground">
+                  {d.title}
+                </dt>
+                <dd className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {d.body}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      <section className="border-y border-border bg-muted px-4 py-20 sm:py-24">
+        <div className="mx-auto grid w-full max-w-5xl items-center gap-12 lg:grid-cols-2">
+          <div>
+            <h2 className="max-w-md text-2xl leading-tight tracking-tight text-foreground sm:text-3xl">
+              Pasokan yang bisa dilihat sebelum dipanen.
+            </h2>
+
+            <dl className="mt-8 flex flex-col gap-5">
+              {FOR_BUYERS.map(([term, detail]) => (
+                <div key={term}>
+                  <dt className="text-sm font-medium text-foreground">{term}</dt>
+                  <dd className="mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                    {detail}
                   </dd>
                 </div>
               ))}
             </dl>
-          </section>
-        )}
-      </div>
 
-      <section className="px-4 py-16 sm:py-20">
-        <div className="mx-auto w-full max-w-5xl overflow-hidden rounded-3xl bg-primary px-6 py-12 text-primary-foreground sm:px-12 sm:py-16">
-          <h2 className="mx-auto max-w-2xl text-center text-2xl font-semibold text-balance sm:text-3xl">
-            Kader mencatat sekali di lahan. Semuanya di bawah ini diturunkan.
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-sm text-primary-foreground/75">
-            Tanggal tanam, luas, varietas — sekitar 40 detik per blok.
-          </p>
+            <Link
+              href="/catalog"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "interactive mt-8",
+              )}
+            >
+              Lihat katalog pasokan
+            </Link>
+          </div>
 
-          <ol className="mx-auto mt-10 flex max-w-2xl flex-col">
-            {DERIVED.map((d, i) => (
-              <li
-                key={d.title}
-                className="flex gap-5 border-t border-primary-foreground/15 py-5 first:border-t-0 first:pt-0"
-              >
-                <span className="mt-0.5 shrink-0 font-mono text-xs tracking-wider text-primary-foreground/60">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <p className="font-mono text-[0.7rem] tracking-wider text-primary-foreground/60">
-                    {d.metric}
-                  </p>
-                  <h3 className="mt-1 text-base font-semibold">{d.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-primary-foreground/75">
-                    {d.body}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      <Feature
-        eyebrow="Untuk koperasi"
-        heading={["Lihat minggu padat", "sebelum minggu itu", "tiba"]}
-        points={[
-          [
-            "Proyeksi 12 minggu",
-            "Setiap blok yang berdiri, dijumlahkan per minggu.",
-          ],
-          ["Peringatan berdasar kapasitas", "Dibandingkan kapasitas koperasi."],
-          [
-            "Saran yang bisa diterapkan",
-            "Geser n blok sebesar m hari, satu klik, tercatat.",
-          ],
-        ]}
-        media={
-          <div className="relative overflow-hidden rounded-2xl border border-border shadow-[var(--shadow-lg)]">
+          <div className="overflow-hidden rounded-lg border border-border">
             <Image
               src="/brand/field.jpg"
               alt=""
               width={1040}
               height={640}
-              className="h-64 w-full object-cover sm:h-80"
+              className="h-56 w-full object-cover sm:h-72"
             />
-            <div
-              aria-hidden
-              className="absolute inset-0 bg-gradient-to-t from-primary/25 via-transparent to-transparent"
-            />
+            <div className="border-t border-border bg-card p-6">
+              <Archipelago
+                provincesWithCooperatives={provinces}
+                className="h-40 w-full"
+              />
+            </div>
           </div>
-        }
-      />
+        </div>
+      </section>
 
-      <Feature
-        reversed
-        eyebrow="Untuk pembeli"
-        heading={["Pasokan yang bisa", "dilihat sebelum", "dipanen"]}
-        points={[
-          ["Katalog terbuka", "Proyeksi panen koperasi, tanpa perlu masuk."],
-          [
-            "Rentang, bukan janji",
-            "Setiap tonase dan tanggal tampil sebagai rentang, dengan dasarnya.",
-          ],
-          [
-            "Ajukan langsung",
-            "Permintaan kontrak masuk ke koperasi yang bersangkutan.",
-          ],
-        ]}
-        media={
-          <div className="flex h-64 items-center justify-center overflow-hidden rounded-2xl border border-border bg-secondary/50 p-6 sm:h-80">
-            <Archipelago
-              provincesWithCooperatives={provinces}
-              className="h-full w-full"
-            />
-          </div>
-        }
-      />
-
-      <section className="px-4 pb-20">
+      <section className="px-4 py-20 sm:py-24">
         <div className="mx-auto grid w-full max-w-5xl gap-4 md:grid-cols-3">
           <Tile
             href="/atlas"
             className="md:col-span-2"
             title="Atlas"
-            body="Indonesia, digali sampai satu kebun. Provinsi, kabupaten, lalu lahan koperasi itu sendiri. Geser dan zoom bebas."
+            body="Indonesia, digali sampai satu kebun. Provinsi, kabupaten, lalu lahan koperasi itu sendiri."
             action="Buka Atlas"
-            tall
           />
           <Tile
             href="/catalog"
@@ -279,93 +284,39 @@ export default async function LandingPage() {
   );
 }
 
-function Feature({
-  eyebrow,
-  heading,
-  points,
-  media,
-  reversed = false,
-}: {
-  eyebrow: string;
-  heading: string[];
-  points: [string, string][];
-  media: React.ReactNode;
-  reversed?: boolean;
-}) {
-  return (
-    <section className="px-4 py-12 sm:py-16">
-      <div className="mx-auto grid w-full max-w-5xl items-center gap-10 lg:grid-cols-2">
-        <div className={cn("flex flex-col gap-6", reversed && "lg:order-2")}>
-          <div>
-            <p className="font-mono text-xs tracking-wider text-primary">
-              {eyebrow}
-            </p>
-            <h2 className="mt-3 text-3xl leading-[1.1] font-semibold tracking-tight text-foreground sm:text-4xl">
-              {heading.map((line) => (
-                <span key={line} className="block">
-                  {line}
-                </span>
-              ))}
-            </h2>
-          </div>
-
-          <dl className="flex flex-col gap-4">
-            {points.map(([term, detail]) => (
-              <div key={term} className="border-l-2 border-primary/30 pl-4">
-                <dt className="text-sm font-semibold text-foreground">
-                  {term}
-                </dt>
-                <dd className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
-                  {detail}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-
-        <div className={cn(reversed && "lg:order-1")}>{media}</div>
-      </div>
-    </section>
-  );
-}
-
+/**
+ * A destination.
+ *
+ * No lift, no shadow bloom, no arrow glyph tacked onto the label. The card
+ * responds to a pointer by darkening its rule and underlining the thing you
+ * would be clicking, which is the whole of what hover has to communicate.
+ */
 function Tile({
   href,
   title,
   body,
   action,
   className,
-  tall = false,
 }: {
   href: string;
   title: string;
   body: string;
   action: string;
   className?: string;
-  tall?: boolean;
 }) {
   return (
     <Link
       href={href}
       className={cn(
-        "interactive group flex flex-col justify-end rounded-2xl border border-border bg-card p-6",
-        "shadow-[var(--shadow-xs)] transition-all hover:-translate-y-0.5 hover:border-input hover:shadow-[var(--shadow-md)]",
-        tall ? "min-h-56" : "min-h-40",
+        "interactive group flex min-h-40 flex-col justify-end rounded-lg border border-border bg-card p-5 hover:border-input",
         className,
       )}
     >
-      <h3
-        className={cn(
-          "font-semibold text-foreground",
-          tall ? "text-2xl" : "text-base",
-        )}
-      >
-        {title}
-      </h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+      <h3 className="text-base font-medium text-foreground">{title}</h3>
+      <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted-foreground">
         {body}
       </p>
-      <span className="mt-3 text-sm font-medium text-primary underline-offset-4 group-hover:underline">
+      <span className="mt-4 text-sm text-primary underline-offset-4 group-hover:underline">
         {action}
       </span>
     </Link>

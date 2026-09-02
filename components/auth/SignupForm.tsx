@@ -60,7 +60,7 @@ export function SignupForm() {
   // so this form cannot be used to find out who has an account.
   if (sentTo) {
     return (
-      <div className="rise mt-7 rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-soft)]">
+      <div className="rise mt-7 rounded-lg border border-border bg-card p-6">
         <p className="text-sm font-semibold text-foreground">Periksa email Anda</p>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Kami mengirim tautan konfirmasi ke <span className="text-foreground">{sentTo}</span>.
@@ -73,14 +73,9 @@ export function SignupForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="rise relative mt-7 flex flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-soft)]"
+      className="rise relative mt-7 flex flex-col gap-4 overflow-hidden rounded-lg border border-border bg-card p-6"
       style={{ ['--rise-delay' as string]: '80ms' }}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full"
-        style={{ background: 'color-mix(in oklch, var(--terrion-gold-500), transparent 88%)' }}
-      />
 
       <AuthField
         icon={User}

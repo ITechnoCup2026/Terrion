@@ -95,7 +95,7 @@ export default async function PurchasesPage() {
                 <TBody>
                   {lines.map(l => (
                     <tr key={l.item}>
-                      <Td className="font-medium uppercase text-foreground">{l.item}</Td>
+                      <Td className="text-foreground capitalize">{l.item}</Td>
                       <Td numeric className="text-muted-foreground">
                         {formatNumberId(l.quantityKg / 1000)} ton
                       </Td>

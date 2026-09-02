@@ -92,7 +92,7 @@ export function PlotsView({ plots, commodities, formData }: Props) {
       {formOpen && (
         <div
           ref={formRef}
-          className="rise overflow-hidden rounded-2xl border border-emerald-500/30 bg-card/95 p-5 sm:p-6 shadow-xl backdrop-blur-md transition-all duration-300 dark:border-emerald-800/40"
+          className="rise overflow-hidden rounded-lg border border-border bg-card p-5 sm:p-6"
         >
           <div className="mb-5 flex items-center justify-between border-b border-border pb-3.5">
             <div className="flex items-center gap-2.5">

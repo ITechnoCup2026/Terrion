@@ -422,7 +422,7 @@ export function Atlas({
         'relative w-full overflow-hidden',
         variant === 'full'
           ? 'h-full'
-          : 'h-[85vh] min-h-[32rem] rounded-2xl border border-border',
+          : 'h-[85vh] min-h-[32rem] rounded-lg border border-border',
       )}
       style={{ background: MAP.ground }}
     >

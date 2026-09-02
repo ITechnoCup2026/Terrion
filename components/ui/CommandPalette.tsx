@@ -117,11 +117,11 @@ export function CommandPalette({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-foreground/25 backdrop-blur-[2px] transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+        <Dialog.Backdrop className="fixed inset-0 z-50 bg-foreground/20 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
         <Dialog.Popup
           className={cn(
             'fixed top-[12vh] left-1/2 z-50 w-[min(34rem,calc(100vw-2rem))] -translate-x-1/2',
-            'overflow-hidden rounded-2xl border border-border bg-popover shadow-[var(--shadow-xl)]',
+            'overflow-hidden rounded-xl border border-border bg-popover shadow-[var(--shadow-xl)]',
             'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
             'data-[starting-style]:opacity-0 data-[ending-style]:opacity-0',
           )}
@@ -158,7 +158,7 @@ export function CommandPalette({
                 return (
                   <li key={command.href}>
                     {header && (
-                      <p className="px-2 pt-2 pb-1 text-[0.65rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+                      <p className="px-2 pt-2 pb-1 text-[0.6875rem] text-[var(--terrion-ink-faint)]">
                         {header}
                       </p>
                     )}

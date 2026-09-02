@@ -1,50 +1,51 @@
-import { Building2, Handshake, Leaf, MapPin, Sprout, TrendingUp } from 'lucide-react'
-
 import { Logo } from '@/components/ui/Logo'
 
 /**
- * The left-hand brand panel on the auth screens.
+ * The brand panel beside the auth form.
  *
- * Mirrors the brand board's showcase card: deep green ground, a gold glow
- * standing in for the logo's sun, contour lines standing in for terraced
- * fields, and the "Data yang Tumbuh, Keputusan yang Menghasilkan" line.
- * Hidden below `lg` -- there is no room for a mood panel next to a form on a
- * phone, and the form itself already carries the logo.
+ * The one screen in the product that is allowed to be a solid field of colour,
+ * because it is the only screen with nothing to read on it. Everywhere else
+ * green means "the cooperative's own"; here it is simply the ground.
  *
- * `variant` tailors the copy and stats to what the visitor is actually doing:
- * a returning koperasi wants proof the season's data is live, a first-time
- * buyer wants proof the market on the other side of the form is real. Same
- * frame, same brand mark, different evidence.
+ * What it used to be: two blurred radial glows, a gradient, a frosted eyebrow
+ * pill, a headline whose second line changed colour, and three cards drifting
+ * up and down on staggered infinite loops. None of that was caused by
+ * anything. Motion with no cause is the fastest way to make a product feel
+ * synthetic, and a login screen is where a cooperative decides whether this
+ * looks like software their bookkeeping can live in.
+ *
+ * What survives is the one device that comes from the subject: contour lines,
+ * the shape of terraced fields read from above.
+ *
+ * `variant` tailors the copy to what the visitor is actually doing -- a
+ * returning koperasi wants proof the season's data is live, a first-time buyer
+ * wants proof the market on the other side of the form is real. Hidden below
+ * `lg`: there is no room for a brand panel next to a form on a phone, and the
+ * form already carries the mark.
  */
 type ShowcaseVariant = 'login' | 'signup'
 
 const copy: Record<ShowcaseVariant, {
-  eyebrow: string
-  headline: [string, string]
+  headline: string
   body: string
-  glow: string
-  stats: { icon: typeof Sprout; label: string; value: string; delay: string }[]
+  facts: [string, string][]
 }> = {
   login: {
-    eyebrow: 'Musim ini, berjalan',
-    headline: ['Data yang Tumbuh,', 'Keputusan yang Menghasilkan.'],
+    headline: 'Data yang tumbuh, keputusan yang menghasilkan.',
     body: 'Terrion menghubungkan lahan, panen dan pasokan koperasi dalam satu kalender tanam bersama.',
-    glow: 'var(--terrion-gold-500)',
-    stats: [
-      { icon: Sprout, label: 'Lahan aktif', value: '1.248 Ha', delay: '0ms' },
-      { icon: TrendingUp, label: 'Perkiraan panen', value: 'Okt 2026', delay: '600ms' },
-      { icon: Leaf, label: 'Pasokan tersedia', value: '820 Ton', delay: '1200ms' },
+    facts: [
+      ['Perkiraan panen', 'Dari akumulasi suhu, bukan hitungan hari'],
+      ['Peringatan penumpukan', 'Sebelum minggu padat itu tiba'],
+      ['Kebutuhan pupuk', 'Teragregasi ke format RDKK'],
     ],
   },
   signup: {
-    eyebrow: 'Untuk pembeli baru',
-    headline: ['Beli Langsung dari', 'Sumbernya.'],
-    body: 'Telusuri panen yang diproyeksikan koperasi verifikasi, lalu ajukan permintaan pasokan tanpa perantara.',
-    glow: 'var(--terrion-green-500)',
-    stats: [
-      { icon: Building2, label: 'Koperasi terverifikasi', value: '46', delay: '0ms' },
-      { icon: MapPin, label: 'Provinsi tercakup', value: '9', delay: '600ms' },
-      { icon: Handshake, label: 'Model kemitraan', value: 'Langsung', delay: '1200ms' },
+    headline: 'Beli langsung dari sumbernya.',
+    body: 'Telusuri panen yang diproyeksikan koperasi terverifikasi, lalu ajukan permintaan pasokan tanpa perantara.',
+    facts: [
+      ['Katalog terbuka', 'Proyeksi panen, bukan stok yang sudah ada'],
+      ['Rentang, bukan janji', 'Setiap tonase tampil dengan dasarnya'],
+      ['Tanpa perantara', 'Permintaan masuk ke koperasinya langsung'],
     ],
   },
 }
@@ -53,116 +54,50 @@ export function AuthShowcasePanel({ variant = 'login' }: { variant?: ShowcaseVar
   const v = copy[variant]
 
   return (
-    <div
-      className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12"
-      style={{
-        background:
-          `radial-gradient(60rem 40rem at 15% -10%, color-mix(in oklch, ${v.glow}, transparent 70%), transparent 55%),` +
-          'linear-gradient(160deg, var(--terrion-green-900), var(--terrion-green-700))',
-      }}
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full blur-3xl transition-[background] duration-700"
-        style={{ background: `color-mix(in oklch, ${v.glow}, transparent 55%)` }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-32 -left-16 h-80 w-80 rounded-full blur-3xl"
-        style={{ background: 'color-mix(in oklch, var(--terrion-green-500), transparent 55%)' }}
-      />
+    <div className="relative hidden overflow-hidden bg-[var(--terrion-green-900)] lg:flex lg:flex-col lg:justify-between lg:p-12">
       <TerraceContours />
 
-      <BrandMark />
+      <div className="relative flex items-center gap-2.5">
+        <Logo size={30} withWordmark={false} />
+        <span className="text-lg font-semibold tracking-tight text-white">Terrion</span>
+      </div>
 
       <div key={variant} className="relative">
-        <span
-          className="animate-fade inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-white/80 backdrop-blur-sm"
-        >
-          {v.eyebrow}
-        </span>
-
-        <p
-          className="animate-fade mt-4 text-3xl font-semibold leading-tight text-white"
-          style={{ animationDelay: '80ms' }}
-        >
-          {v.headline[0]}
-          <br />
-          <span style={{ color: 'var(--terrion-gold-200)' }}>{v.headline[1]}</span>
+        <p className="animate-fade max-w-md text-3xl leading-tight font-semibold text-white">
+          {v.headline}
         </p>
         <p
-          className="animate-fade mt-4 max-w-sm text-sm leading-relaxed text-white/70"
-          style={{ animationDelay: '160ms' }}
+          className="animate-fade mt-4 max-w-sm text-sm leading-relaxed text-white/65"
+          style={{ animationDelay: '80ms' }}
         >
           {v.body}
         </p>
 
-        <div className="mt-10 flex flex-wrap gap-3">
-          {v.stats.map(stat => <FloatingStat key={stat.label} {...stat} />)}
-        </div>
+        {/* Three facts as a ruled list, standing still. */}
+        <dl className="animate-fade mt-10 max-w-sm" style={{ animationDelay: '160ms' }}>
+          {v.facts.map(([term, detail]) => (
+            <div key={term} className="border-t border-white/15 py-3.5">
+              <dt className="text-[0.8125rem] font-medium text-white">{term}</dt>
+              <dd className="mt-0.5 text-[0.8125rem] text-white/55">{detail}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </div>
   )
 }
 
-function BrandMark() {
-  return (
-    <div className="relative flex items-center gap-2">
-      <Logo size={36} withWordmark={false} />
-      <span className="text-lg font-semibold tracking-tight text-white">Terrion</span>
-    </div>
-  )
-}
-
-function FloatingStat({
-  icon: Icon,
-  label,
-  value,
-  delay,
-}: {
-  icon: typeof Sprout
-  label: string
-  value: string
-  delay: string
-}) {
-  return (
-    <div
-      className="animate-float flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 backdrop-blur-sm"
-      style={{ animationDelay: delay }}
-    >
-      <span
-        className="flex size-8 shrink-0 items-center justify-center rounded-lg"
-        style={{ background: 'color-mix(in oklch, var(--terrion-gold-500), transparent 25%)' }}
-      >
-        <Icon aria-hidden className="size-4 text-white" />
-      </span>
-      <div>
-        <p className="text-[0.65rem] text-white/60">{label}</p>
-        <p className="text-sm font-semibold text-white">{value}</p>
-      </div>
-    </div>
-  )
-}
-
-/** Faint concentric contour lines, evoking terraced fields seen from above. */
+/** Concentric contour lines, evoking terraced fields seen from above. */
 function TerraceContours() {
   return (
     <svg
       aria-hidden
       viewBox="0 0 400 400"
-      className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.12]"
+      className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.1]"
       preserveAspectRatio="xMidYMid slice"
     >
-      {[60, 110, 160, 210, 260].map(r => (
-        <circle
-          key={r}
-          cx="60"
-          cy="380"
-          r={r}
-          fill="none"
-          stroke="white"
-          strokeWidth="1.5"
-        />
+      {[60, 110, 160, 210, 260, 310].map(r => (
+        <circle key={r} cx="60" cy="380" r={r} fill="none" stroke="white" strokeWidth="1.25" />
       ))}
     </svg>
   )

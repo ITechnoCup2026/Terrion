@@ -47,30 +47,32 @@ export function StatTile({
     // was two.
     <div
       className={cn(
-        'rounded-xl border p-4 transition-all duration-200',
-        empty
-          ? 'border-dashed border-border/80 bg-muted/20'
-          : 'border-border bg-card shadow-[var(--shadow-xs)] card-lift hover:border-primary/30',
+        'rounded-lg border p-4',
+        empty ? 'border-dashed border-border bg-muted/40' : 'border-border bg-card',
         className,
       )}
     >
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      {/* Sentence case. A tracked-out capitalised label makes the quietest
+          text on the tile the loudest thing on it. */}
+      <p className="text-xs text-muted-foreground">{label}</p>
 
       {empty ? (
-        <p className="mt-2 text-xs text-muted-foreground/80 italic">Belum ada data musim ini</p>
+        <p className="mt-2 text-xs text-[var(--terrion-ink-faint)]">
+          Belum ada data musim ini
+        </p>
       ) : (
         <p className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold tracking-tight tabular-nums text-foreground">
+          <span className="text-2xl leading-none font-medium tracking-tight tabular-nums text-foreground">
             {formatValue ? formatValue(value) : formatNumberId(value, decimals)}
           </span>
-          {unit && <span className="text-xs font-medium text-muted-foreground">{unit}</span>}
+          {unit && <span className="text-xs text-muted-foreground">{unit}</span>}
         </p>
       )}
 
       {/* Provenance of a number that is not there is noise -- while the tile is
           empty its own unlock condition is the more useful sentence. */}
       {(empty ? emptyHint ?? hint : hint) && (
-        <p className="mt-2 text-[0.72rem] leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-[0.6875rem] leading-snug text-[var(--terrion-ink-faint)]">
           {empty ? emptyHint ?? hint : hint}
         </p>
       )}

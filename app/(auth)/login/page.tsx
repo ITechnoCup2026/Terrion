@@ -1,6 +1,6 @@
 'use client'
 
-import { Lock, Mail, Sprout } from 'lucide-react'
+import { Lock, Mail } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Suspense, useState } from 'react'
@@ -36,13 +36,6 @@ export default function LoginPage() {
             <Link href="/" aria-label="Terrion, kembali ke beranda" className="interactive lg:hidden">
               <Logo size={44} withWordmark={false} />
             </Link>
-            <span
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
-              style={{ background: 'var(--terrion-green-50)', color: 'var(--terrion-green-700)' }}
-            >
-              <Sprout aria-hidden className="size-3.5" />
-              Selamat datang kembali
-            </span>
             <div>
               <h1 className="text-2xl font-semibold text-foreground">Masuk ke Terrion</h1>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -55,7 +48,7 @@ export default function LoginPage() {
             fallback={
               <div
                 aria-hidden
-                className="mt-7 h-[19.5rem] animate-pulse rounded-xl border border-border bg-card"
+                className="mt-7 h-[19.5rem] animate-pulse rounded-lg border border-border bg-card"
               />
             }
           >
@@ -109,14 +102,9 @@ function LoginForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="rise relative mt-7 flex flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-soft)]"
+      className="rise relative mt-7 flex flex-col gap-4 overflow-hidden rounded-lg border border-border bg-card p-6"
       style={{ ['--rise-delay' as string]: '80ms' }}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-10 -top-10 -z-10 h-32 w-32 rounded-full"
-        style={{ background: 'color-mix(in oklch, var(--terrion-gold-500), transparent 88%)' }}
-      />
 
       <AuthField
         icon={Mail}

@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { ArrowRight, MapPin } from 'lucide-react'
 
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
 import { commodityStyle } from '@/lib/catalog/commodity-style'
@@ -7,92 +6,66 @@ import type { Listing } from '@/lib/catalog/listings'
 import { formatNumberId } from '@/lib/format/number'
 
 /**
- * One catalogue entry, as a storefront card for buyers.
+ * One catalogue entry.
+ *
+ * What a buyer is deciding between is: which crop, how much, and which week.
+ * So those three are the only things given any weight, in that order, and
+ * everything else on the card is a caption.
+ *
+ * The card used to open with a 112px tinted panel holding a 48px outlined
+ * glyph, under a gradient, with a status pill floating on top — a quarter of
+ * every card spent on an illustration that carried no information the heading
+ * did not. The crop's identity survives as the band across the top edge, which
+ * is the same device the plot list uses for the same purpose, so a colour
+ * learned on one screen means the same thing on the other.
+ *
+ * No hover lift. Forty cards that each rise towards the pointer is forty
+ * invitations competing at once; the rule darkens and the name underlines,
+ * which is what tells a reader this is the thing they would be clicking.
+ *
+ * The "Perkiraan awal" flag is not drawn here. <HarvestWindow> owns it, as it
+ * owns every rendering of a harvest date in this codebase, so the catalogue
+ * cannot drift from the dashboard about how certain a week is.
+ *
+ * No staggered entrance either. Forty cards fading up on a 40ms ladder is a
+ * second and a half during which the reader cannot read the grid they asked
+ * for, spent announcing that the grid has arrived.
  */
-export function ListingCard({ listing, index = 0 }: { listing: Listing; index?: number }) {
+export function ListingCard({ listing }: { listing: Listing }) {
   const style = commodityStyle(listing.commodityName)
 
   return (
     <Link
       href={`/catalog/${listing.id}`}
-      className="rise interactive group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md"
-      style={{ ['--rise-delay' as string]: `${Math.min(index, 11) * 45}ms` }}
+      className="interactive group flex flex-col overflow-hidden rounded-lg border border-border bg-card hover:border-input"
     >
-      {/* The crop's own colour & icon block */}
-      <div
-        className="relative flex h-28 items-center justify-center overflow-hidden transition-colors"
-        style={{ backgroundColor: style.tint }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
+      <span aria-hidden className="h-1 w-full shrink-0" style={{ background: style.hue }} />
 
-        <svg
-          aria-hidden
-          viewBox="0 0 24 24"
-          className="size-12 transition-transform duration-500 group-hover:scale-110"
-          fill="none"
-          stroke={style.hue}
-          strokeWidth="1.25"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d={style.glyph} />
-        </svg>
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="text-[0.9375rem] font-medium text-foreground underline-offset-4 group-hover:underline">
+          {listing.commodityName}
+        </h3>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {listing.varietyName ?? 'Varietas standar'}
+        </p>
 
-        {listing.basis === 'climatology' ? (
-          <span className="absolute top-2.5 right-2.5 rounded-full bg-background/90 px-2.5 py-0.5 text-[0.65rem] font-semibold text-muted-foreground shadow-xs backdrop-blur-md">
-            Perkiraan awal
+        <p className="mt-4 flex items-baseline gap-1.5">
+          <span className="text-2xl leading-none font-medium tracking-tight tabular-nums text-foreground">
+            {formatNumberId(listing.tonnes)}
           </span>
-        ) : (
-          <span className="absolute top-2.5 right-2.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[0.65rem] font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-300/40 dark:border-emerald-700/40 backdrop-blur-md">
-            Panen Terverifikasi
-          </span>
-        )}
-      </div>
+          <span className="text-xs text-muted-foreground">ton diproyeksikan</span>
+        </p>
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div>
-          <h3 className="text-base font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
-            {listing.commodityName}
-          </h3>
-          {listing.varietyName ? (
-            <p className="text-xs font-medium text-muted-foreground">{listing.varietyName}</p>
-          ) : (
-            <p className="text-xs text-muted-foreground/60 italic">Varietas standar</p>
-          )}
+        <div className="mt-3">
+          <HarvestWindow
+            size="sm"
+            week={{ start: listing.weekStart, end: listing.weekEnd, basis: listing.basis }}
+          />
         </div>
 
-        {/* Tonnage metric display */}
-        <div className="flex items-baseline justify-between rounded-xl bg-muted/40 px-3 py-2">
-          <span className="text-xs font-medium text-muted-foreground">Proyeksi Pasokan</span>
-          <p className="flex items-baseline gap-1">
-            <span
-              className="font-mono text-2xl font-bold tracking-tight"
-              style={{ color: style.hue }}
-            >
-              {formatNumberId(listing.tonnes)}
-            </span>
-            <span className="text-xs font-semibold text-muted-foreground">ton</span>
-          </p>
-        </div>
-
-        <HarvestWindow
-          size="sm"
-          week={{ start: listing.weekStart, end: listing.weekEnd, basis: listing.basis }}
-        />
-
-        <div className="mt-auto flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <MapPin className="size-3.5 shrink-0 text-muted-foreground/80" />
-            <span className="truncate font-medium text-foreground/90">
-              {listing.cooperativeName} · {listing.district}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1 text-[0.7rem] font-semibold text-primary opacity-90 transition-all group-hover:opacity-100 group-hover:translate-x-0.5 shrink-0 ml-2">
-            <span>Ajukan</span>
-            <ArrowRight className="size-3" />
-          </div>
-        </div>
+        <p className="mt-auto truncate border-t border-border pt-3 text-xs text-muted-foreground">
+          {listing.cooperativeName} · {listing.district}
+        </p>
       </div>
     </Link>
   )

@@ -37,9 +37,8 @@ export function PlotCard({
   return (
     <Link
       href={`/plots/${plot.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-xl border border-border
-        bg-card shadow-[var(--shadow-xs)] transition-all duration-200 card-lift
-        hover:border-primary/40 hover:shadow-[var(--shadow-md)]"
+      className="interactive group relative flex flex-col overflow-hidden rounded-lg
+        border border-border bg-card hover:border-input"
     >
       {/* The commodity, as a band down the leading edge. */}
       <span aria-hidden className="absolute inset-y-0 left-0 w-1.5" style={{ background: stripe }} />
@@ -47,11 +46,11 @@ export function PlotCard({
       <div className="flex flex-1 flex-col gap-3 p-4 pl-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+            <p className="truncate text-sm font-medium text-foreground underline-offset-4 group-hover:underline">
               {plot.name}
             </p>
-            <p className="truncate text-xs text-muted-foreground font-medium mt-0.5">
-              {plot.memberName ?? 'Petani tidak tercatat'} · <span className="font-semibold">{formatNumberId(plot.areaHa)} ha</span>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              {plot.memberName ?? 'Petani tidak tercatat'} · {formatNumberId(plot.areaHa)} ha
             </p>
           </div>
           {lead && <CropGlyph spriteRow={lead.spriteRow} stage={CROP_STAGES - 2} />}
@@ -61,7 +60,7 @@ export function PlotCard({
           {plot.nextWindow ? (
             <HarvestWindow size="sm" window={plot.nextWindow} />
           ) : (
-            <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+            <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
               Belum ada tanaman aktif
             </span>
           )}
@@ -74,12 +73,15 @@ export function PlotCard({
           <SeasonMeter progress={plot.progress} colour={stripe} />
         )}
 
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pt-2 text-xs border-t border-border/50 text-muted-foreground">
+        {/* A tonnage is a figure, not a status. It used to sit in a green
+            pill, which in this palette claims the cooperative's own colour for
+            a number that is simply a number. */}
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-border pt-2.5 text-xs text-muted-foreground">
           {grown.length > 0 && (
-            <span className="truncate font-medium text-foreground">{grown.map(c => c.name).join(' · ')}</span>
+            <span className="truncate text-foreground">{grown.map(c => c.name).join(' · ')}</span>
           )}
           {plot.expectedTonnes != null && (
-            <span className="ml-auto shrink-0 font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+            <span className="ml-auto shrink-0 tabular-nums">
               {plot.blockCount} blok · ± {formatNumberId(plot.expectedTonnes)} t
             </span>
           )}
@@ -101,7 +103,7 @@ function CropGlyph({ spriteRow, stage }: { spriteRow: number; stage: number }) {
   return (
     <span
       aria-hidden
-      className="shrink-0 rounded-md bg-muted/60"
+      className="shrink-0 rounded-md bg-muted"
       style={{
         width: size, height: size,
         imageRendering: 'pixelated',
@@ -126,7 +128,7 @@ function SeasonMeter({ progress, colour }: { progress: number; colour: string })
   const percent = Math.round(progress * 100)
   return (
     <div>
-      <div className="flex items-baseline justify-between text-[0.7rem] text-muted-foreground">
+      <div className="flex items-baseline justify-between text-[0.6875rem] text-muted-foreground">
         <span>Perkembangan musim</span>
         <span className="tabular-nums">{percent}%</span>
       </div>

@@ -59,7 +59,14 @@ export default async function RdkkPage() {
         <PrintButton label="Cetak / simpan PDF" />
       </div>
 
-      <article className="rounded-xl border border-border bg-card p-4 text-foreground shadow-[var(--shadow-xs)] sm:p-6 print:rounded-none print:border-0 print:bg-transparent print:p-0 print:text-black print:shadow-none">
+      {/* The one screen in the product that is not designed by us.
+          This is a government form, and everything below reproduces how the
+          RDKK is actually typeset: the heading in capitals, the column names
+          in capitals, centred, on paper. The house rules against all-caps and
+          against weights above 600 stop at this element deliberately — a
+          cooperative hands this to a distributor, and a version that looks
+          like the rest of our UI is a version that looks wrong to them. */}
+      <article className="rounded-lg border border-border bg-card p-4 text-foreground sm:p-6 print:rounded-none print:border-0 print:bg-transparent print:p-0 print:text-black">
         <header className="text-center">
           <h1 className="text-base font-bold uppercase tracking-wide">
             Rencana Definitif Kebutuhan Kelompok (RDKK)

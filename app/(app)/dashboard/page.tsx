@@ -1,4 +1,3 @@
-import { Scale, Sprout, TrendingUp, TriangleAlert } from 'lucide-react'
 import { redirect } from 'next/navigation'
 
 import { CollisionAlert, type CollisionAlertData } from '@/components/dashboard/CollisionAlert'
@@ -99,26 +98,22 @@ export default async function DashboardPage() {
       label: 'Panen 12 minggu',
       value: `${formatNumberId(dashboard.weeks.reduce((s, w) => s + w.expectedTonnes, 0))} ton`,
       hint: 'Total perkiraan seluruh lahan',
-      icon: Scale,
     },
     {
       label: 'Minggu puncak',
       value: peak ? `${formatNumberId(peak.expectedTonnes)} t` : '—',
       hint: peak ? weekTick(peak.weekStart) : 'Belum ada proyeksi',
-      icon: TrendingUp,
     },
     {
       label: 'Minggu berisiko',
       value: formatNumberId(flaggedWeeks.size),
       hint: 'Melewati kapasitas koperasi',
-      icon: TriangleAlert,
       tone: flaggedWeeks.size > 0 ? 'accent' : 'default',
     },
     {
       label: 'Lahan',
       value: formatNumberId(plots.length),
       hint: 'Terdaftar di koperasi',
-      icon: Sprout,
     },
   ]
 

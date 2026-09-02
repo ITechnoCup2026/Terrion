@@ -1,4 +1,3 @@
-import { Leaf } from 'lucide-react'
 import Link from 'next/link'
 
 import { AuthBackButton } from '@/components/auth/AuthBackButton'
@@ -34,13 +33,6 @@ export default function SignupPage() {
             <Link href="/" aria-label="Terrion, kembali ke beranda" className="interactive lg:hidden">
               <Logo size={44} withWordmark={false} />
             </Link>
-            <span
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
-              style={{ background: 'var(--terrion-gold-50)', color: 'var(--terrion-gold-600)' }}
-            >
-              <Leaf aria-hidden className="size-3.5" />
-              Bergabung sebagai pembeli
-            </span>
             <div>
               <h1 className="text-2xl font-semibold text-foreground">Daftar sebagai pembeli</h1>
               <p className="mt-1 text-sm text-muted-foreground">

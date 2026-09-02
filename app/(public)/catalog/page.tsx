@@ -1,11 +1,8 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import type { ReactNode } from 'react'
-import { Filter, Layers, Sprout, Store } from 'lucide-react'
 
 import { ListingCard } from '@/components/commerce/ListingCard'
 import { buttonVariants } from '@/components/ui/button'
-import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Page, PageHeader } from '@/components/ui/Page'
 import { isBackendDown } from '@/lib/api/client'
@@ -14,19 +11,21 @@ import { CATALOG_EMPTY, FILTERS_EMPTY } from '@/lib/catalog/copy'
 import type { ListingFilters } from '@/lib/catalog/listings'
 import { loadCatalogListings } from '@/lib/catalog/load'
 
-export const metadata = { title: 'Katalog Pasokan Panen' }
+export const metadata = { title: 'Katalog pasokan panen' }
 
 const field =
-  'interactive h-9 rounded-xl border border-input bg-background/80 px-3 text-xs font-medium text-foreground hover:border-primary/40 focus:border-ring focus:outline-none transition-colors'
+  'interactive h-8 rounded-md border border-input bg-background px-2.5 text-[0.8125rem] text-foreground hover:border-[var(--terrion-ink-faint)] focus:border-ring focus:outline-none'
 
 function one(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
 }
 
+/** A labelled control in the filter strip. Sentence case: a tracked-out
+ *  capitalised word above a select makes the label louder than the value. */
 function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={htmlFor} className="text-[0.7rem] font-semibold tracking-wide text-muted-foreground uppercase">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={htmlFor} className="text-[0.6875rem] text-muted-foreground">
         {label}
       </label>
       {children}
@@ -69,42 +68,24 @@ export default async function CatalogPage({
 
   return (
     <Page width="wide">
+      {/* The two counts are a sentence, not a widget. They were a tinted card
+          in the header holding two mono figures with icons -- an object the
+          reader had to parse to learn something a clause says in passing. */}
       <PageHeader
-        title="Katalog Pasokan Panen"
+        title="Katalog pasokan panen"
         description={
-          <>
-            Panen yang diproyeksikan oleh koperasi petani dalam 12 minggu ke depan. Pilih komoditas panen untuk mengajukan kontrak pasokan secara langsung.
-          </>
-        }
-        actions={
-          <Card pad="none" className="flex gap-4 border-emerald-200/50 bg-emerald-50/40 p-3 dark:border-emerald-900/30 dark:bg-emerald-950/20">
-            <div className="flex items-center gap-2 px-1">
-              <Store className="size-4 text-emerald-600 dark:text-emerald-400" />
-              <div>
-                <p className="font-mono text-lg font-bold leading-none text-foreground">
-                  {listings.length}
-                </p>
-                <p className="mt-0.5 text-[0.68rem] font-medium text-muted-foreground">penawaran</p>
-              </div>
-            </div>
-            <div className="w-px bg-border" aria-hidden />
-            <div className="flex items-center gap-2 px-1">
-              <Sprout className="size-4 text-emerald-600 dark:text-emerald-400" />
-              <div>
-                <p className="font-mono text-lg font-bold leading-none text-foreground">
-                  {commodities.length}
-                </p>
-                <p className="mt-0.5 text-[0.68rem] font-medium text-muted-foreground">komoditas</p>
-              </div>
-            </div>
-          </Card>
+          listings.length > 0
+            ? `${listings.length} penawaran dari ${commodities.length} komoditas, diproyeksikan koperasi untuk 12 minggu ke depan. Pilih satu untuk mengajukan kontrak pasokan langsung ke koperasinya.`
+            : 'Panen yang diproyeksikan koperasi petani untuk 12 minggu ke depan.'
         }
       />
 
-      {/* Glassmorphic Sticky Filter Bar */}
+      {/* Sticky, opaque, and ruled to the page rather than floating over it as
+          a frosted card. A blurred bar makes the first row of results legible
+          through the control the reader is using. */}
       <form
         method="get"
-        className="sticky top-[var(--public-header)] z-30 -mx-4 mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-border/80 bg-background/85 px-4 py-3.5 shadow-sm backdrop-blur-md"
+        className="sticky top-[var(--public-header)] z-30 -mx-4 mt-6 flex flex-wrap items-end gap-3 border-b border-border bg-background px-4 pt-1 pb-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
       >
         <Field label="Komoditas" htmlFor="f-komoditas">
           <select id="f-komoditas" name="komoditas" defaultValue={filters.commodityId ?? ''} className={field}>
@@ -120,7 +101,7 @@ export default async function CatalogPage({
           </select>
         </Field>
 
-        <Field label="Rentang Waktu" htmlFor="f-minggu">
+        <Field label="Rentang waktu" htmlFor="f-minggu">
           <select id="f-minggu" name="minggu" defaultValue={String(filters.weeksAhead ?? '')} className={field}>
             <option value="">Semua minggu panen</option>
             <option value="4">4 minggu ke depan</option>
@@ -128,7 +109,7 @@ export default async function CatalogPage({
           </select>
         </Field>
 
-        <Field label="Min. Tonase" htmlFor="f-ton">
+        <Field label="Min. tonase" htmlFor="f-ton">
           <input
             id="f-ton" name="minTon" type="number" min="0" step="0.1"
             className={`${field} w-28`} placeholder="0 ton"
@@ -137,18 +118,18 @@ export default async function CatalogPage({
         </Field>
 
         <button type="submit" className={buttonVariants({ size: 'default' })}>
-          <Filter className="mr-1.5 size-3.5" />
-          Terapkan Filter
+          Terapkan filter
         </button>
 
         {hasActiveFilter && (
           <Link href="/catalog" className={buttonVariants({ variant: 'ghost', size: 'default' })}>
-            Hapus Filter
+            Hapus filter
           </Link>
         )}
 
-        <p className="ml-auto self-center text-xs text-muted-foreground" aria-live="polite">
-          Menampilkan <span className="font-semibold text-foreground">{shown.length}</span> dari {listings.length} pasokan
+        <p className="ml-auto self-end pb-1.5 text-xs text-muted-foreground" aria-live="polite">
+          Menampilkan <span className="tabular-nums text-foreground">{shown.length}</span> dari{' '}
+          <span className="tabular-nums">{listings.length}</span> pasokan
         </p>
       </form>
 
@@ -159,14 +140,14 @@ export default async function CatalogPage({
           action={
             hasActiveFilter && (
               <Link href="/catalog" className={buttonVariants({ variant: 'outline', size: 'lg' })}>
-                Reset Filter
+                Hapus filter
               </Link>
             )
           }
         />
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {shown.map((l, i) => <ListingCard key={l.id} listing={l} index={i} />)}
+          {shown.map(l => <ListingCard key={l.id} listing={l} />)}
         </div>
       )}
     </Page>

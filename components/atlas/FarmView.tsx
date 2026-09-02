@@ -62,7 +62,7 @@ export function FarmView({
     >
       <header className="flex items-start justify-between gap-4 border-b border-white/10 p-4">
         <div>
-          <p className="text-[0.7rem] tracking-wide text-white/50 uppercase">Kunjungi kebun</p>
+          <p className="text-[0.6875rem] text-white/50">Kunjungi kebun</p>
           <h2 className="mt-0.5 text-lg font-semibold text-white">
             {farm?.name ?? 'Memuat…'}
           </h2>
@@ -117,7 +117,7 @@ export function FarmView({
                 <Link
                   key={plot.publicId}
                   href={`/garden/${plot.publicId}`}
-                  className="rise interactive card-lift group block overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] hover:border-white/25"
+                  className="rise interactive group block overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] hover:border-white/25"
                   style={{ ['--rise-delay' as string]: `${Math.min(i, 18) * 35}ms` }}
                 >
                   <div

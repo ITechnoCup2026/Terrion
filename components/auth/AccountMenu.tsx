@@ -105,7 +105,7 @@ export function AccountMenu({
                   'data-[highlighted]:bg-muted',
                 )}
               >
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
                   <ClipboardList aria-hidden className="size-4" />
                 </span>
                 <div className="flex flex-col">

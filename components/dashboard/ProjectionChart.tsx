@@ -25,9 +25,11 @@ import { formatNumberId } from '@/lib/format/number'
  * "could all land here". Drawing only the bar would state a precision the
  * model does not have.
  *
- * Risk weeks carry an icon and the word "Padat" as well as a different fill,
- * because colour alone fails for a colour-blind reader and dies in greyscale
- * the moment someone prints this for a members' meeting.
+ * Risk weeks carry the word "Padat" as well as a different fill, because
+ * colour alone fails for a colour-blind reader and dies in greyscale the
+ * moment someone prints this for a members' meeting. The word and the bar are
+ * both gold: over capacity is a decision to make, which is the one thing gold
+ * means anywhere in this product.
  */
 
 export type ChartWeek = {
@@ -62,8 +64,8 @@ function RiskMark(props: { x?: number; y?: number; width?: number; index?: numbe
   if (!rows[index]?.risk) return null
   return (
     <g transform={`translate(${x + width / 2}, ${y - 6})`}>
-      <text textAnchor="middle" className="fill-destructive text-[10px] font-semibold">
-        ⚠ Padat
+      <text textAnchor="middle" className="fill-accent text-[10px] font-medium">
+        Padat
       </text>
     </g>
   )
@@ -81,7 +83,7 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
       <p className="text-muted-foreground">
         Rentang {formatNumberId(row.min)}–{formatNumberId(row.max)} ton
       </p>
-      {row.risk && <p className="mt-1 font-medium text-destructive">⚠ Melebihi kapasitas</p>}
+      {row.risk && <p className="mt-1 font-medium text-accent">Melebihi kapasitas</p>}
     </div>
   )
 }
