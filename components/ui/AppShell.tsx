@@ -12,7 +12,6 @@ import { MobileNav } from '@/components/ui/MobileNav'
 import { Sidebar } from '@/components/ui/Sidebar'
 import { Topbar } from '@/components/ui/Topbar'
 import type { UserRole } from '@/lib/auth/roles'
-import { roleLabel } from '@/lib/auth/display'
 import { isActivePath } from '@/lib/nav/active'
 import { isImmersiveRoute } from '@/lib/nav/immersive'
 import { navGroupsFor } from '@/lib/nav/items'
@@ -42,15 +41,20 @@ import { cn } from '@/lib/utils'
  * layout that pads its children cannot have a child that fills the screen --
  * which is the bug this component exists to fix.
  */
-export type ShellCooperative = { name: string; village: string; district: string } | null
+/**
+ * Whose workspace this frame belongs to: a cooperative for a kader or
+ * pengurus, the buying organisation for a buyer, and null when the account has
+ * neither (a buyer who signed up without naming a company).
+ */
+export type ShellWorkspace = { name: string; detail: string | null } | null
 
 /** Where the rail's width is remembered between visits. */
 const COLLAPSE_KEY = 'terrion:nav-collapsed'
 
 export function AppShell({
-  cooperative, userName, role, children,
+  workspace, userName, role, children,
 }: {
-  cooperative: ShellCooperative
+  workspace: ShellWorkspace
   userName: string
   role: UserRole
   children: React.ReactNode
@@ -91,8 +95,8 @@ export function AppShell({
   // limit", and a cooperative's own initials are not a warning. Collapsed, the
   // mark alone is the identity; expanded, the name is, and it is set as plain
   // text because a name in a tinted card reads as a status.
-  const workspace = collapsed ? (
-    <div className="flex justify-center" title={cooperative?.name ?? 'Koperasi'}>
+  const workspaceBlock = collapsed ? (
+    <div className="flex justify-center" title={workspace?.name ?? 'Terrion'}>
       <Logo size={24} withWordmark={false} />
     </div>
   ) : (
@@ -103,16 +107,21 @@ export function AppShell({
           Terrion
         </span>
       </div>
-      <div className="min-w-0 border-t border-border px-1 pt-2.5 leading-tight">
-        <p className="truncate text-[0.8125rem] font-medium text-foreground">
-          {cooperative?.name ?? 'Koperasi'}
-        </p>
-        {cooperative && (
-          <p className="mt-0.5 truncate text-[0.6875rem] text-[var(--terrion-ink-faint)]">
-            {cooperative.village}, {cooperative.district}
+      {/* Only when there is one. An account with no organisation used to get
+          the word "Koperasi" under the wordmark, which for a buyer is the name
+          of something they do not belong to. */}
+      {workspace && (
+        <div className="min-w-0 border-t border-border px-1 pt-2.5 leading-tight">
+          <p className="truncate text-[0.8125rem] font-medium text-foreground">
+            {workspace.name}
           </p>
-        )}
-      </div>
+          {workspace.detail && (
+            <p className="mt-0.5 truncate text-[0.6875rem] text-[var(--terrion-ink-faint)]">
+              {workspace.detail}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 
@@ -120,12 +129,16 @@ export function AppShell({
   // to be three: a row in the rail's foot, a stacked pair in the collapsed
   // rail, and a bare glyph in the phone's top bar -- three arrangements of the
   // same two facts, none of which matched what a buyer sees.
+  // A buyer signed out of this frame belongs back on the public site; a kader
+  // has nowhere to be but the login screen.
+  const signOutTo = role === 'buyer' ? '/' : '/login'
+
   const account = (
     <AccountMenu
       fullName={userName}
-      organisation={cooperative?.name ?? null}
+      organisation={workspace?.name ?? null}
       role={role}
-      signOutTo="/login"
+      signOutTo={signOutTo}
     />
   )
 
@@ -133,9 +146,9 @@ export function AppShell({
   const floatingAccount = (
     <AccountMenu
       fullName={userName}
-      organisation={cooperative?.name ?? null}
+      organisation={workspace?.name ?? null}
       role={role}
-      signOutTo="/login"
+      signOutTo={signOutTo}
       triggerClassName="shadow-[var(--shadow-md)]"
     />
   )
@@ -156,7 +169,7 @@ export function AppShell({
         <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-between gap-3 p-3">
           <div className="pointer-events-auto flex items-start gap-2">
             <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-[var(--shadow-md)]">
-              {workspace}
+              {workspaceBlock}
             </div>
 
             <button
@@ -189,7 +202,7 @@ export function AppShell({
     // no outer scrollbar and a child asking for full height gets it.
     // print:h-auto, because the RDKK form is several pages tall on paper.
     <div className="flex h-dvh overflow-hidden print:block print:h-auto print:overflow-visible">
-      <Sidebar groups={groups} collapsed={collapsed} header={workspace} />
+      <Sidebar groups={groups} collapsed={collapsed} header={workspaceBlock} />
 
       <div className="flex min-w-0 flex-1 flex-col print:block">
         <Topbar
@@ -197,6 +210,7 @@ export function AppShell({
           onToggleCollapse={toggleCollapsed}
           onOpenSearch={openSearch}
           account={account}
+          role={role}
         />
 
         <main className="min-h-0 flex-1 overflow-y-auto print:overflow-visible">

@@ -64,12 +64,16 @@ export function Sidebar({
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-2 pb-2">
         {groups.map((group, index) => (
           <div key={group.label} className={cn(index > 0 && (collapsed ? 'mt-2' : 'mt-5'))}>
+            {/* A section label above the only section names nothing. A buyer
+                has one group, so their rail is just their three destinations. */}
             {collapsed ? (
               index > 0 && <div aria-hidden className="mx-2 mb-2 h-px bg-border" />
             ) : (
-              <p className="px-2 pb-1.5 text-[0.6875rem] font-medium text-[var(--terrion-ink-faint)]">
-                {group.label}
-              </p>
+              groups.length > 1 && (
+                <p className="px-2 pb-1.5 text-[0.6875rem] font-medium text-[var(--terrion-ink-faint)]">
+                  {group.label}
+                </p>
+              )
             )}
 
             <ul className="flex flex-col gap-px">
