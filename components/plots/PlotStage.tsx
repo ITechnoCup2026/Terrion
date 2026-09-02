@@ -186,6 +186,18 @@ export function PlotStage({
     [blocks],
   )
 
+  // Earliest projection start across blocks, so the slider marks the first
+  // date any of them stops resting on real weather. A block still fully
+  // inside known weather contributes null and does not affect this.
+  const projectedFrom = useMemo(() => {
+    const starts = blocks
+      .map(b => b.window?.projectedFrom ?? null)
+      .filter((d): d is Date => d !== null)
+    return starts.length > 0
+      ? new Date(Math.min(...starts.map(d => d.getTime())))
+      : null
+  }, [blocks])
+
   // Stages come from the server for today, and from the series while scrubbing.
   // Recomputing them is a binary search per block, so a drag re-rasterises the
   // crop layer and touches the network not at all.
@@ -298,6 +310,7 @@ export function PlotStage({
           bounds={bounds}
           value={viewDate ?? new Date()}
           onChange={setViewDate}
+          projectedFrom={projectedFrom}
           className="absolute bottom-4 left-1/2 z-20 w-[min(22rem,calc(100%-1.5rem))] -translate-x-1/2"
         />
       )}

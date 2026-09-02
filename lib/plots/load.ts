@@ -16,6 +16,7 @@ function toHarvestWindow(raw: HarvestWindowRaw): HarvestWindow {
     basis: raw.basis,
     plausibility: raw.plausibility,
     cumulativeGdd: raw.cumulative_gdd ?? [],
+    projectedFrom: raw.projected_from ? utcDate(raw.projected_from) : null,
   }
 }
 

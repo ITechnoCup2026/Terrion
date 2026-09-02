@@ -41,6 +41,11 @@ export type HarvestWindow = {
    *  date should be shown as confident. */
   plausibility: 'ok' | 'early' | 'late' | 'implausible'
   cumulativeGdd: { date: string; gdd: number }[]
+  /** Null once the crop already matured within known weather. Otherwise the
+   *  first date in cumulativeGdd computed from climate normals rather than an
+   *  observed or forecast reading -- the slider draws past this differently
+   *  so a projection is never read as a fact. */
+  projectedFrom: Date | null
 }
 
 /** One block's expected harvest, as the collision detector and exports see it. */

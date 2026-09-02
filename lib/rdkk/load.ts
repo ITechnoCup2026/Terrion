@@ -1,6 +1,6 @@
 import { utcDate } from '@/lib/agronomy/dates'
 import { apiFetch } from '@/lib/api/client'
-import type { RdkkResponseRaw } from '@/lib/api/types'
+import type { InputOrderRaw, InputOrderStatusRaw, RdkkResponseRaw } from '@/lib/api/types'
 import { currentSessionId } from '@/lib/auth/session'
 
 export type Season = { label: string; start: Date; end: Date }
@@ -85,6 +85,30 @@ export async function loadSeasonInputs(season: Season): Promise<RdkkSeason> {
     commoditiesWithoutRates: raw.commodities_without_rates,
     subsidyCapHa: raw.subsidy_cap_ha,
   }
+}
+
+export type InputOrder = {
+  id: string
+  seasonLabel: string
+  status: InputOrderStatusRaw
+  createdAt: Date
+  lines: { item: string; quantity: number; unit: string }[]
+}
+
+/** GET /api/input-orders, newest first: every group order this cooperative
+ *  has created, with its status -- the record "Buat pesanan kelompok" leaves
+ *  behind once clicked, which the page had nowhere to show before this. */
+export async function loadInputOrders(): Promise<InputOrder[]> {
+  const sessionId = await currentSessionId()
+  const raw = await apiFetch<InputOrderRaw[]>('/api/input-orders', { sessionId })
+  return raw.map(order => ({
+    id: order.id,
+    seasonLabel: order.season_label,
+    status: order.status,
+    // A full RFC3339 timestamp, not the plain 'YYYY-MM-DD' utcDate() parses.
+    createdAt: new Date(order.created_at),
+    lines: order.lines,
+  }))
 }
 
 /** `RdkkSeason.columns`/`.totals` as the `{inputItem, quantityKg}` pairs

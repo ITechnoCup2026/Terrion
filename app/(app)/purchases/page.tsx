@@ -2,16 +2,26 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { CreateOrderButton } from '@/components/commerce/CreateOrderButton'
+import { Badge } from '@/components/ui/Badge'
 import { buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/Card'
 import { Page, PageHeader } from '@/components/ui/Page'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { addDays } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
+import { formatDateId } from '@/lib/harvest/format'
 import { formatNumberId } from '@/lib/format/number'
 import { SUBSIDY_CAP_HA } from '@/lib/rdkk/aggregate'
-import { loadSeasonInputs, seasonRequirementLines } from '@/lib/rdkk/load'
+import { loadInputOrders, loadSeasonInputs, seasonRequirementLines } from '@/lib/rdkk/load'
 import { KG_PER_SACK, toOrderLines } from '@/lib/rdkk/order'
+import type { InputOrderStatusRaw } from '@/lib/api/types'
+
+const ORDER_STATUS_LABEL: Record<InputOrderStatusRaw, string> = {
+  draft: 'Draf', submitted: 'Diajukan ke pemasok', completed: 'Selesai',
+}
+const ORDER_STATUS_TONE: Record<InputOrderStatusRaw, 'neutral' | 'positive' | 'warning'> = {
+  draft: 'neutral', submitted: 'warning', completed: 'positive',
+}
 
 export const metadata = { title: 'Pembelian' }
 
@@ -24,7 +34,10 @@ export default async function PurchasesPage() {
   if (!user.cooperative_id) redirect('/catalog')
 
   const now = new Date()
-  const rdkk = await loadSeasonInputs({ label: 'musim ini', start: addDays(now, -365), end: now })
+  const [rdkk, orders] = await Promise.all([
+    loadSeasonInputs({ label: 'musim ini', start: addDays(now, -365), end: now }),
+    loadInputOrders(),
+  ])
   const lines = toOrderLines(seasonRequirementLines(rdkk))
 
   const overCap = rdkk.rows.filter(m => m.overSubsidyCap)
@@ -139,6 +152,53 @@ export default async function PurchasesPage() {
             </Card>
           )}
         </>
+      )}
+
+      {orders.length > 0 && (
+        <Card>
+          <p className="text-sm font-semibold text-foreground">Riwayat pesanan kelompok</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Ke mana pesanan yang sudah dibuat pergi -- setiap klik &ldquo;Buat pesanan kelompok&rdquo;
+            di atas menambah satu baris di sini.
+          </p>
+
+          <table className="mt-3 w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                <th className="pb-2 font-medium">Tanggal</th>
+                <th className="pb-2 font-medium">Musim</th>
+                <th className="pb-2 font-medium">Isi</th>
+                <th className="pb-2 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map(order => (
+                <tr key={order.id} className="border-b border-border/50 last:border-0">
+                  <td className="py-2 align-top text-muted-foreground">
+                    {formatDateId(order.createdAt)}
+                  </td>
+                  <td className="py-2 align-top text-foreground">{order.seasonLabel}</td>
+                  <td className="py-2 align-top text-muted-foreground">
+                    {order.lines.map(l => `${formatNumberId(l.quantity, 0)} ${l.unit} ${l.item}`).join(', ')}
+                  </td>
+                  <td className="py-2 align-top">
+                    <Badge tone={ORDER_STATUS_TONE[order.status]}>
+                      {ORDER_STATUS_LABEL[order.status]}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {orders.every(o => o.status === 'draft') && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Semua pesanan di sini masih draf: belum ada transisi ke pemasok di sistem ini
+              hari ini, jadi status bergerak lewat kesepakatan di luar platform sampai fitur
+              itu ada.
+            </p>
+          )}
+        </Card>
       )}
     </Page>
   )

@@ -24,6 +24,7 @@ export type HarvestWindowRaw = {
   basis: WindowBasis
   plausibility: Plausibility
   cumulative_gdd?: { date: string; gdd: number }[]
+  projected_from?: string
 }
 
 // ---- POST /api/auth/signup -------------------------------------------------
@@ -338,6 +339,24 @@ export type RdkkResponseRaw = {
 export type CreateInputOrderResponseRaw = {
   order_id: string
   lines: number
+}
+
+// ---- GET /api/input-orders -----------------------------------------------------------
+
+export type InputOrderStatusRaw = 'draft' | 'submitted' | 'completed'
+
+export type InputOrderLineRaw = {
+  item: string
+  quantity: number
+  unit: string
+}
+
+export type InputOrderRaw = {
+  id: string
+  season_label: string
+  status: InputOrderStatusRaw
+  created_at: string
+  lines: InputOrderLineRaw[]
 }
 
 // ---- GET/POST /api/supply-requests, PATCH /api/supply-requests/:id ------------------

@@ -98,6 +98,11 @@ export function predictHarvest(input: {
     basis,
     plausibility,
     cumulativeGdd,
+    // ponytail: this client-side predictor is superseded by the Go backend
+    // (see Terrion_Backend/internal/agronomy/predict.go, which does project
+    // past known weather) and isn't called from any page anymore, only from
+    // its own test -- not worth mirroring that projection into dead code.
+    projectedFrom: null,
   }
 }
 

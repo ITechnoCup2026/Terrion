@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { fitView, snapScale, pinchScale, scaleStep, MIN_SCALE, MAX_SCALE } from './view'
+import {
+  clampOffset, clampView, fitView, snapScale, pinchScale, scaleStep, MIN_SCALE, MAX_SCALE,
+  type View,
+} from './view'
 
 describe('scaleStep', () => {
   it('allows halves only where they land on whole device pixels', () => {
@@ -115,5 +118,33 @@ describe('pinchScale', () => {
   // Two pointers landing on the same spot would otherwise divide by zero.
   it('survives a zero starting distance', () => {
     expect(pinchScale(2, 0, 150)).toBe(2)
+  })
+})
+
+describe('clampOffset', () => {
+  it('leaves the offset alone while the world still covers the viewport', () => {
+    expect(clampOffset(-50, 1000, 900)).toBe(-50)
+  })
+
+  it('pulls the far edge back to the viewport edge, never leaving a gap', () => {
+    expect(clampOffset(50, 1000, 900)).toBe(0)
+    expect(clampOffset(-500, 1000, 900)).toBe(900 - 1000)
+  })
+
+  it('centres and locks a world smaller than the viewport', () => {
+    expect(clampOffset(-999, 400, 900)).toBe((900 - 400) / 2)
+    expect(clampOffset(999, 400, 900)).toBe((900 - 400) / 2)
+  })
+})
+
+describe('clampView', () => {
+  it('stops a drag from panning past the edge of the generated terrain', () => {
+    // A 16x14 grid at 32px scale 2 is 1024x896 -- bigger than an 800x600
+    // viewport, so a drag that tried to push it far off to one side must be
+    // pulled back to the world's own edge rather than showing blank canvas.
+    const dragged: View = { scale: 2, offsetX: 500, offsetY: -900 }
+    const clamped = clampView(dragged, 16 * 32, 14 * 32, 800, 600)
+    expect(clamped.offsetX).toBe(0)
+    expect(clamped.offsetY).toBe(600 - 14 * 32 * 2)
   })
 })
