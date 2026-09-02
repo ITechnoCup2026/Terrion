@@ -14,7 +14,7 @@ import { loadCatalogListings } from '@/lib/catalog/load'
 export const metadata = { title: 'Katalog pasokan panen' }
 
 const field =
-  'interactive h-8 rounded-md border border-input bg-background px-2.5 text-[0.8125rem] text-foreground hover:border-[var(--terrion-ink-faint)] focus:border-ring focus:outline-none'
+  'interactive h-8 rounded-md border border-input bg-card px-2.5 text-[0.8125rem] text-foreground hover:border-[var(--terrion-ink-faint)] focus:border-ring focus:outline-none'
 
 function one(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
@@ -66,6 +66,11 @@ export default async function CatalogPage({
     ? (await loadCatalogListings(filters)).listings
     : listings
 
+  // Each card's bar is a share of the heaviest offer CURRENTLY SHOWN, so the
+  // scale re-fits as the buyer narrows the list -- which is the moment the
+  // comparison is worth anything.
+  const heaviest = shown.reduce((most, l) => Math.max(most, l.tonnes), 0)
+
   return (
     <Page width="wide">
       {/* The two counts are a sentence, not a widget. They were a tinted card
@@ -85,7 +90,7 @@ export default async function CatalogPage({
           through the control the reader is using. */}
       <form
         method="get"
-        className="sticky top-[var(--public-header)] z-30 -mx-4 mt-6 flex flex-wrap items-end gap-3 border-b border-border bg-background px-4 pt-1 pb-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+        className="sticky top-[var(--public-header)] z-30 -mx-4 mt-6 flex flex-wrap items-end gap-3 border-b border-border bg-card px-4 pt-1 pb-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
       >
         <Field label="Komoditas" htmlFor="f-komoditas">
           <select id="f-komoditas" name="komoditas" defaultValue={filters.commodityId ?? ''} className={field}>
@@ -147,7 +152,9 @@ export default async function CatalogPage({
         />
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {shown.map(l => <ListingCard key={l.id} listing={l} />)}
+          {shown.map(l => (
+            <ListingCard key={l.id} listing={l} max={heaviest} />
+          ))}
         </div>
       )}
     </Page>

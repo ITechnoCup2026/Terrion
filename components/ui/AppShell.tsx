@@ -167,7 +167,7 @@ export function AppShell({
             dragged everywhere the cards themselves are not. */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-between gap-3 p-3">
           <div className="pointer-events-auto flex items-start gap-2">
-            <div className="rounded-lg border border-border bg-background px-3 py-2 shadow-[var(--shadow-md)]">
+            <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-[var(--shadow-md)]">
               {workspace}
             </div>
 
@@ -176,7 +176,7 @@ export function AppShell({
               onClick={() => setNavOpen(o => !o)}
               aria-expanded={navOpen}
               aria-label={navOpen ? 'Sembunyikan navigasi' : 'Tampilkan navigasi'}
-              className="interactive flex size-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground shadow-[var(--shadow-md)] hover:text-foreground"
+              className="interactive flex size-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-[var(--shadow-md)] hover:text-foreground"
             >
               {navOpen
                 ? <PanelLeftClose aria-hidden className="size-4" />
@@ -184,7 +184,7 @@ export function AppShell({
             </button>
           </div>
 
-          <div className="pointer-events-auto flex items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-2 shadow-[var(--shadow-md)]">
+          <div className="pointer-events-auto flex items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2 shadow-[var(--shadow-md)]">
             {avatar}
             <p className="hidden text-xs text-muted-foreground sm:block">{userName}</p>
             {signOutButton}
@@ -241,7 +241,7 @@ function FloatingNav({
   return (
     <nav
       aria-label="Navigasi utama"
-      className="absolute top-16 left-3 z-40 flex flex-col gap-px rounded-lg border border-border bg-background p-1.5 shadow-[var(--shadow-md)]"
+      className="absolute top-16 left-3 z-40 flex flex-col gap-px rounded-lg border border-border bg-card p-1.5 shadow-[var(--shadow-md)]"
     >
       {groups.flatMap((group, groupIndex) => [
         groupIndex > 0 && (

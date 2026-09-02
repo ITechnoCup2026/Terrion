@@ -8,6 +8,7 @@ import { MAP, SUPPLY_RAMP } from '@/components/atlas/palette'
 import { Logo } from '@/components/ui/Logo'
 import { isoWeekStart } from '@/lib/agronomy/dates'
 import type { AtlasCooperative } from '@/lib/atlas/load'
+import { commodityStyle } from '@/lib/catalog/commodity-style'
 import type { RegionSupply } from '@/lib/atlas/supply'
 import { formatNumberId } from '@/lib/format/number'
 import { monthTicks, RULER_WEEKS, supplyRows } from '@/lib/supply/ruler'
@@ -80,7 +81,7 @@ export function AtlasPanel({
     <aside
       aria-label="Rincian wilayah"
       className={cn(
-        'flex shrink-0 flex-col border-border bg-background',
+        'flex shrink-0 flex-col border-border bg-card',
         'h-[55dvh] border-t lg:h-full lg:w-[22rem] lg:border-t-0 lg:border-r xl:w-96',
       )}
     >
@@ -113,7 +114,7 @@ export function AtlasPanel({
 
           <div className="min-h-0 flex-1 overflow-y-auto">
             <section className="border-b border-border px-4 py-4">
-              <h1 className="text-base font-medium text-foreground">{scopeName}</h1>
+              <h1 className="text-lg font-semibold text-foreground">{scopeName}</h1>
               <RegionFigures region={region} />
             </section>
 
@@ -216,7 +217,7 @@ function Crumb({
  * Tonnage is last and is the only one that can be absent: a region with
  * registered land and no recorded planting has not projected zero tonnes, it
  * has projected nothing, and it says so rather than showing a confident 0 --
- * the same rule <StatTile> follows on the dashboard.
+ * the same rule <ImpactPanel> follows on the dashboard.
  */
 function RegionFigures({ region }: { region: RegionSupply }) {
   const figures: [string, string][] = [
@@ -231,7 +232,7 @@ function RegionFigures({ region }: { region: RegionSupply }) {
       {figures.map(([label, value]) => (
         <div key={label}>
           <dt className="text-[0.6875rem] text-muted-foreground">{label}</dt>
-          <dd className="mt-0.5 text-lg leading-none font-medium tabular-nums text-foreground">
+          <dd className="mt-0.5 text-xl leading-none font-semibold tabular-nums text-foreground">
             {value}
           </dd>
         </div>
@@ -257,7 +258,7 @@ function SupplyWindow({ listings }: { listings: RegionSupply['listings'] }) {
 
   return (
     <section className="border-b border-border px-4 py-4">
-      <h2 className="text-xs text-muted-foreground">Perkiraan panen, dua belas minggu</h2>
+      <h2 className="text-xs font-medium text-muted-foreground">Perkiraan panen, dua belas minggu</h2>
 
       <div className="mt-3">
         {/* The scale is a row with the same spacers as the rows below it, not
@@ -283,22 +284,30 @@ function SupplyWindow({ listings }: { listings: RegionSupply['listings'] }) {
         <ul>
           {rows.map(row => (
             <li key={row.commodity} className="flex items-center gap-2 py-1">
-              <span className="w-16 shrink-0 truncate text-[0.75rem] text-foreground">
-                {row.commodity}
+              <span className="flex w-16 shrink-0 items-center gap-1.5">
+                <span
+                  aria-hidden
+                  className="size-1.5 shrink-0 rounded-full"
+                  style={{ background: commodityStyle(row.commodity).hue }}
+                />
+                <span className="truncate text-[0.75rem] font-medium text-foreground">
+                  {row.commodity}
+                </span>
               </span>
               <span className="relative h-4 flex-1 rounded-sm bg-muted">
                 {row.runs.map(([start, length]) => (
                   <span
                     key={start}
-                    className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary"
+                    className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full"
                     style={{
                       left: `${(start / RULER_WEEKS) * 100}%`,
                       width: `${(length / RULER_WEEKS) * 100}%`,
+                      background: commodityStyle(row.commodity).hue,
                     }}
                   />
                 ))}
               </span>
-              <span className="w-12 shrink-0 text-right text-[0.6875rem] tabular-nums text-muted-foreground">
+              <span className="w-12 shrink-0 text-right text-[0.6875rem] font-medium tabular-nums text-foreground">
                 {formatNumberId(row.tonnes)} t
               </span>
             </li>
@@ -323,17 +332,17 @@ function RegionList({
 }) {
   return (
     <section className="border-b border-border py-2">
-      <h2 className="px-4 py-1.5 text-xs text-muted-foreground">{title}</h2>
+      <h2 className="px-4 py-1.5 text-xs font-medium text-muted-foreground">{title}</h2>
       <ul>
         {items.map(item => (
           <li key={item.key}>
             <button
               type="button"
               onClick={() => onOpen(item.key)}
-              className="interactive flex w-full items-baseline justify-between gap-3 px-4 py-2 text-left hover:bg-muted"
+              className="interactive flex w-full items-baseline justify-between gap-3 px-4 py-2 text-left hover:bg-secondary/50"
             >
               <span className="min-w-0">
-                <span className="block truncate text-[0.8125rem] text-foreground">{item.name}</span>
+                <span className="block truncate text-[0.8125rem] font-medium text-foreground">{item.name}</span>
                 <span className="block text-[0.6875rem] text-muted-foreground">
                   {formatNumberId(item.cooperatives)} koperasi
                 </span>
@@ -359,7 +368,7 @@ function CooperativeList({
 }) {
   return (
     <section className="py-2">
-      <h2 className="px-4 py-1.5 text-xs text-muted-foreground">Koperasi</h2>
+      <h2 className="px-4 py-1.5 text-xs font-medium text-muted-foreground">Koperasi</h2>
       <ul>
         {cooperatives.map(c => (
           <li key={c.id}>
@@ -370,10 +379,10 @@ function CooperativeList({
               onMouseLeave={() => onHover(null)}
               onFocus={() => onHover(c.id)}
               onBlur={() => onHover(null)}
-              className="interactive flex w-full items-baseline justify-between gap-3 px-4 py-2 text-left hover:bg-muted"
+              className="interactive flex w-full items-baseline justify-between gap-3 px-4 py-2 text-left hover:bg-secondary/50"
             >
               <span className="min-w-0">
-                <span className="block truncate text-[0.8125rem] text-foreground">{c.name}</span>
+                <span className="block truncate text-[0.8125rem] font-medium text-foreground">{c.name}</span>
                 <span className="block truncate text-[0.6875rem] text-muted-foreground">
                   {c.village}, {c.district}
                 </span>

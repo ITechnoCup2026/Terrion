@@ -39,7 +39,7 @@ export function AccountMenu({
     <Menu.Root>
       <Menu.Trigger
         className={cn(
-          'interactive inline-flex items-center gap-2 rounded-lg border border-border bg-background py-1 pr-2 pl-1',
+          'interactive inline-flex items-center gap-2 rounded-lg border border-border bg-card py-1 pr-2 pl-1',
           'text-sm font-medium text-foreground hover:bg-muted',
           'data-[popup-open]:bg-muted',
         )}
@@ -93,7 +93,7 @@ export function AccountMenu({
                   : <LayoutDashboard aria-hidden className="size-4" />}
               </span>
               <span className="text-sm font-medium text-foreground">
-                {role === 'buyer' ? 'Katalog pasokan' : 'Dasbor koperasi'}
+                {role === 'buyer' ? 'Katalog pasokan' : 'Dashboard koperasi'}
               </span>
             </Menu.Item>
 

@@ -16,7 +16,7 @@ import type { UserRole } from '@/lib/auth/roles'
  *
  * It used to be a flat four-item array inside <AppNav>, which is why the
  * sidebar could not say anything about the shape of the product: "Lahan" and
- * "Dasbor" are what you look at, "Pembelian" and "Permintaan" are what you
+ * "Dashboard" are what you look at, "Pembelian" and "Permintaan" are what you
  * commit the cooperative to, and the catalogue is somebody else's screen you
  * are allowed to visit. An ERP earns its density from that grouping -- a rail
  * of six unlabelled links is a menu, a rail of three named groups is a map of
@@ -54,7 +54,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       {
         href: '/dashboard',
-        label: 'Dasbor',
+        label: 'Dashboard',
         hint: 'Proyeksi panen 12 minggu dan penumpukan',
         icon: LayoutDashboard,
       },

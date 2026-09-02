@@ -29,11 +29,11 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center rounded-lg border border-dashed border-border px-6 py-12 text-center',
+        'flex flex-col items-center justify-center rounded-lg border border-dashed border-input bg-card/60 px-6 py-12 text-center',
         className,
       )}
     >
-      <p className="text-sm font-medium text-foreground">{title}</p>
+      <p className="text-sm font-semibold text-foreground">{title}</p>
       {description && (
         <p className="mt-1.5 max-w-prose text-sm leading-relaxed text-muted-foreground">
           {description}

@@ -23,11 +23,11 @@ export const MAP = {
   water: '#dfe6e1',
   /** Land with no registered cooperative. Paper, and a hairline to shape it. */
   land: '#ffffff',
-  landStroke: '#dbe3dd',
+  landStroke: '#d3ddd7',
   /** A region that can be drilled into, under the pointer. */
-  hoverStroke: '#5a6b62',
+  hoverStroke: '#47574e',
   /** The region currently being looked at. */
-  activeStroke: '#14211b',
+  activeStroke: '#0f1c16',
 
   /**
    * A cooperative's position. Ink with a paper halo, so it is legible on white
@@ -36,7 +36,7 @@ export const MAP = {
    * somewhere is not a warning, and spending the warning colour on identity is
    * what leaves nothing left to warn with.
    */
-  pin: '#14211b',
+  pin: '#0f1c16',
   pinHalo: '#ffffff',
 } as const
 
@@ -48,11 +48,11 @@ export const MAP = {
  * one. Steps 1 to 4 are quartiles of the heaviest region on the map.
  */
 export const SUPPLY_RAMP = [
-  '#f2f7f3', // 0 — registered, nothing projected
-  '#d7e8dc', // 1
-  '#a8cdb4', // 2
-  '#5e9e76', // 3
-  '#1f5c3f', // 4
+  '#eef6f1', // 0 — registered, nothing projected
+  '#cfe8da', // 1
+  '#96ceac', // 2
+  '#4aa870', // 3
+  '#1a5f3c', // 4
 ] as const
 
 /** What the legend calls each step. */

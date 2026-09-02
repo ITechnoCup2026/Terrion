@@ -147,7 +147,7 @@ export default async function LandingPage() {
 
       {cooperatives && (
         <section className="px-4">
-          <dl className="mx-auto grid w-full max-w-5xl grid-cols-2 overflow-hidden rounded-lg border border-border sm:grid-cols-4">
+          <dl className="mx-auto grid w-full max-w-5xl grid-cols-2 overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-xs)] sm:grid-cols-4">
             {[
               { label: "Koperasi", value: formatNumberId(cooperatives.length) },
               { label: "Provinsi", value: formatNumberId(provinces.size) },
@@ -164,7 +164,7 @@ export default async function LandingPage() {
                 )}
               >
                 <dt className="text-xs text-muted-foreground">{stat.label}</dt>
-                <dd className="mt-1.5 text-2xl leading-none font-medium tracking-tight tabular-nums text-foreground">
+                <dd className="mt-1.5 text-[1.75rem] leading-none font-semibold tracking-tight tabular-nums text-foreground">
                   {stat.value}
                 </dd>
               </div>
@@ -186,7 +186,7 @@ export default async function LandingPage() {
             </p>
           </div>
 
-          <dl className="mt-10 grid overflow-hidden rounded-lg border border-border sm:grid-cols-2">
+          <dl className="mt-10 grid overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-xs)] sm:grid-cols-2">
             {DERIVED.map((d) => (
               <div
                 key={d.title}
@@ -197,7 +197,7 @@ export default async function LandingPage() {
                   "sm:even:border-l sm:even:border-border",
                 )}
               >
-                <dt className="text-[0.9375rem] font-medium text-foreground">
+                <dt className="text-[0.9375rem] font-semibold text-foreground">
                   {d.title}
                 </dt>
                 <dd className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -209,7 +209,7 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      <section className="border-y border-border bg-muted px-4 py-20 sm:py-24">
+      <section className="border-y border-border bg-card px-4 py-20 sm:py-24">
         <div className="mx-auto grid w-full max-w-5xl items-center gap-12 lg:grid-cols-2">
           <div>
             <h2 className="max-w-md text-2xl leading-tight tracking-tight text-foreground sm:text-3xl">
@@ -219,7 +219,7 @@ export default async function LandingPage() {
             <dl className="mt-8 flex flex-col gap-5">
               {FOR_BUYERS.map(([term, detail]) => (
                 <div key={term}>
-                  <dt className="text-sm font-medium text-foreground">{term}</dt>
+                  <dt className="text-sm font-semibold text-foreground">{term}</dt>
                   <dd className="mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
                     {detail}
                   </dd>
@@ -274,7 +274,7 @@ export default async function LandingPage() {
           <Tile
             href="/login"
             className="md:col-span-3"
-            title="Dasbor koperasi"
+            title="Dashboard koperasi"
             body="Peringatan penumpukan panen, proyeksi mingguan, dan ekspor RDKK."
             action="Masuk sebagai koperasi"
           />
@@ -308,11 +308,11 @@ function Tile({
     <Link
       href={href}
       className={cn(
-        "interactive group flex min-h-40 flex-col justify-end rounded-lg border border-border bg-card p-5 hover:border-input",
+        "interactive group flex min-h-40 flex-col justify-end rounded-lg border border-border bg-card p-5 shadow-[var(--shadow-xs)] hover:border-[var(--terrion-green-200)] hover:shadow-[var(--shadow-sm)]",
         className,
       )}
     >
-      <h3 className="text-base font-medium text-foreground">{title}</h3>
+      <h3 className="text-base font-semibold text-foreground">{title}</h3>
       <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted-foreground">
         {body}
       </p>

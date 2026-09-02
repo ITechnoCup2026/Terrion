@@ -40,7 +40,7 @@ export default async function PublicLayout({ children }: LayoutProps<'/'>) {
       {/* h-[var(--public-header)] rather than padding: the landing hero sizes
           itself as calc(100dvh - var(--public-header)), so the header's real
           height and the number the hero subtracts have to be the same thing. */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background">
+      <header className="sticky top-0 z-40 border-b border-border bg-card">
         <div className="mx-auto flex h-[var(--public-header)] w-full max-w-5xl items-center justify-between gap-4 px-4">
           <Link href={user ? homeFor(user.role) : '/'} aria-label="Terrion">
             <Logo size={24} />

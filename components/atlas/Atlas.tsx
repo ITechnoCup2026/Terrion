@@ -651,7 +651,7 @@ export function Atlas({
         {/* The only chrome left over the map. Zoom is arithmetic, so + and −
             stay glyphs; everything else that used to float here — breadcrumb,
             reset, legend, counts, links — is the panel's job now. */}
-        <div className="absolute right-4 bottom-4 flex flex-col overflow-hidden rounded-md border border-border bg-background shadow-[var(--shadow-md)]">
+        <div className="absolute right-4 bottom-4 flex flex-col overflow-hidden rounded-md border border-border bg-card shadow-[var(--shadow-md)]">
           <CameraButton label="Perbesar" onClick={() => stepZoom(1 / 1.6)}>+</CameraButton>
           <span aria-hidden className="h-px bg-border" />
           <CameraButton label="Perkecil" onClick={() => stepZoom(1.6)}>−</CameraButton>
@@ -667,7 +667,7 @@ export function Atlas({
         )}
 
         {level === 'province' && regencies.length === 0 && !loading && (
-          <p className="pointer-events-none absolute bottom-4 left-4 max-w-xs rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground shadow-[var(--shadow-sm)]">
+          <p className="pointer-events-none absolute bottom-4 left-4 max-w-xs rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground shadow-[var(--shadow-sm)]">
             Batas kabupaten tidak tersedia untuk provinsi ini.
           </p>
         )}

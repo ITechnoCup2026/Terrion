@@ -5,6 +5,7 @@ import { CreateOrderButton } from '@/components/commerce/CreateOrderButton'
 import { Badge } from '@/components/ui/Badge'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardHeader } from '@/components/ui/Card'
+import { Composition } from '@/components/ui/Composition'
 import { Table, TableFrame, TBody, Td, Th, THead } from '@/components/ui/DataTable'
 import { Page, PageHeader } from '@/components/ui/Page'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -14,6 +15,7 @@ import { formatDateId } from '@/lib/harvest/format'
 import { formatNumberId } from '@/lib/format/number'
 import { SUBSIDY_CAP_HA } from '@/lib/rdkk/aggregate'
 import { loadInputOrders, loadSeasonInputs, seasonRequirementLines } from '@/lib/rdkk/load'
+import { inputItemLabel } from '@/lib/rdkk/label'
 import { KG_PER_SACK, toOrderLines } from '@/lib/rdkk/order'
 import type { InputOrderStatusRaw } from '@/lib/api/types'
 
@@ -81,32 +83,24 @@ export default async function PurchasesPage() {
               }
             />
 
-            {/* The frame runs edge to edge inside the card, so the header rule
-                spans the panel rather than floating inside a padded box. */}
-            <TableFrame className="rounded-none border-x-0 border-b-0">
-              <Table>
-                <THead>
-                  <tr>
-                    <Th>Pupuk</Th>
-                    <Th numeric>Kebutuhan</Th>
-                    <Th numeric>Pesan</Th>
-                  </tr>
-                </THead>
-                <TBody>
-                  {lines.map(l => (
-                    <tr key={l.item}>
-                      <Td className="text-foreground capitalize">{l.item}</Td>
-                      <Td numeric className="text-muted-foreground">
-                        {formatNumberId(l.quantityKg / 1000)} ton
-                      </Td>
-                      <Td numeric className="text-foreground">
-                        {formatNumberId(l.quantity, 0)} karung
-                      </Td>
-                    </tr>
-                  ))}
-                </TBody>
-              </Table>
-            </TableFrame>
+            {/* A composition, not a table. The order is one quantity split
+                four ways, and the thing a pengurus needs off this panel --
+                that urea is more than half of it -- used to be four numbers to
+                add up in your head. Both figures live on the row: the
+                requirement it was derived from, and the sacks that actually
+                get ordered. */}
+            <div className="border-t border-border p-4">
+              <Composition
+                parts={lines.map(l => ({
+                  key: l.item,
+                  label: inputItemLabel(l.item),
+                  value: `${formatNumberId(l.quantityKg / 1000)} ton`,
+                  secondary: `${formatNumberId(l.quantity, 0)} karung`,
+                  amount: l.quantityKg,
+                }))}
+              />
+            </div>
+
 
             <div className="p-4 pt-3">
 
@@ -195,7 +189,7 @@ export default async function PurchasesPage() {
                     </Td>
                     <Td className="text-foreground">{order.seasonLabel}</Td>
                     <Td className="text-muted-foreground">
-                      {order.lines.map(l => `${formatNumberId(l.quantity, 0)} ${l.unit} ${l.item}`).join(', ')}
+                      {order.lines.map(l => `${formatNumberId(l.quantity, 0)} ${l.unit} ${inputItemLabel(l.item)}`).join(', ')}
                     </Td>
                     <Td>
                       <Badge tone={ORDER_STATUS_TONE[order.status]}>

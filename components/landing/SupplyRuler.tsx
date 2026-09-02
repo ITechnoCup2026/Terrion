@@ -1,4 +1,5 @@
 import { isoWeekStart } from '@/lib/agronomy/dates'
+import { commodityStyle } from '@/lib/catalog/commodity-style'
 import type { Listing } from '@/lib/catalog/listings'
 import { formatNumberId } from '@/lib/format/number'
 import { monthTicks, RULER_WEEKS, supplyRows } from '@/lib/supply/ruler'
@@ -19,7 +20,14 @@ import { monthTicks, RULER_WEEKS, supplyRows } from '@/lib/supply/ruler'
  * and the dashboard. A hero built on a big number would be claiming a
  * precision the model does not have.
  *
- * A server component: the arithmetic lives in `lib/landing/ruler`, this is the
+ * Each crop draws in its own colour, the one it keeps everywhere else in the
+ * product — the same hue on its catalogue card, its plot row and its bar here.
+ * Every band was one uniform green for a while, which made the chart of five
+ * different crops look like a chart of one thing measured five times. Colour
+ * is doing identification here, not decoration, and it is never the only
+ * channel: the crop is named on the same line.
+ *
+ * A server component: the arithmetic lives in `lib/supply/ruler`, this is the
  * layout of its result, and the whole thing ships no JavaScript.
  */
 export function SupplyRuler({
@@ -37,7 +45,7 @@ export function SupplyRuler({
 
   return (
     <figure className={className}>
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-xs)]">
         {/* The month scale. Absolutely positioned within its track rather
             than laid out on a grid, because a month is not a whole number of
             weeks and rounding it to one puts the label a few days from the
@@ -64,13 +72,20 @@ export function SupplyRuler({
         </div>
 
         <ul>
-          {rows.map((row, rowIndex) => (
+          {rows.map(row => (
             <li
               key={row.commodity}
               className="flex items-center border-b border-border last:border-b-0"
             >
-              <span className="w-24 shrink-0 truncate py-3 pr-2 pl-4 text-[0.8125rem] text-foreground sm:w-36">
-                {row.commodity}
+              <span className="flex w-24 shrink-0 items-center gap-2 py-3 pr-2 pl-4 sm:w-36">
+                <span
+                  aria-hidden
+                  className="size-2 shrink-0 rounded-full"
+                  style={{ background: commodityStyle(row.commodity).hue }}
+                />
+                <span className="truncate text-[0.8125rem] font-medium text-foreground">
+                  {row.commodity}
+                </span>
               </span>
 
               <span className="relative h-9 flex-1">
@@ -88,11 +103,11 @@ export function SupplyRuler({
                 {row.runs.map(([start, length]) => (
                   <span
                     key={start}
-                    className="band absolute top-1/2 h-2.5 -translate-y-1/2 rounded-full bg-primary"
+                    className="absolute top-1/2 h-2.5 -translate-y-1/2 rounded-full"
                     style={{
                       left: `${(start / RULER_WEEKS) * 100}%`,
                       width: `${(length / RULER_WEEKS) * 100}%`,
-                      ['--band-delay' as string]: `${260 + rowIndex * 80}ms`,
+                      background: commodityStyle(row.commodity).hue,
                     }}
                   />
                 ))}
@@ -102,7 +117,7 @@ export function SupplyRuler({
                   together would leave twelve weeks about 150px to live in.
                   Of the three things the row says -- which crop, which weeks,
                   how much -- the tonnage is the one the caption can carry. */}
-              <span className="hidden w-20 shrink-0 py-3 pr-4 text-right text-[0.8125rem] tabular-nums text-muted-foreground sm:block">
+              <span className="hidden w-20 shrink-0 py-3 pr-4 text-right text-[0.8125rem] font-medium tabular-nums text-foreground sm:block">
                 {formatNumberId(row.tonnes)} t
               </span>
             </li>

@@ -39,7 +39,7 @@ describe('breadcrumbsFor', () => {
   it('ignores a trailing slash', () => {
     expect(breadcrumbsFor('/dashboard/')).toEqual([
       { label: 'Operasi' },
-      { label: 'Dasbor' },
+      { label: 'Dashboard' },
     ])
   })
 

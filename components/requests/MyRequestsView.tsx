@@ -163,7 +163,7 @@ export function MyRequestsView({
             placeholder="Cari komoditas atau koperasi..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="interactive h-9 w-full rounded-xl border border-input bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none"
+            className="interactive h-9 w-full rounded-xl border border-input bg-card pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none"
           />
         </div>
       </div>
