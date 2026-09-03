@@ -85,20 +85,17 @@ export function ProjectionChart({ weeks }: { weeks: ChartWeek[] }) {
           : 'Tidak ada minggu yang melewati kapasitas.')
       }
     >
-      <div className="flex gap-2.5">
-        {/* The scale. Mono and right-aligned, so the digits stack — the one
-            thing a proportional face cannot do down a column. */}
-        <div className="relative h-52 w-7 shrink-0 sm:h-60">
-          <span className="absolute -top-4 right-0 text-[0.625rem] text-[var(--terrion-ink-faint)]">
-            ton
-          </span>
-          {TICKS.map(t => (
+      <div className="flex gap-3">
+        {/* The scale. Mono digits. */}
+        <div className="relative h-52 w-9 shrink-0 sm:h-60">
+          {TICKS.map((t, idx) => (
             <span
               key={t}
-              className="absolute right-0 -translate-y-1/2 font-mono text-[0.625rem] tabular-nums text-[var(--terrion-ink-faint)]"
+              className="absolute right-1 -translate-y-1/2 font-mono text-[0.625rem] tabular-nums text-muted-foreground"
               style={{ top: `${(1 - t) * 100}%` }}
             >
               {formatNumberId(axis * t, axis < 10 ? 1 : 0)}
+              {idx === 0 && <span className="ml-0.5 text-[0.5625rem] text-muted-foreground/80">t</span>}
             </span>
           ))}
         </div>
@@ -111,114 +108,107 @@ export function ProjectionChart({ weeks }: { weeks: ChartWeek[] }) {
                 aria-hidden
                 className={cn(
                   'absolute inset-x-0 h-px',
-                  t === 0 ? 'bg-[var(--terrion-ink-faint)]' : 'bg-border',
+                  t === 0 ? 'bg-border' : 'bg-border/60',
                 )}
                 style={{ top: `${(1 - t) * 100}%` }}
               />
             ))}
 
             <div className="absolute inset-0 flex items-stretch">
-              {weeks.map((week, i) => (
-                <div key={i} className="group/week relative flex-1">
-                  <span
-                    aria-hidden
-                    className="absolute inset-0 rounded-sm group-hover/week:bg-muted"
-                  />
+              {weeks.map((week, i) => {
+                const hasData = week.max > 0 || week.expected > 0
 
-                  {/* This week, marked once. The projection's whole subject is
-                      *when*, and a chart with no "now" on it is a list. */}
-                  {i === 0 && (
-                    <>
+                return (
+                  <div key={i} className="group/week relative flex-1">
+                    <span
+                      aria-hidden
+                      className="absolute inset-0 rounded-sm group-hover/week:bg-muted/50"
+                    />
+
+                    {/* Week 0 green line marker */}
+                    {i === 0 && (
                       <span
                         aria-hidden
-                        className="absolute inset-y-0 left-0 w-px bg-[var(--terrion-green-500)]"
+                        className="absolute inset-y-0 left-0 w-px bg-[var(--terrion-green-600)]"
                       />
-                      <span className="absolute top-0 left-1.5 text-[0.625rem] whitespace-nowrap text-[var(--terrion-green-600)]">
-                        minggu ini
-                      </span>
-                    </>
-                  )}
-
-                  <span
-                    aria-hidden
-                    className="grow-up absolute inset-x-0 bottom-0 top-0"
-                    style={{ '--grow-delay': `${i * 35}ms` } as CSSProperties}
-                  >
-                    <span
-                      className={cn(
-                        'absolute left-1/2 w-[52%] max-w-[18px] -translate-x-1/2 rounded-full',
-                        week.risk
-                          ? 'bg-[var(--terrion-gold-200)]'
-                          : 'bg-[var(--terrion-green-200)]',
-                      )}
-                      style={{
-                        bottom: `${pct(week.min)}%`,
-                        height: `max(${pct(week.max - week.min)}%, 3px)`,
-                      }}
-                    />
-                    <span
-                      className={cn(
-                        'absolute left-1/2 h-[5px] w-[52%] max-w-[18px] -translate-x-1/2 rounded-full',
-                        week.risk ? 'bg-accent' : 'bg-[var(--terrion-green-600)]',
-                      )}
-                      style={{ bottom: `calc(${pct(week.expected)}% - 2.5px)` }}
-                    />
-                  </span>
-
-                  {/* The word as well as the colour: gold alone fails for a
-                      reader who cannot separate it from green, and dies the
-                      moment somebody prints this for a members' meeting. */}
-                  {week.risk && (
-                    <span
-                      className="absolute inset-x-0 text-center text-[0.625rem] font-medium text-accent"
-                      style={{ bottom: `calc(${pct(week.max)}% + 5px)` }}
-                    >
-                      Padat
-                    </span>
-                  )}
-
-                  {/* Read on hover, not fetched on hover — every figure in here
-                      is already in the markup, so there is no tooltip runtime
-                      and no client component. */}
-                  <span
-                    className={cn(
-                      'pointer-events-none absolute bottom-full z-20 mb-1 hidden rounded-md border border-border bg-popover px-2.5 py-1.5 text-left whitespace-nowrap shadow-[var(--shadow-md)] group-hover/week:block',
-                      // The panel clips its own overflow, so a centred popover
-                      // on the last column loses half of itself to the panel's
-                      // right edge. The end weeks anchor to their own edge.
-                      i === weeks.length - 1
-                        ? 'right-0'
-                        : i === 0
-                          ? 'left-0'
-                          : 'left-1/2 -translate-x-1/2',
                     )}
-                  >
-                    <span className="block text-[0.6875rem] font-medium text-foreground">
-                      Minggu {week.weekStart.getUTCDate()} {MONTHS_ID[week.weekStart.getUTCMonth()]}
+
+                    {hasData && (
+                      <span
+                        aria-hidden
+                        className="grow-up absolute inset-x-0 bottom-0 top-0"
+                        style={{ '--grow-delay': `${i * 35}ms` } as CSSProperties}
+                      >
+                        {/* Pale green capsule */}
+                        <span
+                          className={cn(
+                            'absolute left-1/2 w-[38%] max-w-[14px] min-w-[7px] -translate-x-1/2 rounded-full transition-all',
+                            week.risk
+                              ? 'bg-[var(--terrion-gold-200)]/90'
+                              : 'bg-[var(--terrion-green-200)]',
+                          )}
+                          style={{
+                            bottom: `${pct(week.min)}%`,
+                            height: `${Math.max(pct(week.max - week.min), 5)}%`,
+                          }}
+                        />
+                        {/* Expected tonnage crossbar using valid terrion-green-900 */}
+                        <span
+                          className={cn(
+                            'absolute left-1/2 h-[3px] w-[54%] max-w-[18px] min-w-[9px] -translate-x-1/2 rounded-full',
+                            week.risk ? 'bg-accent' : 'bg-[var(--terrion-green-900)]',
+                          )}
+                          style={{ bottom: `calc(${pct(week.expected)}% - 1.5px)` }}
+                        />
+                      </span>
+                    )}
+
+                    {week.risk && (
+                      <span
+                        className="absolute inset-x-0 text-center text-[0.625rem] font-semibold text-accent"
+                        style={{ bottom: `calc(${pct(week.max)}% + 5px)` }}
+                      >
+                        Padat
+                      </span>
+                    )}
+
+                    <span
+                      className={cn(
+                        'pointer-events-none absolute bottom-full z-20 mb-1 hidden rounded-md border border-border bg-popover px-2.5 py-1.5 text-left whitespace-nowrap shadow-[var(--shadow-md)] group-hover/week:block',
+                        i === weeks.length - 1
+                          ? 'right-0'
+                          : i === 0
+                            ? 'left-0'
+                            : 'left-1/2 -translate-x-1/2',
+                      )}
+                    >
+                      <span className="block text-[0.6875rem] font-medium text-foreground">
+                        Minggu {week.weekStart.getUTCDate()} {MONTHS_ID[week.weekStart.getUTCMonth()]}
+                      </span>
+                      <span className="block text-[0.6875rem] tabular-nums text-muted-foreground">
+                        Perkiraan {formatNumberId(week.expected)} ton
+                      </span>
+                      {week.max > week.min && (
+                        <span className="block text-[0.6875rem] tabular-nums text-[var(--terrion-ink-faint)]">
+                          Rentang {formatNumberId(week.min)}–{formatNumberId(week.max)} ton
+                        </span>
+                      )}
                     </span>
-                    <span className="block text-[0.6875rem] tabular-nums text-muted-foreground">
-                      Perkiraan {formatNumberId(week.expected)} ton
-                    </span>
-                    <span className="block text-[0.6875rem] tabular-nums text-[var(--terrion-ink-faint)]">
-                      Rentang {formatNumberId(week.min)}–{formatNumberId(week.max)} ton
-                    </span>
-                  </span>
-                </div>
-              ))}
+                  </div>
+                )
+              })}
             </div>
           </div>
 
-          {/* The calendar band: day of month per week, month names under the
-              run of weeks they cover. A cooperative reads its season off a wall
-              calendar, and twelve repetitions of "7 Sep" is not one. */}
-          <div className="mt-2 flex">
+          {/* The calendar band */}
+          <div className="mt-2.5 flex">
             {weeks.map((week, i) => (
               <span
                 key={i}
                 className={cn(
                   'flex-1 text-center font-mono text-[0.625rem] tabular-nums',
                   i === 0
-                    ? 'font-medium text-[var(--terrion-green-700)]'
+                    ? 'font-bold text-[var(--terrion-green-700)]'
                     : 'text-[var(--terrion-ink-faint)]',
                 )}
               >
@@ -227,11 +217,11 @@ export function ProjectionChart({ weeks }: { weeks: ChartWeek[] }) {
             ))}
           </div>
 
-          <div className="mt-1.5 flex border-t border-border pt-1.5">
+          <div className="mt-2 flex border-t border-border pt-1.5">
             {monthSpans(weeks).map(span => (
               <span
                 key={span.month}
-                className="border-l border-border pl-2 text-[0.6875rem] text-muted-foreground first:border-l-0 first:pl-0"
+                className="border-l border-border/80 pl-2 text-[0.6875rem] font-medium text-muted-foreground first:border-l-0 first:pl-0"
                 style={{ flexGrow: span.count, flexBasis: 0 }}
               >
                 {MONTHS_ID[span.month]}
@@ -240,6 +230,10 @@ export function ProjectionChart({ weeks }: { weeks: ChartWeek[] }) {
           </div>
         </div>
       </div>
+
+
+
+
     </figure>
   )
 }
