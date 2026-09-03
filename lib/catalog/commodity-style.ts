@@ -17,6 +17,8 @@ export type CommodityStyle = {
   tint: string
   /** An SVG path drawn at 24x24, stroked not filled. */
   glyph: string
+  /** High-resolution photo asset path if available. */
+  image?: string
 }
 
 // Deliberately not the chart palette: these identify a crop, they do not encode
@@ -26,14 +28,17 @@ const STYLES: Record<string, CommodityStyle> = {
   padi: {
     hue: '#b08900', tint: '#fdf6e3',
     glyph: 'M12 21V11M12 11c0-2 1.4-3.6 3.6-4-.2 2.4-1.6 4-3.6 4Zm0 0c0-2-1.4-3.6-3.6-4 .2 2.4 1.6 4 3.6 4Zm0-5c0-2 1.4-3.6 3.6-4-.2 2.4-1.6 4-3.6 4Zm0 0c0-2-1.4-3.6-3.6-4 .2 2.4 1.6 4 3.6 4Z',
+    image: '/crops/padi.png',
   },
   jagung: {
     hue: '#c98a00', tint: '#fdf3e0',
     glyph: 'M12 3c2.5 1.6 3.5 4.2 3.5 7s-1 5.4-3.5 7c-2.5-1.6-3.5-4.2-3.5-7S9.5 4.6 12 3ZM9.4 7h5.2M9 11h6M9.4 15h5.2M12 17v4',
+    image: '/crops/jagung.png',
   },
   cabai: {
     hue: '#c2410c', tint: '#fdf0ea',
     glyph: 'M14 5c0-1 .8-2 2-2M14 5c-3.4 0-6.5 3-6.5 7.5S10 20 13 20c3.4 0 5.5-3.4 5.5-7C18.5 8.6 16.8 5 14 5Z',
+    image: '/crops/cabai.png',
   },
   kentang: {
     hue: '#8a6a3f', tint: '#f8f3ec',
@@ -42,6 +47,7 @@ const STYLES: Record<string, CommodityStyle> = {
   wortel: {
     hue: '#d1660a', tint: '#fdf2e8',
     glyph: 'M11 8 6.5 19.5 18 15 11 8Zm0 0 2-3m-2 3-3-2m5-1V3m0 2 3-1',
+    image: '/crops/wortel.png',
   },
   beri: {
     hue: '#9d2c5b', tint: '#fbeef3',

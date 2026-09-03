@@ -21,19 +21,6 @@
    The rule that keeps this honest: nothing is tinted to look interesting. A
    panel earns colour by carrying a state, and a panel with no state is white.
 
-   That rule was right and the first pass applied it to death. Everything ended
-   up white on white, in one grey, at one weight, with shadows at three percent
-   -- 223 pieces of grey text against 155 of ink, and the six-colour crop
-   palette used fourteen times in the entire product. A page where nothing is
-   emphasised reads as a page where nothing matters.
-
-   Colour comes back through the DATA, never through ornament. A crop keeps its
-   own hue wherever it appears -- in a band on the ruler, a bar on a row, a
-   chip beside a name -- because that hue is an identifier a reader learns and
-   then navigates by. Status colour stays exactly as strict as before. The
-   difference between the two is the difference between a chart and a
-   decoration.
-
    Removed deliberately, and listed so it does not creep back:
      .glass-panel / .glow-* / backdrop blur as decoration — a frosted surface
        says "layer above", and nothing here is above anything
@@ -99,50 +86,72 @@
   --animate-rise: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-fade: fade 0.35s ease-out both;
   --animate-grow: grow 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-band: band 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 :root {
-  /* Field greens. The 500 is brighter than it was: it is the live green, the
-     one that appears on a dot, a positive badge, a chart series -- the places
-     that should look like something is growing rather than something is
-     archived. The deep 700 stays the ink green for buttons and marks. */
-  --terrion-green-50: #eef6f1;
-  --terrion-green-100: #d5e9dd;
-  --terrion-green-200: #b9d9c4;
-  --terrion-green-500: #2e9e5b;
-  --terrion-green-600: #24804a;
-  --terrion-green-700: #1a5f3c;
-  --terrion-green-900: #0e3524;
+  /* ═══ BRAND PALETTE ══════════════════════════════════════════════════════
+     The brand board's seven colours, mapped onto the ladder the product
+     already reads. Four of them survive as EXACT hex and are marked so; the
+     rest of each ramp is derived from them, never invented beside them.
 
-  /* Harvest gold. The 600 is the semantic one -- "at or over a limit" -- and
-     it is dark enough to hold 4.5:1 on white as TEXT, because over-a-limit is
-     nearly always a sentence rather than a fill. It was #b07a12, which reads
-     fine at 28px on a figure and failed AA at 12px on the collision alert's
-     own label. The 500 stays brighter for fills, where the contrast rule that
-     applies is the 3:1 one for large shapes. */
-  --terrion-gold-50: #fbf4e4;
-  --terrion-gold-200: #ecd7a2;
-  --terrion-gold-500: #c68f1c;
-  --terrion-gold-600: #9c6910;
+     Where the board and the product disagreed, the product's rule won and the
+     reason is written next to it — a token that quietly fails contrast is a
+     bug you can only find by looking at a screen.
+  ═══════════════════════════════════════════════════════════════════════════ */
 
-  --terrion-sky-100: #dceaf2;
+  /* Field greens. Two of the board's colours are load-bearing here: Deep
+     Forest is the ink of the mark and every primary action, Green Field is the
+     fill of a band. Fresh Leaf is genuinely light, so it sits at 300 rather
+     than 500 — dropping it into the middle of the ramp would have made the
+     "Kuat" password meter and chart-5 lighter than the row behind them. 500
+     is the step between the two board greens, so the ramp still climbs. */
+  --terrion-green-50: #f2f8ee;
+  --terrion-green-100: #e3f0d6;
+  --terrion-green-200: #c9e3ab;
+  --terrion-green-300: #9ccc65;   /* Fresh Leaf — exact */
+  --terrion-green-500: #5aa045;
+  --terrion-green-600: #2e7d32;   /* Green Field — exact */
+  --terrion-green-700: #0f4d3c;   /* Deep Forest — exact. The primary. */
+  --terrion-green-900: #073124;
 
-  /* Ink, warmed a few degrees towards green so it belongs to the palette
-     instead of being a pasted-in neutral. Three steps, and they are three
-     steps apart on purpose: the first pass set them so close together that
-     more than half the type on the site was the middle one and the page had no
-     anchor. --ink-faint was #8a9891, which is 3.4:1 on white -- below AA, and
-     used for twenty-eight pieces of real text. */
-  --terrion-ink: #0f1c16;
-  --terrion-ink-soft: #47574e;
-  --terrion-ink-faint: #617169;
+  /* Harvest gold. 500 is the board's Harvest Gold exactly, and it is a FILL:
+     #f6b93b on white is 1.9:1, which is not text. 600 is that same hue walked
+     down until it holds 4.86:1 on white and 4.56:1 on its own gold-50 wash —
+     the two grounds Badge actually puts it on — because at-or-over-a-limit is
+     nearly always a sentence rather than a swatch. The board's gold and this
+     one are the same colour at two jobs, not two golds. */
+  --terrion-gold-50: #fef7e9;
+  --terrion-gold-200: #fbe0a6;
+  --terrion-gold-500: #f6b93b;    /* Harvest Gold — exact */
+  --terrion-gold-600: #98680e;
 
-  /* Ground and paper. The page is a soft green-grey and the cards on it are
-     white, which is the whole of why a card now reads as an object -- a white
-     panel on a white page is a rectangle of hairlines, and no amount of
-     shadow tuning fixes that. Chrome (the rail, the top bar) is paper too, so
-     the frame is one white shape and the content sits in it. */
-  --background: #f5f8f6;
+  --terrion-sky-100: #e8f5fb;     /* Sky Mist — exact */
+
+  /* Warm Sand, the board's "clarity, balance". It is the LANDING's paper —
+     see .landing-sheet. Inside the product the ground stays white: sand
+     behind a dense table tints every figure sitting on it, and a figure that
+     changes colour with its background is a figure you cannot trust. */
+  --terrion-sand: #f7e9d7;        /* Warm Sand — exact */
+  --terrion-sand-deep: #efdcc2;
+  --terrion-sand-line: #e3d3b8;
+
+  /* Soil Brown. The board prints this as #ED4C2F, which is an orange-red and
+     not the brown its own swatch shows; every other label on the board matches
+     its swatch, so this is read as a typo and the swatch is taken as the
+     truth. Used once, for the one thing on the page that is literally about
+     the ground: the atlas legend's unlit provinces. */
+  --terrion-soil: #6b4c2f;
+
+  /* Ink, pulled a few degrees further towards Deep Forest than it was, so the
+     body text belongs to the palette instead of being a neutral parked beside
+     it. Three steps and no more: body, secondary, and the meta line that is
+     nearly furniture. */
+  --terrion-ink: #10251c;
+  --terrion-ink-soft: #4f5c50;
+  --terrion-ink-faint: #7d8a7e;
+
+  --background: #ffffff;
   --foreground: var(--terrion-ink);
   --card: #ffffff;
   --card-foreground: var(--terrion-ink);
@@ -151,15 +160,13 @@
 
   --primary: var(--terrion-green-700);
   --primary-foreground: #ffffff;
-  /* Deep enough to be visibly green against the page ground. At the old value
-     the active nav item was the same colour as the page it sat on. */
-  --secondary: #e2f0e7;
+  --secondary: var(--terrion-green-50);
   --secondary-foreground: var(--terrion-green-900);
 
-  /* The single recessed tint, and it recedes from PAPER, not from the page:
-     a table head inside a white card, a hovered row. Barely green, so it never
+  /* The single recessed tint. A table head, a page ground behind a panel —
+     one step down from paper and nothing else. Barely green, so it never
      reads as a status. */
-  --muted: #f1f5f2;
+  --muted: #f4f7f0;
   --muted-foreground: var(--terrion-ink-soft);
 
   --accent: var(--terrion-gold-600);
@@ -167,14 +174,14 @@
   --destructive: #a93226;
   --destructive-foreground: #ffffff;
 
-  --border: #dce4df;
-  --input: #c4d1c9;
+  --border: #e3e9dd;
+  --input: #ccd7c4;
   --ring: var(--terrion-green-600);
 
   /* Chart series: one hue with lightness steps, plus gold reserved for the
      series that is over a limit. Survives greyscale printing, which the RDKK
      workflow actually does. */
-  --chart-1: var(--terrion-green-600);
+  --chart-1: var(--terrion-green-700);
   --chart-2: var(--terrion-gold-600);
   --chart-3: var(--terrion-green-500);
   --chart-4: var(--terrion-ink-faint);
@@ -186,27 +193,27 @@
   --sidebar-foreground: var(--terrion-ink);
   --sidebar-primary: var(--terrion-green-700);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e2f0e7;
+  --sidebar-accent: var(--terrion-green-50);
   --sidebar-accent-foreground: var(--terrion-green-900);
-  --sidebar-border: #dce4df;
+  --sidebar-border: #e3e9dd;
   --sidebar-ring: var(--terrion-green-600);
 
-  /* A card sitting on the page ground gets a real contact shadow now. The
-     first pass took these to three percent, which on a white-on-white layout
-     meant nothing on any screen was an object -- every panel was an outline.
-     Still soft, still tinted green rather than black (a neutral drop shadow on
-     this warm white reads as dirt), but present. */
-  --shadow-xs: 0 1px 2px rgb(15 28 22 / 0.05);
-  --shadow-sm: 0 1px 2px rgb(15 28 22 / 0.06), 0 1px 3px rgb(15 28 22 / 0.05);
-  --shadow-md: 0 1px 3px rgb(15 28 22 / 0.07), 0 4px 12px rgb(15 28 22 / 0.08);
-  --shadow-lg: 0 2px 4px rgb(15 28 22 / 0.07), 0 12px 28px rgb(15 28 22 / 0.11);
-  --shadow-xl: 0 4px 8px rgb(15 28 22 / 0.08), 0 24px 48px rgb(15 28 22 / 0.14);
+  /* Shadows are for things that genuinely float: a popover, a command
+     palette, a dropdown. A panel that sits in the page gets a rule instead,
+     which is why this ladder starts at "almost nothing" and only the top two
+     rungs are visible at all. Tinted green rather than black — a neutral drop
+     shadow on this white reads as dirt. */
+  --shadow-xs: 0 1px 1px rgb(16 37 28 / 0.03);
+  --shadow-sm: 0 1px 2px rgb(16 37 28 / 0.04);
+  --shadow-md: 0 1px 2px rgb(16 37 28 / 0.04), 0 4px 12px rgb(16 37 28 / 0.06);
+  --shadow-lg: 0 2px 4px rgb(16 37 28 / 0.05), 0 12px 28px rgb(16 37 28 / 0.09);
+  --shadow-xl: 0 4px 8px rgb(16 37 28 / 0.06), 0 24px 48px rgb(16 37 28 / 0.12);
 
 
   /* The canvas draws onto soil, not onto the page, so it cannot borrow
      --border: a line tuned to be visible on white disappears on brown. This
      is the one token that exists because a <canvas> cannot use a class. */
-  --canvas-grid: rgb(15 28 22 / 0.14);
+  --canvas-grid: rgb(16 37 28 / 0.13);
 
   /* Display sizes. Fluid rather than stepped: the landing headline has to
      hold the top of the screen at every width, and a breakpoint jump in the
@@ -265,7 +272,7 @@
   }
 
   ::selection {
-    background: #cfe8d9;
+    background: var(--terrion-green-100);
     color: var(--terrion-green-900);
   }
 }
@@ -288,14 +295,450 @@
     animation-delay: var(--rise-delay, 0ms);
   }
 
-  /* A quantity rising to its value, from the axis it is measured from.
-     The projection uses it once, staggered left to right, so the page opens
-     with the wave arriving rather than with a picture that was already there.
-     One orchestrated moment; nothing else on these screens moves unasked. */
-  .grow-up {
-    transform-origin: bottom;
-    animation: var(--animate-grow);
-    animation-delay: var(--grow-delay, 0ms);
+  /* A harvest band drawing itself along the week ruler. The product's one
+     orchestrated moment, on the landing page only. */
+  .band {
+    animation: var(--animate-band);
+    animation-delay: var(--band-delay, 0ms);
+    transform-origin: left center;
+  }
+
+  /* A section's opening label. Small, wide and quiet: it names the section
+     without competing with the heading beneath it, and its rule carries the
+     eye to the same left edge every other element on the page sits on. */
+  .eyebrow {
+    @apply flex items-center gap-2.5 text-[0.6875rem] font-medium tracking-[0.14em] text-muted-foreground uppercase;
+  }
+  .eyebrow::before {
+    content: "";
+    @apply h-px w-6 bg-input;
+  }
+
+  /* ---------------------------------------------------------------------
+     LANDING ONLY.
+
+     White paper, green accent, and air. The landing page is the one surface
+     in the product allowed to be soft: generous radii, a wash of the lightest
+     green behind a section that needs separating, and a shadow so faint it
+     reads as depth rather than as a card lifting off the page.
+
+     The discipline that keeps it from becoming a template: ONE accent, used
+     at three strengths and nowhere else. Deep Forest is every action and
+     every figure that matters, Green Field is a mark, and green-50 is the
+     only tinted ground on the page. Gold appears exactly once, under the
+     phrase in the headline that carries the claim, because gold means "a
+     figure somebody has to decide about" everywhere else in the product and a
+     poster that spends it on decoration spends it everywhere.
+
+     Inside the app — dashboard, plots, catalogue, RDKK — a panel still earns
+     its colour by carrying a state. None of these may follow it in there.
+  --------------------------------------------------------------------- */
+
+  /* The theme, applied by <PublicShell> on `/` only. It redefines TOKENS
+     rather than restyling anything, which is what lets SupplyRuler — a
+     component the landing page does not own — sit correctly on this surface
+     without knowing the landing page exists. */
+  .landing {
+    --background: #ffffff;
+    --card: #ffffff;
+    --popover: #ffffff;
+
+    /* The one tinted ground, and it is the palette's own lightest green
+       rather than a grey. A neutral panel on white reads as "disabled"; this
+       reads as the same family, one step quieter. */
+    --muted: var(--terrion-green-50);
+    --secondary: var(--terrion-green-50);
+
+    /* Hairlines warmed towards the green so they belong to the palette
+       instead of being a slate line borrowed from a UI kit. */
+    --border: #e5ece0;
+    --input: #cddbc4;
+
+    /* Both quiet steps are measured on BOTH grounds rather than assumed —
+       green-50 costs about 8% of the contrast white gives, and the first
+       value chosen here cleared 4.67:1 on white and then failed at 4.32:1 on
+       the wash, which is where most of the small text actually sits.
+       muted-foreground: 6.39:1 white / 5.92:1 wash. ink-faint, which carries
+       the rails and the ruler's month scale at 11px: 5.11:1 / 4.73:1. */
+    --muted-foreground: #55634f;
+    --terrion-ink-faint: #64725e;
+
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  /* ── Surfaces ─────────────────────────────────────────────────────────
+     Two, and only two. A panel is either paper (white, hairline, whisper of
+     a shadow) or a wash (the lightest green, no border at all). A page that
+     has four kinds of box is a page where the boxes have stopped meaning
+     anything. */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    box-shadow: 0 1px 3px rgb(16 37 28 / 0.04), 0 8px 24px rgb(16 37 28 / 0.05);
+    transition: all 200ms ease-out;
+  }
+  .panel-hover:hover {
+    border-color: var(--terrion-green-300);
+    box-shadow: 0 4px 12px rgb(16 37 28 / 0.06), 0 16px 36px rgb(16 37 28 / 0.08);
+    transform: translateY(-2px);
+  }
+  .wash {
+    background: var(--terrion-green-50);
+    border: 1px solid #e2ebe0;
+    border-radius: 1.75rem;
+  }
+
+  /* A pill. The landing's only button shape — the product proper uses the
+     6px-radius <Button>, and mixing the two on one screen is how a page ends
+     up looking like two products stapled together. */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    padding: 0.8125rem 1.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 180ms ease-out;
+  }
+  .pill-solid {
+    background: var(--terrion-green-700);
+    color: #ffffff;
+    border: 1px solid var(--terrion-green-700);
+    box-shadow: 0 4px 14px rgb(15 77 60 / 0.25);
+  }
+  .pill-solid:hover {
+    background: var(--terrion-green-900);
+    border-color: var(--terrion-green-900);
+    box-shadow: 0 6px 20px rgb(7 49 36 / 0.35);
+  }
+  .pill-quiet {
+    background: #ffffff;
+    color: var(--terrion-green-700);
+    border: 1px solid var(--input);
+    box-shadow: 0 1px 3px rgb(16 37 28 / 0.04);
+  }
+  .pill-quiet:hover {
+    border-color: var(--terrion-green-700);
+    background: var(--terrion-green-50);
+  }
+
+  /* A small label chip: the eyebrow, a legend key, a section marker. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    background: var(--terrion-green-50);
+    color: var(--terrion-green-700);
+    border: 1px solid #e1e8dd;
+    padding: 0.4375rem 0.875rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .badge-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 0.375rem;
+    background: rgba(15, 77, 60, 0.08);
+    color: var(--terrion-green-700);
+    border: 1px solid rgba(15, 77, 60, 0.15);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  /* A section's index and name. Quiet, mono, and always on the same left
+     edge, so a reader can tell one section from the next without a rule or a
+     colour change doing it for them. */
+  .rail {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--terrion-ink-faint);
+    text-transform: uppercase;
+  }
+
+  /* ── The band ─────────────────────────────────────────────────────────
+     Terrion never knows a harvest date, only a window, and the band is how
+     the product draws one — on the ruler, in the catalogue, on the plot list.
+     The landing borrows it as its single ornament, at two scales: as a mark
+     beside a chip, and as the highlight under the one phrase in the headline
+     that carries the whole claim. */
+  .band-mark {
+    display: inline-block;
+    width: 0.875rem;
+    height: 0.25rem;
+    border-radius: 1px;
+    background: var(--terrion-gold-500);
+  }
+
+  /* Set BEHIND the type, not under it: the phrase stays Deep Forest on gold,
+     which holds 5.55:1, and the band keeps the same proportion to its text
+     that a harvest band keeps to its row. It draws once, on load — the page's
+     one animation that carries meaning rather than polish. */
+  .band-underline {
+    position: relative;
+    display: inline;
+    background-image: linear-gradient(
+      var(--terrion-gold-500),
+      var(--terrion-gold-500)
+    );
+    background-repeat: no-repeat;
+    background-position: 0 84%;
+    background-size: 0% 0.26em;
+    animation: band-underline 850ms cubic-bezier(0.22, 1, 0.36, 1) 550ms forwards;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    padding: 0 0.06em;
+    margin: 0 -0.06em;
+  }
+
+  /* ── Motion ───────────────────────────────────────────────────────────
+     Five things move, and every one is an entrance tied to the reader
+     arriving. There is one ambient loop and it belongs to the single element
+     that is genuinely detached from the surface behind it. A product whose
+     whole claim is that it does not overstate what it knows should not have a
+     landing page that fidgets.
+  --------------------------------------------------------------------- */
+
+  /* Scroll entrance. The resting state lives here and not in JS, so a block
+     is never briefly visible before the observer reaches it. Short travel on
+     purpose: 4rem is a page announcing its own animation, 0.75rem is a block
+     settling onto the line it belongs on. */
+  .reveal {
+    opacity: 0;
+    transition:
+      opacity 720ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 720ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+  }
+  .reveal-up { transform: translateY(1.125rem) scale(0.985); }
+  .reveal-left { transform: translateX(-1.125rem) scale(0.985); }
+  .reveal-right { transform: translateX(1.125rem) scale(0.985); }
+  .reveal-fade { transform: scale(0.97); }
+
+  .reveal[data-shown='true'] {
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+  }
+
+  /* The hero plays on load rather than on scroll — it is already on screen.
+     Same curve and distance as the reveal, different trigger. */
+  .enter {
+    animation: enter 750ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+
+  /* ── The signature: the map lights up one province at a time ───────────
+     Not decoration and not a generic entrance — it is the product's coverage
+     ARRIVING, in the order the cooperatives are listed, stopping when the
+     real ones run out. A reader watching it learns something true: that this
+     is a specific, countable set of places and not a green wash over a map of
+     Indonesia. It is also why the figure is worth animating at all; an
+     illustration would have nothing to reveal.
+
+     It is gated on the enclosing <Reveal>, NOT on load. The map lives well
+     below the fold, and an animation that has already finished by the time
+     you scroll to it is an animation nobody sees — the whole point is that it
+     runs while somebody is looking at it.
+
+     The final opacity arrives per path as --lit-fill, because it is computed
+     from `emphasis` in the component and a keyframe cannot see it. Animating
+     a presentation attribute this way works because a CSS declaration beats
+     the attribute it overrides, which is also why `both` is required. */
+  .province-lit {
+    fill-opacity: 0;
+  }
+  [data-shown='true'] .province-lit {
+    animation: province-lit 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--lit-delay, 0ms);
+  }
+
+  /* Hover, on the landing only. Inside the product `.interactive` is still
+     colour-only; here a panel may lift by two pixels, which is the smallest
+     movement that still reads as one. */
+  .lift {
+    transition:
+      transform 300ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 300ms ease-out,
+      background-color 300ms ease-out,
+      box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .lift:hover {
+    transform: translateY(-3px) scale(1.008);
+  }
+  .panel.lift:hover {
+    box-shadow: 0 4px 12px rgb(16 37 28 / 0.06), 0 20px 40px rgb(16 37 28 / 0.1);
+  }
+
+  /* ── The hero stage ───────────────────────────────────────────────────
+     ONE poster, and only the top of the page is allowed to be one.
+
+     Everything below the fold stays white paper with a green accent; this
+     card is the exception, and it earns it the way a cover earns being
+     louder than the chapter — it arrives once, and a reader who scrolls past
+     it never meets a second one.
+
+     The rules that keep it from becoming a template:
+       · The display type is the product's own claim, not a slogan. The word
+         set in ghost behind the map is the SECOND half of the sentence the
+         solid word starts, so the layering reads as one line and not as two
+         pieces of decoration overlapping.
+       · The centrepiece is the Atlas itself, drawn from the same boundary
+         file and lit only where a cooperative has registered. A stock
+         photograph would be the one dishonest object on a page whose whole
+         argument is that every figure came from somewhere real.
+       · The floating cards carry live figures or real input fields. Nothing
+         floats that has nothing to say.
+  --------------------------------------------------------------------- */
+  /* Full bleed and no radius: the poster is the first screen, not a picture
+     of one resting on a page. The container that keeps the type aligned with
+     the sections below lives inside it instead. */
+  .hero-stage {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    color: #ffffff;
+    background:
+      radial-gradient(
+        120% 90% at 50% 108%,
+        rgb(255 255 255 / 0.22) 0%,
+        transparent 62%
+      ),
+      linear-gradient(
+        168deg,
+        var(--terrion-green-600) 0%,
+        var(--terrion-green-700) 46%,
+        var(--terrion-green-900) 100%
+      );
+  }
+
+  /* The light the map sits in. A single soft bloom behind the centrepiece so
+     the archipelago reads as lit rather than as a sticker on a gradient. */
+  .hero-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(
+      60% 50% at 50% 46%,
+      rgb(156 204 101 / 0.3) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+    /* The one thing on the screen that never settles, and it is light rather
+       than an element: slow enough (22s) to be weather behind the map instead
+       of a page that fidgets. */
+    animation: aurora 22s ease-in-out infinite;
+  }
+
+  /* The display words, each rising out of its own mask. A mask reveal rather
+     than a fade because the words are objects: they are set as one sentence
+     across two lines, and sliding them up in sequence reads as the line being
+     spoken, where two blocks fading in together reads as two blocks. */
+  .hero-line {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.08em;
+  }
+  .hero-line > * {
+    display: block;
+    animation: hero-rise 950ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+
+  /* The harvest range drawing itself along its scale, left to right — the
+     same gesture the supply ruler makes further down the page, at the size a
+     hero can carry it. */
+  .range-band {
+    animation: range-band 900ms cubic-bezier(0.22, 1, 0.36, 1) 1s both;
+  }
+
+  /* Display type. Heavier and tighter than anything else in the product —
+     this is the only place a word is allowed to be an object rather than a
+     sentence, so it is set at the weight that makes it one. */
+  /* Poster scale. The two halves of the line sit at opposite corners of the
+     stage with the map running between them, so each word has the full width
+     to itself and is set to fill it — a display word that hedges its size is
+     just a large heading. */
+  .hero-word {
+    display: block;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.045em;
+    line-height: 0.92;
+    font-size: clamp(3rem, 11vw, 9.5rem);
+  }
+
+  /* A card genuinely detached from the surface behind it — the one thing on
+     the page allowed a real shadow, because it is the one thing that is
+     really above something. */
+  .float-card {
+    background: #ffffff;
+    color: var(--foreground);
+    border-radius: 1.5rem;
+    box-shadow:
+      0 2px 6px rgb(7 49 36 / 0.10),
+      0 22px 48px rgb(7 49 36 / 0.22);
+  }
+  .float-card-dark {
+    background: color-mix(in srgb, var(--terrion-green-900) 88%, transparent);
+    border: 1px solid rgb(255 255 255 / 0.14);
+    color: #ffffff;
+    border-radius: 1.5rem;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 22px 48px rgb(7 49 36 / 0.28);
+  }
+
+  /* The page's one ambient loop, and it belongs to the only genuinely
+     detached object on it. 8px over nine seconds: a card resting on air, not
+     a page that fidgets. */
+  .drift {
+    animation: drift 9s ease-in-out infinite;
+    animation-delay: var(--drift-delay, 0ms);
+  }
+
+  /* The knob on the hero's window scale — the harvest range, drawn as the
+     thing you can actually slide a reading along. */
+  .hero-knob {
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 9999px;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgb(255 255 255 / 0.22);
+  }
+
+  /* An underlined call to action, set in the small caps the rails use. The
+     underline is the link — no pill, because a pill here would be a third
+     button competing with the two the card already has. */
+  .cta-rule {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-bottom: 1.5px solid currentColor;
+    padding-bottom: 0.25rem;
+    transition: opacity 140ms ease-out;
+  }
+  .cta-rule:hover {
+    opacity: 0.72;
   }
 
   /* Scrollbars: present, thin, and the same green-grey as a rule, so a
@@ -313,10 +756,48 @@
     background-clip: content-box;
     border-radius: 9999px;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--terrion-ink-faint);
-    background-clip: content-box;
+  /* Shimmer sweep effect */
+  .shimmer-sweep {
+    position: relative;
+    overflow: hidden;
   }
+  .shimmer-sweep::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.25) 50%,
+      transparent 100%
+    );
+    transition: transform 700ms ease-in-out;
+  }
+  .shimmer-sweep:hover::after {
+    transform: translateX(100%);
+  }
+
+  /* Slow ambient float */
+  .float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+  }
+  .pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 0.9; transform: scale(1.04); }
 }
 
 @keyframes rise {
@@ -335,6 +816,68 @@
   to   { transform: scaleY(1); }
 }
 
+/* A band drawing left to right along its ruler, the way a season arrives. */
+@keyframes band {
+  from { opacity: 0; transform: scaleX(0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The landing hero, settling onto the line it belongs on. Deliberately the
+   same distance and curve as .rise — the hero is not a different kind of
+   arrival from the sections below it, only an earlier one. */
+@keyframes enter {
+  from { opacity: 0; transform: translateY(1rem) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The gold band drawing itself under the headline's load-bearing phrase, left
+   to right, the way a harvest band draws itself along its week ruler. */
+@keyframes band-underline {
+  from { background-size: 0% 0.26em; }
+  to   { background-size: 100% 0.26em; }
+}
+
+/* A card resting on air. */
+@keyframes drift {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+/* One province arriving. */
+@keyframes province-lit {
+  0%   { fill-opacity: 0; transform: scale(0.98); }
+  65%  { fill-opacity: calc(var(--lit-fill, 0.3) * 1.2); transform: scale(1.01); }
+  100% { fill-opacity: var(--lit-fill, 0.3); transform: scale(1); }
+}
+
+/* A display word rising out of its mask. Just past 100% so the word starts
+   fully hidden even where the mask and the glyphs round to different pixels. */
+@keyframes hero-rise {
+  from { transform: translateY(115%) scale(0.96); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* A hairline drawing itself from its left end. */
+@keyframes rule-draw {
+  from { transform: scaleX(0); }
+  to   { transform: none; }
+}
+
+/* The hero's harvest range, arriving along its scale rather than appearing
+   on it. Clipped rather than scaled, so the knobs keep their shape. */
+@keyframes range-band {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+
+/* The light behind the map, weather rather than motion. Slow and small on
+   purpose: at 22s nobody watches it happen, they only notice the screen is
+   not a flat fill. */
+@keyframes aurora {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.85; }
+  50%      { transform: translate3d(-3%, 2%, 0) scale(1.1); opacity: 1; }
+}
+
 /* Somebody who has asked their system for less motion gets the final state
    immediately. Not a slower animation — none. */
 @media (prefers-reduced-motion: reduce) {
@@ -342,13 +885,24 @@
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
-    /* The delay too, not just the duration. A staggered entrance whose
-       duration is zeroed but whose delay survives still hides twelve bars for
-       a third of a second and then pops them in one at a time, which is the
-       animation this rule exists to switch off. */
-    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* Three states have to be stated as well as sped up. A `.reveal` whose
+     transition never runs would sit at opacity 0 for ever; the lit provinces
+     rest at 0 until their animation starts, and they carry the one piece of
+     MEANING an animation holds on this page, so they are shown rather than
+     skipped; and the headline's band is drawn, not omitted. */
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .province-lit {
+    fill-opacity: var(--lit-fill, 0.3);
+  }
+  .band-underline {
+    background-size: 100% 0.26em;
   }
 }

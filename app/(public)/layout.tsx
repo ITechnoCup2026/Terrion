@@ -1,4 +1,8 @@
-import { PublicFrame, type FrameUser } from '@/components/ui/PublicFrame'
+import Link from 'next/link'
+
+import { Logo } from '@/components/ui/Logo'
+import { PublicHeader } from '@/components/ui/PublicHeader'
+import { PublicShell } from '@/components/ui/PublicShell'
 import { isBackendDown } from '@/lib/api/client'
 import { currentAppUser, type AppUser } from '@/lib/auth/session'
 
@@ -11,10 +15,9 @@ import { currentAppUser, type AppUser } from '@/lib/auth/session'
  * job happens on the public catalogue, was invited to sign in on every page
  * after they already had, and had nowhere to sign out from at all.
  *
- * This file does the session lookup; <PublicFrame> picks the frame, because
- * that choice needs the pathname and a server layout cannot read one. A buyer
- * on their own screens gets the same rail a kader gets; everyone else gets the
- * marketing header.
+ * The header is sticky and translucent: on the catalogue the reader scrolls a
+ * long list and still needs the way back, and a solid bar that far down the
+ * page reads as a second, unrelated header.
  */
 export default async function PublicLayout({ children }: LayoutProps<'/'>) {
   // These pages are public by design, so an unreachable backend must not take
@@ -30,9 +33,54 @@ export default async function PublicLayout({ children }: LayoutProps<'/'>) {
     if (!isBackendDown(error)) throw error
   }
 
-  const frameUser: FrameUser | null = user
-    ? { fullName: user.full_name, organisation: user.organisation, role: user.role }
-    : null
+  return (
+    <PublicShell>
+      {/* Absent on the landing page, which carries its own bar inside the
+          hero card. Everywhere else it is the sticky way back: the catalogue
+          is a long list and a reader deep in it still needs the header. */}
+      <PublicHeader
+        user={
+          user
+            ? {
+                fullName: user.full_name,
+                organisation: user.organisation,
+                role: user.role,
+              }
+            : null
+        }
+      />
 
-  return <PublicFrame user={frameUser}>{children}</PublicFrame>
+      <main className="flex flex-1 flex-col">{children}</main>
+
+      <footer className="border-t border-border bg-card">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <Logo size={24} withWordmark={true} />
+            <p className="mt-3 max-w-xs text-xs leading-relaxed text-muted-foreground">
+              Terrion adalah penyedia sistem, bukan pihak dalam kontrak antara
+              koperasi dan pembeli.
+            </p>
+          </div>
+
+          <nav aria-label="Tautan kaki" className="flex flex-col gap-2.5">
+            {(
+              [
+                ['/atlas', 'Atlas Pasokan'],
+                ['/catalog', 'Katalog Pasokan'],
+                ['/login', 'Masuk Koperasi'],
+              ] as const
+            ).map(([href, label]) => (
+              <Link
+                key={href}
+                href={href}
+                className="interactive text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </footer>
+    </PublicShell>
+  )
 }

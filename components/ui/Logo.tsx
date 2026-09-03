@@ -41,7 +41,7 @@ export function Logo({
   if (withWordmark) {
     return (
       <Image
-        src="/brand/logo-wordmark.png"
+        src="/brand/logo-terion.png"
         alt="Terrion"
         width={Math.round(size * WORDMARK_RATIO)}
         height={size}

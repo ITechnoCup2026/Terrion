@@ -89,25 +89,27 @@ export function PublicFrame({
           itself as calc(100dvh - var(--public-header)), so the header's real
           height and the number the hero subtracts have to be the same thing. */}
       <header className="sticky top-0 z-40 border-b border-border bg-card">
-        <div className="mx-auto flex h-[var(--public-header)] w-full max-w-5xl items-center justify-between gap-4 px-4">
-          <Link href={user ? homeFor(user.role) : '/'} aria-label="Terrion">
-            <Logo size={24} />
-          </Link>
+        <div className="mx-auto flex h-[var(--public-header)] w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-1 items-center justify-start min-w-0">
+            <Link href={user ? homeFor(user.role) : '/'} aria-label="Terrion" className="interactive flex items-center gap-2">
+              <Logo size={26} withWordmark={true} />
+            </Link>
+          </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center">
             <PublicNav role={user?.role} />
+          </div>
 
-            <div>
-              {user ? (
-                <AccountMenu
-                  fullName={user.fullName}
-                  organisation={user.organisation}
-                  role={user.role}
-                />
-              ) : (
-                <AuthMenu />
-              )}
-            </div>
+          <div className="flex flex-1 items-center justify-end">
+            {user ? (
+              <AccountMenu
+                fullName={user.fullName}
+                organisation={user.organisation}
+                role={user.role}
+              />
+            ) : (
+              <AuthMenu />
+            )}
           </div>
         </div>
       </header>
@@ -122,7 +124,7 @@ export function PublicFrame({
 function Disclaimer({ className }: { className?: string }) {
   return (
     <footer className={className}>
-      <div className="mx-auto w-full max-w-5xl px-4 py-6">
+      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <p className="text-xs text-muted-foreground">
           Terrion adalah penyedia sistem, bukan pihak dalam kontrak antara koperasi dan pembeli.
         </p>

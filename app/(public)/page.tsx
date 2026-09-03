@@ -1,324 +1,630 @@
-import Image from "next/image";
-import Link from "next/link";
-import { redirect } from "next/navigation";
+import {
+  ArrowRight,
+  BarChart3,
+  CalendarRange,
+  CheckCircle2Icon,
+  ChevronRight,
+  Compass,
+  Layers,
+  MapPin,
+  Scale,
+  ShieldCheck,
+  Sparkles,
+  Sprout,
+  Store,
+  TrendingUp,
+  type LucideIcon,
+} from 'lucide-react'
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
 
-import { Archipelago } from "@/components/landing/Archipelago";
-import { SupplyRuler } from "@/components/landing/SupplyRuler";
-import { buttonVariants } from "@/components/ui/button";
-import { isBackendDown } from "@/lib/api/client";
-import { loadAtlasCooperativesIfUp } from "@/lib/atlas/load";
-import { homeFor } from "@/lib/auth/display";
-import { currentAppUser, type AppUser } from "@/lib/auth/session";
-import type { Listing } from "@/lib/catalog/listings";
-import { loadCatalogListings } from "@/lib/catalog/load";
-import { formatNumberId } from "@/lib/format/number";
-import { cn } from "@/lib/utils";
+import { AuthMenu } from '@/components/auth/AuthMenu'
+import { Archipelago } from '@/components/landing/Archipelago'
+import { AtlasInteractiveSteps } from '@/components/landing/AtlasInteractiveSteps'
+import { ClosingCtaPoster } from '@/components/landing/ClosingCtaPoster'
+import { CountUp } from '@/components/landing/CountUp'
+import { InteractiveDerivedCards } from '@/components/landing/InteractiveDerivedCards'
+import { Reveal } from '@/components/landing/Reveal'
+import { SupplyRuler } from '@/components/landing/SupplyRuler'
+import { WindowDiagram } from '@/components/landing/WindowDiagram'
+import { Logo } from '@/components/ui/Logo'
+import { isBackendDown } from '@/lib/api/client'
+import { loadAtlasCooperativesIfUp } from '@/lib/atlas/load'
+import { homeFor } from '@/lib/auth/display'
+import { currentAppUser, type AppUser } from '@/lib/auth/session'
+import { LEGAL_FRAMING } from '@/lib/catalog/copy'
+import type { Listing } from '@/lib/catalog/listings'
+import { loadCatalogListings } from '@/lib/catalog/load'
+import { RULER_WEEKS } from '@/lib/supply/ruler'
 
 // The counts are real cooperatives, so this cannot be baked at build time.
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: "Terrion — atlas pasokan pertanian",
+  title: 'Terrion — Atlas Pasokan Pertanian Nasional',
   description:
-    "Proyeksi panen, agregasi kebutuhan pupuk dan katalog pasokan untuk koperasi tani.",
-};
+    'Proyeksi panen berbasis GDD, agregasi kebutuhan pupuk RDKK, dan katalog pasokan untuk koperasi tani.',
+}
+
+
 
 /**
- * The four things Terrion derives from one recorded planting.
- *
- * Not numbered. They are four parallel outputs of the same input, not four
- * steps of a process, and 01/02/03 down the side of a list that is not a
- * sequence tells the reader something untrue about how the product works.
+ * Derived analysis outputs with custom visual micro-widget keys
  */
-const DERIVED = [
+const DERIVED: {
+  icon: LucideIcon
+  key: string
+  title: string
+  body: string
+  badgeText: string
+  widgetType: 'timeline' | 'alert' | 'rdkk' | 'catalog'
+}[] = [
   {
-    title: "Perkiraan waktu panen",
-    body: "Rentang tanggal per blok, dari akumulasi suhu dan cuaca yang benar-benar terjadi — bukan hitungan hari sejak tanam.",
+    icon: CalendarRange,
+    key: 'A',
+    title: 'Perkiraan Waktu Panen (GDD)',
+    body: 'Rentang tanggal per blok, dari akumulasi suhu dan cuaca riil — bukan sekadar hitungan kalender konvensional.',
+    badgeText: '8–21 Okt (80% Confidence)',
+    widgetType: 'timeline',
   },
   {
-    title: "Peringatan penumpukan",
-    body: "Minggu ketika terlalu banyak lahan panen bersamaan, dengan saran pergeseran tanam yang bisa langsung diterapkan.",
+    icon: Layers,
+    key: 'B',
+    title: 'Peringatan Penumpukan',
+    body: 'Deteksi dini minggu ketika terlalu banyak lahan panen bersamaan, lengkap dengan rekomendasi pergeseran jadwal tanam.',
+    badgeText: 'Minggu 42 · Risk Alert +45%',
+    widgetType: 'alert',
   },
   {
-    title: "Kebutuhan pupuk (RDKK)",
-    body: "Agregasi per anggota, lengkap dengan acuan dosis resmi dan penanda batas subsidi dua hektare.",
+    icon: Sprout,
+    key: 'C',
+    title: 'Kebutuhan Pupuk (RDKK)',
+    body: 'Agregasi otomatis per anggota, lengkap dengan acuan dosis resmi pemerintah dan penanda batas subsidi 2 hektare.',
+    badgeText: 'Max 2 Ha Subsidized',
+    widgetType: 'rdkk',
   },
   {
-    title: "Katalog pasokan",
-    body: "Proyeksi panen koperasi tampil sebagai katalog yang bisa diajukan pembeli secara langsung.",
+    icon: Store,
+    key: 'D',
+    title: 'Katalog Pasokan Langsung',
+    body: 'Proyeksi panen koperasi otomatis tampil sebagai katalog terbuka yang bisa diajukan pembeli secara langsung.',
+    badgeText: 'Katalog Terbuka · Direct Order',
+    widgetType: 'catalog',
   },
-];
+]
+
+/** The Atlas, as the four levels it actually descends through. */
+const DRILLDOWN: { step: string; name: string; desc: string; detail: string }[] = [
+  {
+    step: '01',
+    name: 'Provinsi',
+    desc: 'Hanya menampilkan wilayah yang memiliki koperasi aktif terdaftar.',
+    detail: 'Berdasarkan data spasial batas provinsi riil',
+  },
+  {
+    step: '02',
+    name: 'Koperasi',
+    desc: 'Nama koperasi, domisili, serta total luas lahan anggotanya.',
+    detail: 'Terverifikasi dengan status legal koperasi tani',
+  },
+  {
+    step: '03',
+    name: 'Kebun',
+    desc: 'Satu hamparan kawasan bertani dengan blok-blok spesifik.',
+    detail: 'Pemetaan petak lahan presisi tinggi',
+  },
+  {
+    step: '04',
+    name: 'Blok Lahan',
+    desc: 'Varietas tanaman, tanggal tanam, dan rentang panen aktual.',
+    detail: 'Perhitungan GDD & penyerapan energi matahari',
+  },
+]
 
 const FOR_BUYERS: [string, string][] = [
-  ["Katalog terbuka", "Proyeksi panen koperasi, tanpa perlu masuk lebih dulu."],
   [
-    "Rentang, bukan janji",
-    "Setiap tonase dan tanggal tampil sebagai rentang, dengan dasar perhitungannya.",
+    'Katalog Terbuka & Real-time',
+    'Proyeksi panen dari koperasi terdaftar dapat diakses publik tanpa hambatan registrasi awal.',
   ],
   [
-    "Ajukan langsung",
-    "Permintaan kontrak masuk ke koperasi yang bersangkutan, tanpa perantara.",
+    'Rentang Kepastian, Bukan Janji',
+    'Setiap tonase dan estimasi tanggal disajikan sebagai rentang confidence interval beserta parameter dasar perhitungannya.',
   ],
-];
+  [
+    'Pengajuan Langsung ke Koperasi',
+    'Permintaan pembelian langsung terhubung ke koperasi bersangkutan tanpa perantara dan tanpa biaya tersembunyi.',
+  ],
+]
+
+/** The three fields a kader actually fills in. */
+const BLOCK_RECORD: [string, string][] = [
+  ['Varietas', 'Ciherang'],
+  ['Tanam', '12 Jul 2026'],
+  ['Luas Lahan', '1,4 ha'],
+]
+
+function Rail({ index, label }: { index: string; label: string }) {
+  return (
+    <div className="rail flex items-center gap-2.5 lg:sticky lg:top-28">
+      <span className="badge-tag font-semibold text-[var(--terrion-green-700)] bg-[var(--terrion-green-50)]">
+        {index}
+      </span>
+      <span aria-hidden className="h-px w-5 bg-border" />
+      <span className="font-semibold text-foreground tracking-wider">{label}</span>
+    </div>
+  )
+}
+
+function Container({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div
+      className={`mx-auto w-full max-w-[76rem] px-5 sm:px-8 lg:px-10 ${className}`}
+    >
+      {children}
+    </div>
+  )
+}
 
 export default async function LandingPage() {
-  let user: AppUser | null = null;
+  let user: AppUser | null = null
   try {
-    user = await currentAppUser();
+    user = await currentAppUser()
   } catch (error) {
-    if (!isBackendDown(error)) throw error;
+    if (!isBackendDown(error)) throw error
   }
 
-  // Redirect signed-in users directly to their designated workspace/home
-  if (user) {
-    redirect(homeFor(user.role));
-  }
+  if (user) redirect(homeFor(user.role))
 
-  // null is "could not ask", which the page shows as nothing at all. An empty
-  // array is the different, sayable claim that nobody has registered yet.
-  const cooperatives = await loadAtlasCooperativesIfUp();
+  const cooperatives = await loadAtlasCooperativesIfUp()
 
-  // The hero draws real supply. If the catalogue cannot be reached the ruler
-  // simply is not there and the headline stands on its own -- a landing page
-  // that renders a fabricated chart when the backend is down is lying in the
-  // one place the product's whole claim is honesty about uncertainty.
-  let listings: Listing[] = [];
+  let listings: Listing[] = []
   try {
-    listings = (await loadCatalogListings()).listings;
+    listings = (await loadCatalogListings()).listings
   } catch (error) {
-    if (!isBackendDown(error)) throw error;
+    if (!isBackendDown(error)) throw error
   }
 
-  const plots = cooperatives?.reduce((s, c) => s + c.plotCount, 0) ?? 0;
-  const hectares = cooperatives?.reduce((s, c) => s + c.hectares, 0) ?? 0;
-  const provinces = new Set(
-    (cooperatives ?? []).map((c) => c.province.toLowerCase()),
-  );
+  const plots = cooperatives?.reduce((s, c) => s + c.plotCount, 0) ?? 0
+  const hectares = cooperatives?.reduce((s, c) => s + c.hectares, 0) ?? 0
+  const provinces = new Set((cooperatives ?? []).map(c => c.province.toLowerCase()))
 
   return (
-    <div className="flex w-full flex-1 flex-col">
-      {/* The hero is left-aligned against the ruler beneath it. Centred
-          headline, centred paragraph, centred button pair is the shape every
-          landing page arrives in; here the type and the chart share one left
-          edge, so the page reads as an instrument panel rather than a poster. */}
-      <section className="px-4 pt-14 pb-16 sm:pt-20 sm:pb-20">
-        <div className="mx-auto w-full max-w-5xl">
-          <div className="max-w-3xl">
-            {cooperatives && (
-              <p className="text-[0.8125rem] text-muted-foreground">
-                {cooperatives.length === 0
-                  ? "Belum ada koperasi terdaftar"
-                  : `${formatNumberId(cooperatives.length)} koperasi terdaftar di ${formatNumberId(provinces.size)} provinsi`}
-              </p>
-            )}
+    <div className="flex w-full flex-1 flex-col bg-background selection:bg-[var(--terrion-green-100)]">
+      {/* ─── HERO POSTER STAGE ────────────────────────────────────────────── */}
+      {/* One screen, edge to edge, composed as a poster: the two halves of the
+          headline sit at opposite corners and the centrepiece runs between
+          them, so the type and the picture occupy one space instead of two
+          columns. The words are placed in their own GRID ROWS rather than
+          absolutely, which is what keeps the overlap deliberate — the map can
+          pass behind them at any width without a collision. */}
+      <section className="hero-stage flex min-h-[82vh] sm:min-h-[86vh] flex-col pt-[var(--public-header)]">
+        <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 pt-6 sm:px-8 lg:px-10">
 
-            <h1 className="mt-4 max-w-[19ch] text-[length:var(--text-display-sm)] leading-[1.08] tracking-tight text-foreground sm:text-[length:var(--text-display)]">
-              Satu tanggal tanam, seluruh gambaran pasokan.
+          {/* The poster. Three rows: the first word, the reading it produces,
+              the second word — with the archipelago spanning all three behind
+              them. */}
+          <div className="relative grid flex-1 grid-rows-[auto_1fr_auto] gap-y-6 pt-6 sm:pt-8 lg:pt-10 pb-20 sm:pb-24 lg:pb-28">
+            {/* The centrepiece, behind the type and sized by its own width —
+                it is a 4:1 drawing, so a height would only letterbox it. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center"
+            >
+              <Reveal variant="fade" delay={380} className="w-full">
+                <Archipelago
+                  provincesWithCooperatives={provinces}
+                  emphasis={3.0}
+                  animate
+                  className="h-auto w-full text-[var(--terrion-green-300)] opacity-80 drop-shadow-[0_24px_48px_rgb(7_49_36/0.5)]"
+                />
+              </Reveal>
+            </div>
+
+            {/* The headline is one sentence placed at two corners, so it has
+                to be one <h1> whose halves are separate grid items —
+                `display: contents` is what allows both without wrapping the
+                picture in the heading. */}
+            <h1 className="contents">
+              <span className="hero-line relative z-10 row-start-1 justify-self-start">
+                <span className="hero-word">PANEN</span>
+              </span>
+              <span className="hero-line relative z-10 row-start-3 justify-self-end self-start mb-6 lg:mb-8">
+                <span
+                  className="hero-word text-white/85"
+                  style={{ ['--enter-delay' as string]: '160ms' }}
+                >
+                  TERBACA
+                </span>
+              </span>
             </h1>
 
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
-              Koperasi mencatat lahan anggotanya sebagai diagram blok. Dari satu
-              catatan itu Terrion menurunkan waktu panen, peringatan penumpukan,
-              kebutuhan pupuk, dan katalog pasokan yang bisa dilihat pembeli.
-            </p>
-
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link
-                href="/atlas"
-                className={cn(buttonVariants({ size: "lg" }), "interactive")}
+            {/* The reading the map produces, set as a labelled scale rather
+                than a card: a bold line, a quiet line, and the range drawn on
+                a hairline underneath. Nothing boxed — the stage is the box. */}
+            <div
+              className="enter relative z-10 row-start-2 max-w-sm self-center justify-self-start"
+              style={{ ['--enter-delay' as string]: '640ms' }}
+            >
+              <p className="text-[0.9375rem] font-bold text-white">
+                Rentang Panen Terbaca
+              </p>
+              <p className="mt-0.5 font-mono text-[0.75rem] text-white/60">
+                8–21 Oktober · 80% confidence
+              </p>
+              <div
+                aria-hidden
+                className="range-band relative mt-4 h-px w-full bg-white/30"
               >
-                Buka Atlas
-              </Link>
-              <Link
-                href="/catalog"
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "lg" }),
-                  "interactive",
-                )}
-              >
-                Lihat katalog pasokan
-              </Link>
+                <span className="absolute inset-y-0 left-[26%] right-[28%] bg-[var(--terrion-green-300)]" />
+                <span className="hero-knob absolute -top-[0.4375rem] left-[26%]" />
+                <span className="hero-knob absolute -top-[0.4375rem] left-[72%]" />
+              </div>
             </div>
-          </div>
 
-          <SupplyRuler listings={listings} className="mt-12 sm:mt-14" />
+          </div>
         </div>
       </section>
 
-      {cooperatives && (
-        <section className="px-4">
-          <dl className="mx-auto grid w-full max-w-5xl grid-cols-2 overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-xs)] sm:grid-cols-4">
-            {[
-              { label: "Koperasi", value: formatNumberId(cooperatives.length) },
-              { label: "Provinsi", value: formatNumberId(provinces.size) },
-              { label: "Lahan terpetakan", value: formatNumberId(plots) },
-              { label: "Hektare", value: formatNumberId(hectares) },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className={cn(
-                  "p-4 sm:p-5",
-                  "even:border-l even:border-border",
-                  "[&:nth-child(n+3)]:border-t [&:nth-child(n+3)]:border-border",
-                  "sm:[&:nth-child(n+2)]:border-l sm:[&:nth-child(n+3)]:border-t-0",
-                )}
-              >
-                <dt className="text-xs text-muted-foreground">{stat.label}</dt>
-                <dd className="mt-1.5 text-[1.75rem] leading-none font-semibold tracking-tight tabular-nums text-foreground">
-                  {stat.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      )}
+      {/* ─── THE PANEL STRADDLING THE HERO BOTTOM EDGE ───────────────────── */}
+      <section className="relative z-20 -mt-16 sm:-mt-20 lg:-mt-24">
+        <div className="mx-auto w-full max-w-[86rem] px-5 sm:px-8 lg:px-10">
+          <Reveal variant="fade" className="relative">
+            <Link
+              href="/atlas"
+              className="pill pill-solid interactive lift absolute -top-6 left-1/2 z-10 -translate-x-1/2 px-8 py-3 text-[0.6875rem] font-bold uppercase tracking-[0.14em]"
+            >
+              Buka Atlas Pasokan
+            </Link>
 
-      <section className="px-4 py-20 sm:py-24">
-        <div className="mx-auto w-full max-w-5xl">
-          <div className="max-w-3xl">
-            <h2 className="text-2xl leading-tight tracking-tight text-foreground sm:text-3xl">
-              Kader mencatat sekali di lahan. Empat hal di bawah ini diturunkan
-              dari catatan itu.
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Tanggal tanam, luas, varietas — sekitar 40 detik per blok, dari
-              telepon genggam, di tempat.
-            </p>
-          </div>
-
-          <dl className="mt-10 grid overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-xs)] sm:grid-cols-2">
-            {DERIVED.map((d) => (
-              <div
-                key={d.title}
-                className={cn(
-                  "p-5 sm:p-6",
-                  "[&:not(:first-child)]:border-t [&:not(:first-child)]:border-border",
-                  "sm:[&:nth-child(n+3)]:border-t sm:[&:nth-child(2)]:border-t-0",
-                  "sm:even:border-l sm:even:border-border",
-                )}
-              >
-                <dt className="text-[0.9375rem] font-semibold text-foreground">
-                  {d.title}
-                </dt>
-                <dd className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {d.body}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
-
-      <section className="border-y border-border bg-card px-4 py-20 sm:py-24">
-        <div className="mx-auto grid w-full max-w-5xl items-center gap-12 lg:grid-cols-2">
-          <div>
-            <h2 className="max-w-md text-2xl leading-tight tracking-tight text-foreground sm:text-3xl">
-              Pasokan yang bisa dilihat sebelum dipanen.
-            </h2>
-
-            <dl className="mt-8 flex flex-col gap-5">
-              {FOR_BUYERS.map(([term, detail]) => (
-                <div key={term}>
-                  <dt className="text-sm font-semibold text-foreground">{term}</dt>
-                  <dd className="mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                    {detail}
-                  </dd>
+            <div className="grid overflow-hidden rounded-[1.75rem] bg-white shadow-[0_4px_24px_rgb(7_49_36/0.08),0_24px_48px_rgb(7_49_36/0.16)] lg:grid-cols-12">
+              {/* What a kader actually fills in. */}
+              <div className="flex flex-col justify-between gap-3 border-b border-border p-5 sm:p-6 lg:col-span-4 lg:border-b-0 lg:border-r">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-xs uppercase tracking-wider text-[var(--terrion-green-700)]">
+                      Input Kader Tani
+                    </p>
+                    <span className="badge-tag text-[0.625rem] py-0.5">±40 Detik</span>
+                  </div>
+                  <dl className="mt-3 space-y-0">
+                    {BLOCK_RECORD.map(([field, value]) => (
+                      <div
+                        key={field}
+                        className="flex items-center justify-between border-b border-border/40 py-1.5 text-xs last:border-0"
+                      >
+                        <dt className="text-muted-foreground">{field}</dt>
+                        <dd className="font-semibold text-foreground">
+                          {value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
-              ))}
-            </dl>
+                <Link
+                  href="/login"
+                  className="cta-rule interactive self-start font-bold text-xs text-[var(--terrion-green-700)]"
+                >
+                  Catat blok pertama
+                </Link>
+              </div>
+
+              {/* The claim, centred */}
+              <div className="flex flex-col items-center justify-center gap-3 px-6 py-6 text-center sm:px-8 sm:py-7 lg:col-span-5">
+                <p className="max-w-[24ch] text-[clamp(1.2rem,1.8vw,1.5rem)] font-extrabold leading-[1.25] tracking-tight text-[var(--terrion-green-700)]">
+                  Pasokan pangan yang terbaca{' '}
+                  <span className="band-underline">sebelum ia dipanen</span>.
+                </p>
+                <p className="max-w-[38ch] text-[0.78125rem] leading-relaxed text-muted-foreground">
+                  Koperasi mencatat lahan, pembeli melihat ketersediaan pasokan
+                  secara transparan — tanpa spekulasi, tanpa perantara.
+                </p>
+                <Link
+                  href="/catalog"
+                  className="cta-rule interactive group font-bold text-xs text-[var(--terrion-green-700)]"
+                >
+                  Lihat katalog pasokan
+                  <ArrowRight
+                    aria-hidden
+                    className="size-3.5 transition-transform group-hover:translate-x-1"
+                  />
+                </Link>
+              </div>
+
+              {/* What it adds up to */}
+              <div className="flex flex-col justify-center gap-2.5 bg-[var(--terrion-green-700)] p-5 text-center sm:p-6 lg:col-span-3">
+                {cooperatives && cooperatives.length > 0 ? (
+                  <>
+                    <p className="font-mono text-[clamp(2rem,3.2vw,2.5rem)] font-bold leading-none tracking-tight text-white">
+                      <CountUp value={hectares} />
+                      <span className="ml-1 font-sans text-[0.875rem] font-normal text-white/60">
+                        ha
+                      </span>
+                    </p>
+                    <p className="text-[0.75rem] leading-relaxed text-white/80">
+                      terpetakan di {plots} blok lahan, {provinces.size}{' '}
+                      provinsi, oleh {cooperatives.length} koperasi.
+                    </p>
+                    <ul className="mt-0.5 flex flex-wrap justify-center gap-1">
+                      {cooperatives.slice(0, 2).map(c => (
+                        <li
+                          key={c.id}
+                          className="rounded-full bg-white/12 px-2 py-0.5 text-[0.625rem] text-white/90"
+                        >
+                          {c.name}
+                        </li>
+                      ))}
+                      {cooperatives.length > 2 && (
+                        <li className="rounded-full bg-white/12 px-2 py-0.5 text-[0.625rem] text-white/90">
+                          +{cooperatives.length - 2}
+                        </li>
+                      )}
+                    </ul>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs font-semibold leading-relaxed text-white">
+                      Siap menerima koperasi tani pertama untuk wilayah Anda.
+                    </p>
+                    <Link
+                      href="/login"
+                      className="cta-rule interactive self-center text-xs text-white"
+                    >
+                      Daftarkan koperasi
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ─── SECTION 01: DASAR ALGORITMA ─────────────────────────────────── */}
+      <section className="py-20 sm:py-24 border-b border-border/60 bg-white">
+        <Container className="grid gap-x-12 gap-y-10 lg:grid-cols-12 items-center">
+          <Reveal className="lg:col-span-6 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <span className="badge-tag font-bold text-[var(--terrion-green-700)] bg-[var(--terrion-green-50)] border-[var(--terrion-green-200)]">
+                01
+              </span>
+              <span className="h-px w-4 bg-border" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--terrion-green-700)]">
+                Dasar Algoritma · Metode Agronomi Presisi
+              </span>
+            </div>
+
+            <h2 className="text-[clamp(1.625rem,2.8vw,2.25rem)] leading-[1.25] font-extrabold tracking-tight text-[var(--terrion-green-700)]">
+              Rentang panen berbasis suhu, bukan sekadar kalender.
+            </h2>
+
+            <p className="text-[0.9375rem] leading-[1.8] text-muted-foreground">
+              Tanaman tidak tumbuh menurut tanggal di kalender, melainkan dari total energi panas yang diserapnya (Growing Degree-Days). Terrion menjumlahkan derajat suhu harian dari data cuaca riil stasiun setempat.
+            </p>
+
+            <p className="text-[0.9375rem] leading-[1.8] text-muted-foreground">
+              Model kami mensimulasikan dua kondisi iklim (anomali hangat vs dingin pada ±1.28 SD) untuk menghasilkan selisih rentang tanggal panen dengan tingkat kepastian 80%.
+            </p>
+
+            <div className="mt-6 flex items-center gap-3.5 rounded-xl bg-[var(--terrion-green-50)] p-4 border border-[var(--terrion-green-200)]">
+              <ShieldCheck className="size-5 shrink-0 text-[var(--terrion-green-700)]" />
+              <p className="text-xs leading-relaxed text-[var(--terrion-green-900)] font-medium">
+                Setiap laporan hasil panen aktual secara otomatis mengkalibrasi ulang presisi prediksi model untuk musim berikutnya.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={120} className="lg:col-span-6">
+            <WindowDiagram />
+          </Reveal>
+        </Container>
+      </section>
+
+      {/* ─── SECTION 02: KELUARAN OTOMATIS ───────────────────────────────── */}
+      <section className="py-20 sm:py-24 border-b border-border/60 bg-[var(--terrion-green-50)]/40">
+        <Container className="space-y-8">
+          <Reveal>
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <span className="badge-tag font-bold text-[var(--terrion-green-700)] bg-[var(--terrion-green-50)] border-[var(--terrion-green-200)]">
+                02
+              </span>
+              <span className="h-px w-4 bg-border" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--terrion-green-700)]">
+                Keluaran Otomatis · Satu Input Empat Derivasi
+              </span>
+            </div>
+            <h2 className="text-[clamp(1.625rem,2.8vw,2.25rem)] leading-[1.25] font-extrabold tracking-tight text-[var(--terrion-green-700)] max-w-3xl">
+              Kader mencatat sekali. Empat analisis ini diturunkan otomatis.
+            </h2>
+          </Reveal>
+
+          <Reveal delay={100}>
+            <InteractiveDerivedCards />
+          </Reveal>
+        </Container>
+      </section>
+
+      {/* ─── SECTION 03: JANGKAUAN ATLAS ─────────────────────────────────── */}
+      <section className="py-20 sm:py-24 border-b border-border/60 bg-white">
+        <Container className="grid gap-x-12 gap-y-10 lg:grid-cols-12 items-start">
+          <Reveal variant="left" className="lg:col-span-6 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <span className="badge-tag font-bold text-[var(--terrion-green-700)] bg-[var(--terrion-green-50)] border-[var(--terrion-green-200)]">
+                03
+              </span>
+              <span className="h-px w-4 bg-border" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--terrion-green-700)]">
+                Jangkauan Atlas · Hierarki Spasial 4 Tingkat
+              </span>
+            </div>
+
+            <h2 className="text-[clamp(1.625rem,2.8vw,2.25rem)] leading-[1.25] font-extrabold tracking-tight text-[var(--terrion-green-700)]">
+              Turun dari peta nasional hingga satu bedeng lahan.
+            </h2>
+
+            <p className="text-[0.9375rem] leading-[1.8] text-muted-foreground mb-4">
+              Atlas terbuka untuk publik tanpa perlu login. Hanya menampilkan provinsi yang memiliki koperasi terdaftar resmi — bukan klaim cakupan fiktif.
+            </p>
+
+            <AtlasInteractiveSteps />
+          </Reveal>
+
+          <Reveal variant="right" delay={120} className="lg:col-span-6">
+            <div className="wash p-7 sm:p-8 shadow-sm border border-border">
+              <div className="flex items-center justify-between border-b border-border/80 pb-4 mb-4">
+                <span className="font-bold text-[var(--terrion-green-700)] text-sm">Peta Sebaran Koperasi</span>
+                <span className="badge-tag">Data Spasial Real-Time</span>
+              </div>
+
+              <Archipelago
+                provincesWithCooperatives={provinces}
+                emphasis={1.8}
+                animate
+                className="h-56 w-full text-[var(--terrion-green-700)] sm:h-72"
+              />
+
+              <dl className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--terrion-green-200)] pt-5">
+                <div className="flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="size-3 shrink-0 rounded-sm bg-[var(--terrion-green-700)]"
+                  />
+                  <dt className="text-xs font-medium text-foreground">Koperasi Terdaftar ({provinces.size} Prov)</dt>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="size-3 shrink-0 rounded-sm border border-[var(--terrion-soil)] bg-transparent opacity-50"
+                  />
+                  <dt className="text-xs font-medium text-muted-foreground">Belum Ada</dt>
+                </div>
+              </dl>
+            </div>
+          </Reveal>
+        </Container>
+      </section>
+
+      {/* ─── SECTION 04: LINI MASA PASOKAN ───────────────────────────────── */}
+      <section className="py-20 sm:py-24 border-b border-border/60 bg-[var(--terrion-green-50)]/40">
+        <Container className="grid gap-x-12 gap-y-10 lg:grid-cols-12 items-start">
+          <Reveal className="lg:col-span-5 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <span className="badge-tag font-bold text-[var(--terrion-green-700)] bg-[var(--terrion-green-50)] border-[var(--terrion-green-200)]">
+                04
+              </span>
+              <span className="h-px w-4 bg-border" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--terrion-green-700)]">
+                Lini Masa Pasokan
+              </span>
+            </div>
+
+            <h2 className="text-[clamp(1.625rem,2.8vw,2.25rem)] leading-[1.25] font-extrabold tracking-tight text-[var(--terrion-green-700)]">
+              Proyeksi pasokan panen 12 minggu ke depan.
+            </h2>
+
+            <p className="text-[0.9375rem] leading-[1.8] text-muted-foreground">
+              Koperasi mencatat satu blok lahan di telepon genggam dalam 40 detik. Terrion menyajikan proyeksi agregat ketersediaan komoditas di tingkat nasional secara real-time.
+            </p>
+
+            <div className="mt-6 text-xs leading-relaxed text-muted-foreground bg-white p-4 rounded-xl border border-[var(--terrion-green-200)] shadow-2xs">
+              <strong className="text-[var(--terrion-green-700)] block mb-1">PRINSIP AKURASI TRANSPARAN:</strong>
+              Tidak ada klaim harga fiktif, tidak ada kontrak spekulatif. Semua angka murni berbasis data spasial riil dan akumulasi derajat suhu harian.
+            </div>
+          </Reveal>
+
+          <Reveal delay={120} className="lg:col-span-7">
+            <div className="panel p-5 sm:p-6 shadow-sm border border-border bg-white">
+              <div className="flex items-center justify-between px-1 pb-3 mb-2 border-b border-border/60">
+                <p className="font-bold text-[var(--terrion-green-700)] text-sm">Grafik Pasokan Nasional</p>
+                <span className="badge-tag">{RULER_WEEKS} Minggu Kedepan</span>
+              </div>
+              <SupplyRuler
+                listings={listings}
+                className="[&>div]:rounded-xl [&>figcaption]:px-1"
+              />
+            </div>
+          </Reveal>
+        </Container>
+      </section>
+
+      {/* ─── SECTION 05: AKSES PEMBELI ───────────────────────────────────── */}
+      <section className="py-20 sm:py-24 border-b border-border/60 bg-white">
+        <Container className="grid gap-x-12 gap-y-10 lg:grid-cols-12 items-start">
+          <Reveal className="lg:col-span-5 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <span className="badge-tag font-bold text-[var(--terrion-green-700)] bg-[var(--terrion-green-50)] border-[var(--terrion-green-200)]">
+                05
+              </span>
+              <span className="h-px w-4 bg-border" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--terrion-green-700)]">
+                Akses Pembeli
+              </span>
+            </div>
+
+            <h2 className="text-[clamp(1.625rem,2.8vw,2.25rem)] leading-[1.25] font-extrabold tracking-tight text-[var(--terrion-green-700)]">
+              Pasokan yang dapat dipantau sebelum dipanen.
+            </h2>
+
+            <p className="text-[0.9375rem] leading-[1.8] text-muted-foreground">
+              Pembeli, off-taker, dan industri pengolah hasil tani dapat melihat ketersediaan komoditas dan mengajukan permintaan pasokan secara langsung tanpa perantara.
+            </p>
 
             <Link
               href="/catalog"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "interactive mt-8",
-              )}
+              className="pill pill-solid interactive lift group mt-4 font-semibold text-xs shadow-xs inline-flex"
             >
-              Lihat katalog pasokan
-            </Link>
-          </div>
-
-          <div className="overflow-hidden rounded-lg border border-border">
-            <Image
-              src="/brand/field.jpg"
-              alt=""
-              width={1040}
-              height={640}
-              className="h-56 w-full object-cover sm:h-72"
-            />
-            <div className="border-t border-border bg-card p-6">
-              <Archipelago
-                provincesWithCooperatives={provinces}
-                className="h-40 w-full"
+              Lihat Katalog Pasokan Publik
+              <ArrowRight
+                aria-hidden
+                className="size-4 transition-transform group-hover:translate-x-1"
               />
-            </div>
+            </Link>
+          </Reveal>
+
+          <div className="lg:col-span-7 space-y-4">
+            <dl className="space-y-3">
+              {FOR_BUYERS.map(([term, detail], i) => (
+                <Reveal
+                  key={term}
+                  delay={80 + i * 80}
+                  className="panel p-5 border border-border shadow-2xs"
+                >
+                  <dt className="text-[0.9375rem] font-bold text-foreground flex items-center gap-2.5">
+                    <CheckCircle2Icon className="size-4 shrink-0 text-[var(--terrion-green-600)]" />
+                    {term}
+                  </dt>
+                  <dd className="mt-2 text-[0.875rem] leading-[1.75] text-muted-foreground pl-6">
+                    {detail}
+                  </dd>
+                </Reveal>
+              ))}
+            </dl>
+
+            <Reveal delay={300}>
+              <div className="rounded-xl bg-[var(--terrion-green-50)] p-5 border border-[var(--terrion-green-200)] text-xs leading-relaxed text-[var(--terrion-green-900)]">
+                <span className="font-bold text-[var(--terrion-green-700)] uppercase block mb-1">
+                  Jaminan Ketentuan & Keandalan Pasokan:
+                </span>
+                {LEGAL_FRAMING}
+              </div>
+            </Reveal>
           </div>
-        </div>
+        </Container>
       </section>
 
-      <section className="px-4 py-20 sm:py-24">
-        <div className="mx-auto grid w-full max-w-5xl gap-4 md:grid-cols-3">
-          <Tile
-            href="/atlas"
-            className="md:col-span-2"
-            title="Atlas"
-            body="Indonesia, digali sampai satu kebun. Provinsi, kabupaten, lalu lahan koperasi itu sendiri."
-            action="Buka Atlas"
-          />
-          <Tile
-            href="/catalog"
-            title="Katalog pasokan"
-            body="Apa yang akan panen, di mana, dan kapan."
-            action="Lihat katalog"
-          />
-          <Tile
-            href="/login"
-            className="md:col-span-3"
-            title="Dashboard koperasi"
-            body="Peringatan penumpukan panen, proyeksi mingguan, dan ekspor RDKK."
-            action="Masuk sebagai koperasi"
-          />
-        </div>
+      {/* ─── CLOSING CALL TO ACTION ─────────────────────────────────────── */}
+      <section className="px-5 py-16 sm:px-8 sm:py-20 bg-white">
+        <Reveal>
+          <ClosingCtaPoster />
+        </Reveal>
       </section>
     </div>
-  );
+  )
 }
 
-/**
- * A destination.
- *
- * No lift, no shadow bloom, no arrow glyph tacked onto the label. The card
- * responds to a pointer by darkening its rule and underlining the thing you
- * would be clicking, which is the whole of what hover has to communicate.
- */
-function Tile({
-  href,
-  title,
-  body,
-  action,
-  className,
-}: {
-  href: string;
-  title: string;
-  body: string;
-  action: string;
-  className?: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "interactive group flex min-h-40 flex-col justify-end rounded-lg border border-border bg-card p-5 shadow-[var(--shadow-xs)] hover:border-[var(--terrion-green-200)] hover:shadow-[var(--shadow-sm)]",
-        className,
-      )}
-    >
-      <h3 className="text-base font-semibold text-foreground">{title}</h3>
-      <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted-foreground">
-        {body}
-      </p>
-      <span className="mt-4 text-sm text-primary underline-offset-4 group-hover:underline">
-        {action}
-      </span>
-    </Link>
-  );
-}
+
