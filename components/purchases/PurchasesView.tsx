@@ -477,28 +477,26 @@ export function PurchasesView({
         />
 
         <TableToolbar className="border-t border-border">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+          <SegmentedControl
+            ariaLabel="Filter status pesanan"
+            options={[
+              { value: 'all', label: 'Semua', count: orders.length },
+              { value: 'draft', label: 'Draf', count: orders.filter(o => o.status === 'draft').length },
+              { value: 'submitted', label: 'Diajukan', count: orders.filter(o => o.status === 'submitted').length },
+              { value: 'completed', label: 'Selesai', count: orders.filter(o => o.status === 'completed').length },
+            ]}
+            value={orderStatusFilter}
+            onChange={val => setOrderStatusFilter(val as OrderStatusFilter)}
+          />
+
+          <div className="relative min-w-48 sm:min-w-64">
+            <Search className="absolute left-3 top-2.5 size-3.5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Cari riwayat pesanan..."
               value={orderSearch}
               onChange={e => setOrderSearch(e.target.value)}
-              className="w-full rounded-md border border-border bg-background pl-8 pr-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--terrion-green-500)]"
-            />
-          </div>
-
-          <div className="flex items-center gap-1">
-            <SegmentedControl
-              ariaLabel="Filter status pesanan"
-              options={[
-                { value: 'all', label: 'Semua' },
-                { value: 'draft', label: 'Draf' },
-                { value: 'submitted', label: 'Diajukan' },
-                { value: 'completed', label: 'Selesai' },
-              ]}
-              value={orderStatusFilter}
-              onChange={val => setOrderStatusFilter(val as OrderStatusFilter)}
+              className="interactive h-8.5 w-full rounded-md border border-input bg-card pl-8.5 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none"
             />
           </div>
         </TableToolbar>
