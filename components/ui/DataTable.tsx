@@ -200,11 +200,11 @@ export function TableToolbar({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-between gap-x-4 gap-y-3 print:hidden',
+        'flex flex-wrap items-center justify-between gap-x-4 gap-y-3 p-3.5 px-4 print:hidden',
         className,
       )}
     >
-      <div className="flex flex-wrap items-center gap-2">{children}</div>
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4">{children}</div>
       {meta && <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">{meta}</div>}
     </div>
   )
