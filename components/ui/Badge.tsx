@@ -30,11 +30,11 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-medium whitespace-nowrap',
-        tone === 'neutral' && 'border-border bg-muted text-muted-foreground',
-        tone === 'positive' && 'border-[var(--terrion-green-200)] bg-secondary text-[var(--terrion-green-700)]',
-        tone === 'warning' && 'border-[var(--terrion-gold-200)] bg-[var(--terrion-gold-50)] text-[var(--terrion-gold-600)]',
-        tone === 'negative' && 'border-destructive/25 bg-destructive/8 text-destructive',
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.6875rem] font-semibold whitespace-nowrap transition-colors',
+        tone === 'neutral' && 'border-border/80 bg-muted/80 text-muted-foreground',
+        tone === 'positive' && 'border-[var(--terrion-green-300)] bg-[var(--terrion-green-50)] text-[var(--terrion-green-700)] shadow-2xs',
+        tone === 'warning' && 'border-[var(--terrion-gold-500)]/40 bg-[var(--terrion-gold-50)] text-[var(--terrion-gold-600)] shadow-2xs',
+        tone === 'negative' && 'border-destructive/30 bg-destructive/10 text-destructive',
         className,
       )}
     >

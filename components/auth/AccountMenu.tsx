@@ -36,6 +36,7 @@ export function AccountMenu({
   role,
   signOutTo = '/',
   triggerClassName,
+  hideNavItems = false,
 }: {
   fullName: string
   organisation: string | null
@@ -51,6 +52,11 @@ export function AccountMenu({
    * white chip from a bright field.
    */
   triggerClassName?: string
+  /**
+   * When true (e.g. inside the app shell with its own sidebar), hides redundant
+   * navigation items so the menu contains only account identity and "Keluar".
+   */
+  hideNavItems?: boolean
 }) {
   const home = homeFor(role)
 
@@ -80,12 +86,6 @@ export function AccountMenu({
       </Menu.Trigger>
 
       <Menu.Portal>
-        {/* z-50: the popup is portalled to the end of <body>, which puts it
-            LAST in the DOM but not on top. A positioned element with a real
-            z-index paints in a later layer than one with z-index:auto, so the
-            catalogue's sticky filter bar (z-30) and this header itself (z-40)
-            were both painting over a menu that had no z-index at all. DOM
-            order does not settle this; a stacking order does. */}
         <Menu.Positioner className="z-50" side="bottom" align="end" sideOffset={8}>
           <Menu.Popup
             className={cn(
@@ -95,10 +95,9 @@ export function AccountMenu({
               'data-[ending-style]:scale-95 data-[ending-style]:opacity-0',
             )}
           >
-            {/* Who you are, spelled out. On a phone the trigger shows only two
-                letters, so this is the one place the full name appears. */}
+            {/* Who you are, spelled out. */}
             <div className="px-2.5 py-2">
-              <p className="truncate text-sm font-medium text-foreground">{fullName}</p>
+              <p className="truncate text-sm font-semibold text-foreground">{fullName}</p>
               <p className="truncate text-xs text-muted-foreground">
                 {organisation ? `${roleLabel(role)} · ${organisation}` : roleLabel(role)}
               </p>
@@ -106,47 +105,44 @@ export function AccountMenu({
 
             <div className="my-1 h-px bg-border" aria-hidden />
 
-            <Menu.Item
-              render={<Link href={home} />}
-              className={cn(
-                'interactive flex items-center gap-2.5 rounded-lg p-2.5 outline-none',
-                'data-[highlighted]:bg-muted',
-              )}
-            >
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
-                {role === 'buyer'
-                  ? <Store aria-hidden className="size-4" />
-                  : <LayoutDashboard aria-hidden className="size-4" />}
-              </span>
-              <span className="text-sm font-medium text-foreground">
-                {role === 'buyer' ? 'Katalog pasokan' : 'Dashboard koperasi'}
-              </span>
-            </Menu.Item>
+            {!hideNavItems && (
+              <>
+                <Menu.Item
+                  render={<Link href={home} />}
+                  className={cn(
+                    'interactive flex items-center gap-2.5 rounded-lg p-2.5 outline-none',
+                    'data-[highlighted]:bg-muted',
+                  )}
+                >
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+                    {role === 'buyer'
+                      ? <Store aria-hidden className="size-4" />
+                      : <LayoutDashboard aria-hidden className="size-4" />}
+                  </span>
+                  <span className="text-sm font-medium text-foreground">
+                    {role === 'buyer' ? 'Katalog pasokan' : 'Dashboard koperasi'}
+                  </span>
+                </Menu.Item>
 
-            {role === 'buyer' && (
-              <Menu.Item
-                render={<Link href="/my-requests" />}
-                className={cn(
-                  'interactive flex items-center gap-2.5 rounded-lg p-2.5 outline-none',
-                  'data-[highlighted]:bg-muted',
+                {role === 'buyer' && (
+                  <Menu.Item
+                    render={<Link href="/my-requests" />}
+                    className={cn(
+                      'interactive flex items-center gap-2.5 rounded-lg p-2.5 outline-none',
+                      'data-[highlighted]:bg-muted',
+                    )}
+                  >
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+                      <ClipboardList aria-hidden className="size-4" />
+                    </span>
+                    <span className="text-sm font-medium text-foreground">Permintaan saya</span>
+                  </Menu.Item>
                 )}
-              >
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
-                  <ClipboardList aria-hidden className="size-4" />
-                </span>
-                {/* Sentence case and no subtitle, like the two items either
-                    side of it. One row in three carrying a second line made
-                    the list ragged, and "ACC" was a fourth name for a state
-                    the pengurus's own button calls Terima. */}
-                <span className="text-sm font-medium text-foreground">Permintaan saya</span>
-              </Menu.Item>
+              </>
             )}
 
             {/* A form, not an onClick: signing out has to revoke the session at
-                the backend, and a Server Action does that without this menu
-                needing to know the endpoint. The form lives inside the popup
-                because the popup is portalled -- a form wrapped around the
-                trigger would not contain this button in the DOM. */}
+                the backend. */}
             <form action={signOut.bind(null, signOutTo)}>
               <Menu.Item
                 nativeButton

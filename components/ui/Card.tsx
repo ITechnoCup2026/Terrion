@@ -89,10 +89,6 @@ export type Metric = {
   hint?: ReactNode
   /**
    * The series the figure summarises, drawn beside it.
-   *
-   * Optional and honestly so: "Lahan" is a count with no shape, and inventing
-   * a sparkline for it would be drawing a picture of nothing. A figure that
-   * has a series shows it; a figure that does not, does not.
    */
   series?: {
     values: readonly number[]
@@ -101,33 +97,15 @@ export type Metric = {
     flagged?: readonly boolean[]
   }
   /**
-   * `accent` is for the one figure on the row that is a call to action — a
-   * count of risky weeks, a pile-up. At most one per row: a row where every
-   * tile is emphasised is a row where none is.
+   * `accent` is for call to action, `positive` for success/accepted, `negative` for declined, `info` for totals.
    */
-  tone?: 'default' | 'accent'
+  tone?: 'default' | 'accent' | 'positive' | 'negative' | 'info'
+  icon?: any
 }
 
 /**
  * A row of headline figures — the four numbers that open the dashboard, the
  * plot list and the requests inbox.
- *
- * One ruled row, not four cards. Four separately bordered, separately
- * shadowed boxes read as four unrelated objects that happen to be adjacent;
- * these figures are one statement about one cooperative, and a ledger's
- * column rules say that where four containers cannot.
- *
- * The icons are gone. A scale, a rising line, a warning triangle and a
- * seedling in a coloured chip added a second thing to decode above every
- * figure without telling the reader anything the label did not already say —
- * and dressed the whole row in gradient at the exact moment the page wanted to
- * be read quickly.
- *
- * What replaced them earns its place: where a figure summarises a series, the
- * series is drawn next to it. That is not decoration standing in for an icon,
- * it is the second half of the sentence — "63 tonnes" and "all of it in week
- * nine" are different facts, and the row used to be able to say only the
- * first.
  */
 export function MetricRow({
   items,
@@ -137,60 +115,72 @@ export function MetricRow({
   className?: string
 }) {
   return (
-    <dl
-      className={cn(
-        'grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-xs)] sm:grid-cols-4',
-        className,
-      )}
-    >
-      {items.map(item => (
-        <div
-          key={item.label}
-          className={cn(
-            'p-4 sm:p-5',
-            // Cell rules rather than four bordered boxes. On a phone the row
-            // folds to two columns, so the second pair needs a rule above it
-            // that the four-across layout must not keep.
-            'even:border-l even:border-border',
-            '[&:nth-child(n+3)]:border-t [&:nth-child(n+3)]:border-border',
-            'sm:[&:nth-child(n+2)]:border-l sm:[&:nth-child(n+3)]:border-t-0',
-          )}
-        >
-          <dt className="text-xs text-muted-foreground">{item.label}</dt>
-
-          {/* Figure left, its shape right. Stacking the sparkline under the
-              number instead would make every tile two rows taller and push the
-              alert below the fold on a laptop, which is the one thing this
-              page cannot afford. */}
-          <div className="mt-1.5 flex items-end justify-between gap-3">
-            <dd
-              className={cn(
-                'text-[1.75rem] leading-none font-semibold tracking-tight tabular-nums',
-                // Gold is the whole signal. No fill, no chip, no border — the
-                // figure itself is the thing that needs a decision, so the
-                // figure itself is what changes colour.
-                item.tone === 'accent' ? 'text-accent' : 'text-foreground',
-              )}
-            >
-              {item.value}
-            </dd>
-
-            {item.series && (
-              <Sparkbars
-                values={item.series.values}
-                highlight={item.series.highlight}
-                flagged={item.series.flagged}
-                className="w-20 shrink-0"
-              />
+    <dl className={cn('grid grid-cols-2 gap-4 lg:grid-cols-4', className)}>
+      {items.map(item => {
+        const Icon = item.icon
+        return (
+          <div
+            key={item.label}
+            className={cn(
+              'panel relative flex flex-col justify-between p-5 transition-all hover:border-[var(--terrion-green-300)]',
+              item.tone === 'accent' && 'border-[var(--terrion-gold-500)]/40 bg-[var(--terrion-gold-50)]/40',
             )}
+          >
+            {item.tone === 'accent' && (
+              <div className="absolute inset-x-0 top-0 h-1 rounded-t-xl bg-[var(--terrion-gold-500)]" />
+            )}
+
+            <div className="flex items-center justify-between gap-2 text-muted-foreground">
+              <dt className="text-xs font-medium">{item.label}</dt>
+              {Icon && (
+                <div
+                  className={cn(
+                    'flex size-7 shrink-0 items-center justify-center rounded-lg transition-colors',
+                    item.tone === 'accent'
+                      ? 'bg-[var(--terrion-gold-200)]/60 text-[var(--terrion-gold-600)]'
+                      : item.tone === 'positive'
+                        ? 'bg-[var(--terrion-green-100)] text-[var(--terrion-green-700)]'
+                        : item.tone === 'negative'
+                          ? 'bg-destructive/10 text-destructive'
+                          : 'bg-muted text-[var(--terrion-green-600)]',
+                  )}
+                >
+                  <Icon className="size-4" />
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3">
+              <dd
+                className={cn(
+                  'text-3xl font-bold tracking-tight tabular-nums',
+                  item.tone === 'accent'
+                    ? 'text-[var(--terrion-gold-600)]'
+                    : item.tone === 'positive'
+                      ? 'text-[var(--terrion-green-700)]'
+                      : item.tone === 'negative'
+                        ? 'text-destructive'
+                        : 'text-[var(--terrion-green-700)]',
+                )}
+              >
+                {item.value}
+              </dd>
+              {item.hint && (
+                <p
+                  className={cn(
+                    'mt-1.5 text-[0.6875rem] font-medium leading-snug',
+                    item.tone === 'accent'
+                      ? 'text-[var(--terrion-gold-600)]'
+                      : 'text-muted-foreground',
+                  )}
+                >
+                  {item.hint}
+                </p>
+              )}
+            </div>
           </div>
-          {item.hint && (
-            <p className="mt-2 text-[0.6875rem] leading-snug text-[var(--terrion-ink-faint)]">
-              {item.hint}
-            </p>
-          )}
-        </div>
-      ))}
+        )
+      })}
     </dl>
   )
 }

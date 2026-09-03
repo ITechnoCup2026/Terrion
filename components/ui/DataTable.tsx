@@ -56,11 +56,7 @@ export function THead({ children, className }: { children: ReactNode; className?
   return (
     <thead
       className={cn(
-        // The tint plus the bottom rule is what separates the head from row one
-        // once the head is sticky and rows slide under it. Fully opaque, not
-        // blurred: a translucent header lets the top row bleed through it at
-        // exactly the moment the reader is trying to read the column name.
-        'sticky top-0 z-10 bg-muted text-left text-[0.6875rem] font-medium text-muted-foreground',
+        'sticky top-0 z-10 bg-[var(--terrion-green-50)]/90 backdrop-blur-xs text-left text-[0.7rem] font-semibold uppercase tracking-wider text-[var(--terrion-green-900)] border-b border-border',
         '[&_th]:border-b [&_th]:border-border',
         'print:static',
         className,
@@ -75,8 +71,8 @@ export function TBody({ children, className }: { children: ReactNode; className?
   return (
     <tbody
       className={cn(
-        '[&_tr]:border-b [&_tr]:border-border [&_tr:last-child]:border-0',
-        '[&_tr]:transition-colors [&_tr:hover]:bg-secondary/45',
+        '[&_tr]:border-b [&_tr]:border-border/70 [&_tr:last-child]:border-0',
+        '[&_tr]:transition-colors [&_tr:hover]:bg-[var(--terrion-green-50)]/40',
         className,
       )}
     >
@@ -89,10 +85,6 @@ export function TBody({ children, className }: { children: ReactNode; className?
  * A header cell. `numeric` is for a column holding a figure, and it carries
  * the alignment for the whole column: the body cell below it has to ask for
  * the same thing, which is why both take the same prop.
- *
- * Not called `align` — that is already an attribute of <th> and <td>, with a
- * different set of values, and shadowing it makes the component reject the
- * only values it accepts.
  */
 export function Th({
   children,
@@ -108,7 +100,7 @@ export function Th({
     <th
       scope="col"
       className={cn(
-        'px-4 py-2.5 font-normal whitespace-nowrap',
+        'px-4 py-3 font-semibold whitespace-nowrap text-[0.7rem]',
         numeric && 'text-right',
         className,
       )}
@@ -131,7 +123,7 @@ export function Td({
 } & React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td
-      className={cn('px-4 py-3 align-top', numeric && 'text-right tabular-nums whitespace-nowrap', className)}
+      className={cn('px-4 py-3.5 align-middle', numeric && 'text-right tabular-nums whitespace-nowrap', className)}
       {...rest}
     >
       {children}
@@ -141,10 +133,6 @@ export function Td({
 
 /**
  * A sortable column header.
- *
- * The arrow is drawn for every sortable column, not only the active one --
- * dimmed until it is the sort. A column that only reveals it is sortable once
- * you have already sorted it is a control nobody finds.
  */
 export function SortableTh({
   label,
@@ -169,9 +157,9 @@ export function SortableTh({
         type="button"
         onClick={onSort}
         className={cn(
-          'interactive inline-flex w-full items-center gap-1 px-4 py-2.5 hover:text-foreground',
+          'interactive inline-flex w-full items-center gap-1.5 px-4 py-3 font-semibold hover:text-[var(--terrion-green-700)]',
           numeric && 'justify-end',
-          active && 'text-foreground',
+          active && 'text-[var(--terrion-green-700)]',
         )}
       >
         {label}
@@ -180,12 +168,12 @@ export function SortableTh({
           viewBox="0 0 12 12"
           className={cn(
             'size-3 shrink-0 transition-all',
-            active ? 'opacity-100' : 'opacity-30',
+            active ? 'opacity-100' : 'opacity-35',
             active && desc && 'rotate-180',
           )}
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.6"
+          strokeWidth="1.8"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
@@ -198,8 +186,7 @@ export function SortableTh({
 
 /**
  * The strip above a table: filters on the left, counts and actions on the
- * right. Its job is to keep every table's controls in the same place, because
- * a filter row that moves between screens has to be looked for each time.
+ * right.
  */
 export function TableToolbar({
   children,
@@ -207,29 +194,24 @@ export function TableToolbar({
   className,
 }: {
   children?: ReactNode
-  /** The right-hand side: a row count, an export button. */
   meta?: ReactNode
   className?: string
 }) {
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2 print:hidden',
+        'flex flex-wrap items-center justify-between gap-x-4 gap-y-3 print:hidden',
         className,
       )}
     >
-      <div className="flex flex-wrap items-center gap-1.5">{children}</div>
-      {meta && <div className="flex items-center gap-2 text-xs text-muted-foreground">{meta}</div>}
+      <div className="flex flex-wrap items-center gap-2">{children}</div>
+      {meta && <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">{meta}</div>}
     </div>
   )
 }
 
 /**
  * A segmented filter — the status tabs above the requests table.
- *
- * Previously five separate buttons that swapped between the `default` and
- * `outline` variants, so the whole row changed weight as you moved through it
- * and the group did not read as one control. One track, one thumb.
  */
 export function SegmentedControl<T extends string>({
   options,
@@ -246,7 +228,7 @@ export function SegmentedControl<T extends string>({
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className="inline-flex flex-wrap items-center gap-0.5 rounded-md border border-border bg-muted p-0.5"
+      className="inline-flex flex-wrap items-center gap-1 rounded-lg border border-border bg-muted/70 p-1 shadow-2xs"
     >
       {options.map(option => {
         const active = option.value === value
@@ -258,18 +240,20 @@ export function SegmentedControl<T extends string>({
             aria-selected={active}
             onClick={() => onChange(option.value)}
             className={cn(
-              'interactive inline-flex items-center gap-1.5 rounded-[calc(var(--radius-md)-0.125rem)] px-2.5 py-1 text-[0.8125rem]',
+              'interactive inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-150',
               active
-                ? 'bg-card font-medium text-foreground shadow-[var(--shadow-sm)]'
-                : 'text-muted-foreground hover:text-foreground',
+                ? 'bg-card font-semibold text-foreground shadow-xs ring-1 ring-border/60'
+                : 'text-muted-foreground hover:bg-card/40 hover:text-foreground',
             )}
           >
             {option.label}
             {option.count !== undefined && (
               <span
                 className={cn(
-                  'rounded-full px-1.5 text-[0.65rem] tabular-nums',
-                  active ? 'bg-secondary text-secondary-foreground' : 'bg-border text-muted-foreground',
+                  'rounded-full px-1.8 py-0.2 text-[0.65rem] font-semibold tabular-nums',
+                  active
+                    ? 'bg-[var(--terrion-green-100)] text-[var(--terrion-green-700)]'
+                    : 'bg-muted-foreground/15 text-muted-foreground',
                 )}
               >
                 {option.count}

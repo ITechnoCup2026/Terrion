@@ -1,3 +1,4 @@
+import { User } from 'lucide-react'
 import Link from 'next/link'
 
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
@@ -10,15 +11,6 @@ export type CommodityRef = { id: string; name: string; spriteRow: number }
 
 /**
  * One plot in the list.
- *
- * The card answers, in order: what is it, whose is it, when does it come out,
- * and how far along is it. The harvest window is the largest thing on it
- * because "when" is the question the whole product exists to answer -- the
- * previous card gave it the same weight as the hectares.
- *
- * The colour stripe and the glyph both come from the commodity, so a kader
- * scanning thirty cards recognises the crop before reading a word. They are
- * the same colours the farm canvas outlines blocks with.
  */
 export function PlotCard({
   plot, commodities,
@@ -37,51 +29,50 @@ export function PlotCard({
   return (
     <Link
       href={`/plots/${plot.id}`}
-      className="interactive group relative flex flex-col overflow-hidden rounded-lg
-        border border-border bg-card hover:border-input"
+      className="interactive group relative flex flex-col overflow-hidden rounded-xl border border-border/80 bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:border-[var(--terrion-green-700)]/50 hover:shadow-md"
     >
-      {/* The commodity, as a band down the leading edge. */}
-      <span aria-hidden className="absolute inset-y-0 left-0 w-1.5" style={{ background: stripe }} />
+      {/* Top Commodity Accent Stripe */}
+      <span aria-hidden className="absolute top-0 inset-x-0 h-1" style={{ background: stripe }} />
 
-      <div className="flex flex-1 flex-col gap-3 p-4 pl-5">
-        <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-1 flex-col gap-3">
+        <div className="flex items-start justify-between gap-3 pt-1">
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-foreground underline-offset-4 group-hover:underline">
+            <h3 className="truncate text-base font-bold text-foreground transition-colors group-hover:text-[var(--terrion-green-900)]">
               {plot.name}
-            </p>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
-              {plot.memberName ?? 'Petani tidak tercatat'} · {formatNumberId(plot.areaHa)} ha
-            </p>
+            </h3>
+            <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <User className="size-3.5 text-muted-foreground/70 shrink-0" />
+              <span className="truncate">{plot.memberName ?? 'Petani tidak tercatat'}</span>
+              <span>·</span>
+              <span className="font-semibold tabular-nums text-foreground">{formatNumberId(plot.areaHa)} ha</span>
+            </div>
           </div>
           {lead && <CropGlyph spriteRow={lead.spriteRow} stage={CROP_STAGES - 2} />}
         </div>
 
-        <div>
+        <div className="my-1">
           {plot.nextWindow ? (
             <HarvestWindow size="sm" window={plot.nextWindow} />
           ) : (
-            <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center rounded-md bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground">
               Belum ada tanaman aktif
             </span>
           )}
         </div>
 
-        {/* Only while it is still growing. A bar pinned at 100% says nothing
-            the harvest window above it has not already said, and every crop
-            past its heat requirement would show one. */}
         {plot.progress != null && plot.progress < 1 && (
           <SeasonMeter progress={plot.progress} colour={stripe} />
         )}
 
-        {/* A tonnage is a figure, not a status. It used to sit in a green
-            pill, which in this palette claims the cooperative's own colour for
-            a number that is simply a number. */}
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-border pt-2.5 text-xs text-muted-foreground">
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-border/60 pt-3 text-xs">
           {grown.length > 0 && (
-            <span className="truncate text-foreground">{grown.map(c => c.name).join(' · ')}</span>
+            <div className="flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="size-2 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: stripe }} />
+              <span className="truncate">{grown.map(c => c.name).join(' · ')}</span>
+            </div>
           )}
           {plot.expectedTonnes != null && (
-            <span className="ml-auto shrink-0 tabular-nums">
+            <span className="ml-auto shrink-0 font-semibold tabular-nums text-foreground">
               {plot.blockCount} blok · ± {formatNumberId(plot.expectedTonnes)} t
             </span>
           )}
@@ -93,48 +84,44 @@ export function PlotCard({
 
 /**
  * One cell of the crop sprite sheet, as a background position.
- *
- * The sheet is already served for the canvas, so this costs no extra request.
- * Rendered at 2x with crisp-edges: a 32px pixel-art tile scaled smoothly turns
- * to mush.
  */
 function CropGlyph({ spriteRow, stage }: { spriteRow: number; stage: number }) {
   const size = CROP_CELL * 2
   return (
     <span
       aria-hidden
-      className="shrink-0 rounded-md bg-muted"
+      className="shrink-0 rounded-lg border border-border/50 bg-muted/40 p-1 flex items-center justify-center shadow-2xs"
       style={{
-        width: size, height: size,
-        imageRendering: 'pixelated',
-        backgroundImage: 'url(/sprites/crops.png)',
-        backgroundSize: `${CROP_STAGES * size}px auto`,
-        backgroundPosition: `-${stage * size}px -${spriteRow * size}px`,
+        width: size + 8, height: size + 8,
       }}
-    />
+    >
+      <span
+        style={{
+          width: size, height: size,
+          imageRendering: 'pixelated',
+          backgroundImage: 'url(/sprites/crops.png)',
+          backgroundSize: `${CROP_STAGES * size}px auto`,
+          backgroundPosition: `-${stage * size}px -${spriteRow * size}px`,
+        }}
+      />
+    </span>
   )
 }
 
 /**
  * How far the soonest block is through the heat its variety needs.
- *
- * Shown only while that is under way -- see the caller.
- *
- * Not a countdown in days: the model works in accumulated degree-days, and a
- * cold fortnight really does move the harvest. Showing the ratio the model
- * uses is honest; converting it to "12 hari lagi" would invent precision.
  */
 function SeasonMeter({ progress, colour }: { progress: number; colour: string }) {
   const percent = Math.round(progress * 100)
   return (
-    <div>
-      <div className="flex items-baseline justify-between text-[0.6875rem] text-muted-foreground">
+    <div className="space-y-1">
+      <div className="flex items-baseline justify-between text-[0.6875rem] font-medium text-muted-foreground">
         <span>Perkembangan musim</span>
-        <span className="tabular-nums">{percent}%</span>
+        <span className="tabular-nums font-semibold text-foreground">{percent}%</span>
       </div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+      <div className="h-1.5 overflow-hidden rounded-full bg-muted/80">
         <div
-          className="h-full rounded-full transition-[width]"
+          className="h-full rounded-full transition-[width] duration-300"
           style={{ width: `${percent}%`, background: colour }}
         />
       </div>
