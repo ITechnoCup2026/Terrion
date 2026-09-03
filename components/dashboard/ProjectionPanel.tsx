@@ -3,22 +3,6 @@ import { formatNumberId } from '@/lib/format/number'
 import { formatHarvestRange } from '@/lib/harvest/format'
 import { cn } from '@/lib/utils'
 
-/**
- * The page's subject, in one object.
- *
- * The dashboard used to open with a four-cell ledger of totals, then put the
- * projection in a card two thirds of the way down a three-column grid. That
- * order is backwards: a total is a summary of the picture, and the picture is
- * the only thing on this screen a board cannot reconstruct in its head. So the
- * figures moved *inside* the chart's panel, down its left edge, where they
- * read as captions on the thing they describe rather than as four unrelated
- * measurements that happen to be adjacent.
- *
- * The peak week is the headline because it is the actionable one. "83,4 tonnes
- * over twelve weeks" is a fact about the season; "14,2 tonnes in the week of
- * 1 November" is a fact somebody has to do something about this month.
- */
-
 const WEEK_MS = 7 * 86_400_000
 
 export type ProjectionPanelProps = {
@@ -27,7 +11,6 @@ export type ProjectionPanelProps = {
   peak: { tonnes: number; min: number; max: number; weekStart: Date } | null
   flaggedCount: number
   plotCount: number
-  /** The pile-up the peak belongs to, when there is one. */
   overCapacity: { commodityName: string; percentOfCapacity: number } | null
 }
 
@@ -39,7 +22,7 @@ export function ProjectionPanel({
     {
       label: 'Minggu padat',
       value: formatNumberId(flaggedCount),
-      tone: flaggedCount > 0 ? 'accent' as const : undefined,
+      tone: flaggedCount > 0 ? ('accent' as const) : undefined,
     },
     { label: 'Lahan terdaftar', value: formatNumberId(plotCount) },
   ]
@@ -47,61 +30,64 @@ export function ProjectionPanel({
   return (
     <section
       aria-labelledby="projection-heading"
-      className="grid overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-md)] lg:grid-cols-[16rem_minmax(0,1fr)]"
+      className="panel overflow-hidden grid lg:grid-cols-[17rem_minmax(0,1fr)]"
     >
-      {/* The caption column. Ruled, not boxed: it is part of the chart's
-          statement, not a second panel beside it. */}
-      <div className="flex flex-col border-b border-border p-5 lg:border-r lg:border-b-0 lg:p-6">
+      {/* Caption column with landing page wash ground */}
+      <div className="flex flex-col justify-between border-b border-border bg-[var(--terrion-green-50)]/70 p-6 lg:border-r lg:border-b-0">
         <div>
-          <p className="text-[0.6875rem] text-muted-foreground">Puncak panen</p>
+          <p className="text-[0.6875rem] font-mono tracking-wider uppercase text-muted-foreground">PUNCAK PANEN</p>
 
           {peak ? (
-            <>
-              <p className="mt-2 flex items-baseline gap-1.5">
+            <div className="mt-2.5">
+              <div className="flex items-baseline gap-1.5">
                 <span
                   className={cn(
-                    'text-[2.75rem] leading-[0.9] font-semibold tracking-[-0.02em] tabular-nums',
-                    overCapacity ? 'text-accent' : 'text-foreground',
+                    'text-[3rem] leading-none font-bold tracking-tight tabular-nums',
+                    overCapacity ? 'text-accent' : 'text-[var(--terrion-green-700)]',
                   )}
                 >
                   {formatNumberId(peak.tonnes)}
                 </span>
-                <span className="text-sm text-muted-foreground">ton</span>
-              </p>
-              {/* The headline figure states its own interval, because every
-                  other tonnage in this product does. A single number at 44px
-                  is the loudest place on the page to imply a precision the
-                  model has not got. */}
-              <p className="mt-2 text-[0.75rem] tabular-nums text-muted-foreground">
+                <span className="text-sm font-semibold text-[var(--terrion-green-700)]">ton</span>
+              </div>
+
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-[var(--terrion-green-100)]/80 px-2 py-0.5 text-xs font-medium text-[var(--terrion-green-900)]">
                 rentang {formatNumberId(peak.min)}–{formatNumberId(peak.max)} ton
-              </p>
-              <p className="mt-3 border-t border-border pt-3 text-[0.8125rem] text-foreground">
-                minggu {formatHarvestRange(peak.weekStart, new Date(+peak.weekStart + WEEK_MS - 86_400_000))}
-              </p>
+              </div>
+
+              <div className="mt-4 rounded-lg border border-[#e1e9dc] bg-background/90 p-3 shadow-xs">
+                <span className="block text-[0.6875rem] font-medium uppercase tracking-wider text-muted-foreground">
+                  Jendela Waktu Puncak
+                </span>
+                <span className="mt-0.5 block text-xs font-semibold text-foreground">
+                  Minggu {formatHarvestRange(peak.weekStart, new Date(+peak.weekStart + WEEK_MS - 86_400_000))}
+                </span>
+              </div>
+
               {overCapacity && (
-                <p className="mt-1 text-[0.75rem] text-accent">
+                <p className="mt-2 text-xs font-medium text-accent">
                   {overCapacity.percentOfCapacity}% dari kapasitas {overCapacity.commodityName.toLowerCase()}
                 </p>
               )}
-            </>
+            </div>
           ) : (
-            <p className="mt-2 text-[0.8125rem] text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               Belum ada proyeksi untuk musim ini.
             </p>
           )}
         </div>
 
-        <dl className="mt-7 flex flex-col lg:mt-auto lg:pt-7">
+        <dl className="mt-6 flex flex-col divide-y divide-[#e1e9dc] border-t border-[#e1e9dc] pt-2">
           {ledger.map(row => (
             <div
               key={row.label}
-              className="flex items-baseline justify-between gap-3 border-t border-border py-2 last:pb-0"
+              className="flex items-center justify-between gap-3 py-2.5"
             >
-              <dt className="text-[0.75rem] text-muted-foreground">{row.label}</dt>
+              <dt className="text-xs text-muted-foreground">{row.label}</dt>
               <dd
                 className={cn(
-                  'text-[0.9375rem] font-medium tabular-nums',
-                  row.tone === 'accent' ? 'text-accent' : 'text-foreground',
+                  'text-xs font-semibold tabular-nums',
+                  row.tone === 'accent' ? 'text-accent font-bold' : 'text-foreground',
                 )}
               >
                 {row.value}
@@ -111,14 +97,15 @@ export function ProjectionPanel({
         </dl>
       </div>
 
-      <div className="flex min-w-0 flex-col p-5 lg:p-6">
-        <div className="mb-5 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+
+      <div className="flex min-w-0 flex-col p-6">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
           <div className="min-w-0">
-            <h2 id="projection-heading" className="text-sm font-semibold text-foreground">
-              Proyeksi panen mingguan
+            <h2 id="projection-heading" className="text-base font-bold tracking-tight text-foreground">
+              Proyeksi Panen Mingguan
             </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Setiap minggu adalah rentang, bukan satu angka.
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Setiap minggu adalah rentang estimasi berbasis GDD & cuaca, bukan satu angka pasti.
             </p>
           </div>
           <Legend />
@@ -130,24 +117,22 @@ export function ProjectionPanel({
   )
 }
 
-/**
- * The capsule needs saying once. A reader who has met a bar chart has not
- * necessarily met an interval, and the difference between the pale part and
- * the dark line is the difference between "might" and "expected".
- */
 function Legend() {
   return (
-    <ul className="flex shrink-0 items-center gap-4">
-      <li className="flex items-center gap-1.5 text-[0.6875rem] text-muted-foreground">
-        <span aria-hidden className="relative block h-4 w-2 rounded-full bg-[var(--terrion-green-200)]">
+    <ul className="flex shrink-0 items-center gap-3">
+      <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground bg-background border border-border px-3 py-1 rounded-full shadow-xs">
+        <span aria-hidden className="relative block h-3.5 w-2 rounded-full bg-[var(--terrion-green-200)]">
           <span className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-[var(--terrion-green-600)]" />
         </span>
-        perkiraan dan rentangnya
+        Perkiraan & Rentang
       </li>
-      <li className="flex items-center gap-1.5 text-[0.6875rem] text-muted-foreground">
-        <span aria-hidden className="block h-4 w-2 rounded-full bg-accent" />
-        melewati kapasitas
+      <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground bg-background border border-border px-3 py-1 rounded-full shadow-xs">
+        <span aria-hidden className="block h-3.5 w-2 rounded-full bg-accent" />
+        Melewati Kapasitas
       </li>
     </ul>
   )
 }
+
+
+

@@ -1,26 +1,18 @@
-import { CollisionAlert, CollisionClear, type CollisionAlertData } from '@/components/dashboard/CollisionAlert'
+import Link from 'next/link'
+import { Calendar, PackageCheck, Sprout } from 'lucide-react'
+
+import { CollisionAlert, type CollisionAlertData } from '@/components/dashboard/CollisionAlert'
 import { GroupPurchaseAlert } from '@/components/dashboard/GroupPurchaseAlert'
 import { ImpactPanel } from '@/components/dashboard/ImpactPanel'
 import { ProjectionPanel } from '@/components/dashboard/ProjectionPanel'
 import type { ChartWeek } from '@/components/dashboard/ProjectionChart'
 import { UpcomingHarvests } from '@/components/dashboard/UpcomingHarvests'
 import { Page, PageHeader } from '@/components/ui/Page'
+import { buttonVariants } from '@/components/ui/button'
 import type { DashboardData } from '@/lib/dashboard/load'
+import { formatNumberId } from '@/lib/format/number'
 import type { RequirementLine } from '@/lib/rdkk/aggregate'
-
-/**
- * The dashboard, as a function of the data it is handed.
- *
- * Split out of the route so the screen can be rendered without the Go API, a
- * database or a session — the page above is an auth check and three fetches,
- * this is every pixel.
- *
- * The order is the order a board reads in: the wave, then the one week that is
- * a problem and what to do about it, then the two lists that turn into work
- * this week, then what the season has already been worth. The page used to
- * open on a row of four totals, which put the only actionable thing on it
- * below the fold on a laptop.
- */
+import { cn } from '@/lib/utils'
 
 const UPCOMING_SHOWN = 5
 
@@ -45,14 +37,13 @@ export function DashboardView({
     risk: flaggedWeeks.has(w.isoWeek),
   }))
 
+  const totalExpected = dashboard.weeks.reduce((sum, w) => sum + w.expectedTonnes, 0)
+
   const peak = dashboard.weeks.reduce<typeof dashboard.weeks[number] | null>(
     (best, w) => (best === null || w.expectedTonnes > best.expectedTonnes ? w : best), null)
 
   const lead = dashboard.lead
 
-  // The percentage is only true of the week it was measured on. Printing the
-  // lead collision's ratio under a peak that falls in some other week would
-  // caption one number with another number's evidence.
   const overCapacity = lead && peak && lead.isoWeek === peak.isoWeek
     ? {
         commodityName: lead.commodityName,
@@ -76,10 +67,6 @@ export function DashboardView({
       threshold: lead.threshold,
       plotCount: lead.plotCount,
       totalPlots: plotCount,
-      // GET /api/dashboard names which blocks contribute (block_ids), not
-      // which plots -- and no contract endpoint maps a block id back to its
-      // plot's name and farmer without a per-plot lookup this page has no
-      // reason to make. The count above is real; the roster is not available.
       contributingPlots: [],
       suggestion: suggestion
         ? { blockIds: suggestion.blockIds, shiftDays: suggestion.shiftDays, tonnesMoved: suggestion.tonnesMoved }
@@ -88,19 +75,97 @@ export function DashboardView({
   }
 
   const upcomingRows = dashboard.upcoming.rows.slice(0, UPCOMING_SHOWN)
+  const totalRdkkKg = rdkkTotals.reduce((sum, l) => sum + l.quantityKg, 0)
 
   return (
-    // The page owns its padding: the shell applies none, so that the farm page
-    // can fill the screen without fighting a parent.
-    <Page width="wide" className="flex flex-col gap-4">
+    <Page width="wide" className="flex flex-col gap-6">
       <PageHeader
         title="Dashboard"
-        description="Proyeksi panen 12 minggu ke depan untuk seluruh lahan koperasi."
+        description="Pantau proyeksi panen 12 minggu ke depan, kebutuhan pupuk RDKK, dan jadwal panen riil."
+        actions={
+          <div className="flex items-center gap-2.5">
+            <Link
+              href="/plots"
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'interactive gap-2 rounded-lg font-medium hover:bg-[var(--terrion-green-50)]')}
+            >
+              <Sprout className="size-4 text-[var(--terrion-green-600)]" />
+              Kelola Lahan
+            </Link>
+            <Link
+              href="/purchases"
+              className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'interactive gap-2 rounded-lg font-medium bg-[var(--terrion-green-700)] hover:bg-[var(--terrion-green-900)] text-white shadow-[0_2px_10px_rgba(15,77,60,0.25)]')}
+            >
+              <PackageCheck className="size-4" />
+              Dokumen RDKK
+            </Link>
+          </div>
+        }
       />
+
+
+
+      {/* Quick Agronomic Metric Strip */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="panel flex flex-col justify-between p-5 transition-all hover:border-[var(--terrion-green-300)]">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-medium">Proyeksi 12 Minggu</span>
+            <Calendar className="size-4 text-[var(--terrion-green-600)]" />
+          </div>
+          <p className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-3xl font-bold tracking-tight text-[var(--terrion-green-700)] tabular-nums">
+              {formatNumberId(totalExpected)}
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground">ton</span>
+          </p>
+        </div>
+
+        <div className="panel flex flex-col justify-between p-5 transition-all hover:border-[var(--terrion-green-300)]">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-medium">Puncak Tonase</span>
+            <span className="badge-tag">
+              Minggu Padat
+            </span>
+          </div>
+          <p className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-3xl font-bold tracking-tight text-[var(--terrion-green-700)] tabular-nums">
+              {peak ? formatNumberId(peak.expectedTonnes) : 0}
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground">ton</span>
+          </p>
+        </div>
+
+        <div className="panel flex flex-col justify-between p-5 transition-all hover:border-[var(--terrion-green-300)]">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-medium">Lahan Terdaftar</span>
+            <Sprout className="size-4 text-[var(--terrion-green-600)]" />
+          </div>
+          <p className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+              {formatNumberId(plotCount)}
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground">lahan aktif</span>
+          </p>
+        </div>
+
+        <div className="panel flex flex-col justify-between p-5 transition-all hover:border-[var(--terrion-green-300)]">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-medium">Agregasi Pupuk</span>
+            <PackageCheck className="size-4 text-[var(--terrion-green-600)]" />
+          </div>
+          <p className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+              {totalRdkkKg >= 1000 ? formatNumberId(totalRdkkKg / 1000) : formatNumberId(totalRdkkKg)}
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground">
+              {totalRdkkKg >= 1000 ? 'ton' : 'kg'}
+            </span>
+          </p>
+        </div>
+      </div>
 
       <ProjectionPanel
         weeks={chartWeeks}
-        totalTonnes={dashboard.weeks.reduce((sum, w) => sum + w.expectedTonnes, 0)}
+        totalTonnes={totalExpected}
         peak={peak
           ? {
               tonnes: peak.expectedTonnes,
@@ -114,20 +179,9 @@ export function DashboardView({
         overCapacity={overCapacity}
       />
 
-      {alert
-        ? <CollisionAlert data={alert} />
-        : <CollisionClear peakTonnes={peak?.expectedTonnes ?? null} />}
+      {alert && <CollisionAlert data={alert} />}
 
-      {/* Two panels of equal height, and each one owns the space it does not
-          fill: the harvest list centres its empty state, the purchase panel
-          settles its button on the bottom. Left to their natural heights they
-          drew a short card beside a tall one with a column of page ground
-          between them, which reads as a panel that failed to load.
-
-          minmax(0,1fr), not 1fr: a grid track's default minimum is its
-          content's, so one long unbreakable row in either panel widens the
-          column and pushes the page into a horizontal scroll. */}
-      <div className="grid gap-4 lg:grid-cols-[repeat(2,minmax(0,1fr))]">
+      <div className="grid gap-6 lg:grid-cols-[repeat(2,minmax(0,1fr))]">
         <UpcomingHarvests
           rows={upcomingRows}
           totalTonnes={dashboard.upcoming.totalTonnes}
@@ -141,9 +195,11 @@ export function DashboardView({
         />
       </div>
 
-      {/* Last, because it looks backwards: what the cooperative already got out
-          of this, rather than what it must do next. */}
-      <ImpactPanel figures={dashboard.impact} className="mt-2" />
+      <ImpactPanel figures={dashboard.impact} />
     </Page>
   )
 }
+
+
+
+
