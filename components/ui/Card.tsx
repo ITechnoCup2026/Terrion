@@ -123,12 +123,9 @@ export function MetricRow({
             key={item.label}
             className={cn(
               'panel relative flex flex-col justify-between p-5 transition-all hover:border-[var(--terrion-green-300)]',
-              item.tone === 'accent' && 'border-[var(--terrion-gold-500)]/40 bg-[var(--terrion-gold-50)]/40',
+              item.tone === 'accent' && 'border-[var(--terrion-gold-500)]/40 bg-[var(--terrion-gold-50)]/30',
             )}
           >
-            {item.tone === 'accent' && (
-              <div className="absolute inset-x-0 top-0 h-1 rounded-t-xl bg-[var(--terrion-gold-500)]" />
-            )}
 
             <div className="flex items-center justify-between gap-2 text-muted-foreground">
               <dt className="text-xs font-medium">{item.label}</dt>

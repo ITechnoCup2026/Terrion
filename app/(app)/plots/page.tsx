@@ -85,7 +85,7 @@ export default async function PlotsPage() {
       value: formatNumberId(dueSoon),
       hint: 'Lahan yang jatuh tempo',
       icon: CalendarClock,
-      tone: dueSoon > 0 ? 'accent' : 'default',
+      tone: dueSoon > 0 ? 'positive' : 'default',
     },
   ]
 
