@@ -1,13 +1,9 @@
 import Link from 'next/link'
 
-import { AccountMenu } from '@/components/auth/AccountMenu'
-import { AuthMenu } from '@/components/auth/AuthMenu'
 import { Logo } from '@/components/ui/Logo'
 import { PublicHeader } from '@/components/ui/PublicHeader'
-import { PublicNav } from '@/components/ui/PublicNav'
 import { PublicShell } from '@/components/ui/PublicShell'
 import { isBackendDown } from '@/lib/api/client'
-import { homeFor } from '@/lib/auth/display'
 import { currentAppUser, type AppUser } from '@/lib/auth/session'
 
 /**
@@ -42,38 +38,24 @@ export default async function PublicLayout({ children }: LayoutProps<'/'>) {
       {/* Absent on the landing page, which carries its own bar inside the
           hero card. Everywhere else it is the sticky way back: the catalogue
           is a long list and a reader deep in it still needs the header. */}
-      <PublicHeader>
-        <Link href={user ? homeFor(user.role) : '/'} aria-label="Terrion">
-          <Logo size={24} />
-        </Link>
-
-        <div className="flex items-center gap-3">
-          <PublicNav role={user?.role} />
-
-          <div>
-            {user ? (
-              <AccountMenu
-                fullName={user.full_name}
-                organisation={user.organisation}
-                role={user.role}
-              />
-            ) : (
-              <AuthMenu />
-            )}
-          </div>
-        </div>
-      </PublicHeader>
+      <PublicHeader
+        user={
+          user
+            ? {
+                fullName: user.full_name,
+                organisation: user.organisation,
+                role: user.role,
+              }
+            : null
+        }
+      />
 
       <main className="flex flex-1 flex-col">{children}</main>
 
-      {/* The footer says two things and stops: where else you can go, and
-          what Terrion is not. No newsletter, no second navigation of links
-          that already exist in the header, no social row for accounts nobody
-          keeps. */}
-      <footer className="border-t border-border bg-muted">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-start sm:justify-between">
+      <footer className="border-t border-border bg-card">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <Logo size={22} />
+            <Logo size={24} withWordmark={true} />
             <p className="mt-3 max-w-xs text-xs leading-relaxed text-muted-foreground">
               Terrion adalah penyedia sistem, bukan pihak dalam kontrak antara
               koperasi dan pembeli.
@@ -83,9 +65,9 @@ export default async function PublicLayout({ children }: LayoutProps<'/'>) {
           <nav aria-label="Tautan kaki" className="flex flex-col gap-2.5">
             {(
               [
-                ['/atlas', 'Atlas'],
-                ['/catalog', 'Katalog pasokan'],
-                ['/login', 'Masuk sebagai koperasi'],
+                ['/atlas', 'Atlas Pasokan'],
+                ['/catalog', 'Katalog Pasokan'],
+                ['/login', 'Masuk Koperasi'],
               ] as const
             ).map(([href, label]) => (
               <Link

@@ -1,24 +1,19 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { ArrowLeft, Building2, LogIn, MapPin, Store, UserPlus } from 'lucide-react'
 
 import { RequestForm } from '@/components/commerce/RequestForm'
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
-import { Card } from '@/components/ui/Card'
 import { Page } from '@/components/ui/Page'
 import { toISODate } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
-import { listingSummary, requestStatusLabel } from '@/lib/catalog/copy'
+import { requestStatusLabel } from '@/lib/catalog/copy'
 import { parseListingId } from '@/lib/catalog/listings'
 import { loadCooperativeListings } from '@/lib/catalog/load'
 import { commodityStyle } from '@/lib/catalog/commodity-style'
 import { formatNumberId } from '@/lib/format/number'
 import { loadSupplyRequests } from '@/lib/supply-requests/load'
 
-// No revalidate here, unlike the list page. This page calls currentAppUser(),
-// which reads cookies, so it renders dynamically no matter what this export
-// said -- and it must, because a buyer sees a form where a visitor sees a
-// sign-in link. The expensive part is scoped to one cooperative rather than
-// every cooperative, which is what makes that affordable.
 export default async function ListingPage({
   params,
 }: {
@@ -31,7 +26,6 @@ export default async function ListingPage({
     redirect('/dashboard')
   }
 
-  // A malformed or stale id is a 404, never a throw.
   const parsed = parseListingId(id)
   if (!parsed) notFound()
 
@@ -41,10 +35,6 @@ export default async function ListingPage({
 
   const style = commodityStyle(listing.commodityName)
 
-  // A buyer with an open request against this exact listing sees its status
-  // instead of the form -- otherwise the same button submits again on every
-  // visit to this page, and the cooperative's inbox fills with duplicates of
-  // a request it has not even answered yet.
   const existingRequest = user?.role === 'buyer'
     ? (await loadSupplyRequests()).find(r =>
         r.cooperativeId === listing.cooperativeId &&
@@ -56,133 +46,180 @@ export default async function ListingPage({
     : null
 
   return (
-    <Page>
-      {/* A breadcrumb, not a back arrow: it says where you are as well as where
-          you came from, and it does not lie when the page was opened from a
-          shared link rather than from the grid. */}
-      <nav aria-label="Remah roti" className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href="/catalog" className="interactive rounded px-1 hover:text-foreground">
-          Katalog
+    <Page width="wide" className="pb-16">
+      {/* ─── BREADCRUMB ────────────────────────────────────────────────────── */}
+      <nav aria-label="Remah roti" className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+        <Link href="/catalog" className="interactive inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
+          <ArrowLeft className="size-3.5" />
+          Katalog Pasokan
         </Link>
-        <span aria-hidden>/</span>
-        <span className="text-foreground">{listing.commodityName}</span>
+        <span aria-hidden className="text-muted-foreground/60">/</span>
+        <span className="text-foreground font-bold">{listing.commodityName}</span>
       </nav>
 
-      <div className="mt-5 grid gap-6 sm:grid-cols-[minmax(0,13rem)_1fr] sm:items-start">
-        {/* The crop's identity block, matching its card in the grid so the
-            transition from list to detail is recognisably the same object. */}
-        <div
-          className="rise flex aspect-[4/3] items-center justify-center rounded-xl border border-border sm:aspect-square"
-          style={{ backgroundColor: style.tint }}
-        >
-          <svg
-            aria-hidden viewBox="0 0 24 24" className="size-20"
-            fill="none" stroke={style.hue} strokeWidth="1.1"
-            strokeLinecap="round" strokeLinejoin="round"
+      {/* ─── MAIN PRODUCT DETAIL CARD ─────────────────────────────────────── */}
+      <div className="mt-6 rounded-2xl border border-border/80 bg-card p-6 sm:p-8 shadow-xs">
+        <div className="grid gap-8 lg:grid-cols-[16rem_1fr] lg:items-start">
+          {/* Crop Identity Icon Box */}
+          <div
+            className="flex aspect-square w-full max-w-[16rem] items-center justify-center overflow-hidden rounded-2xl border border-border/60 shadow-2xs mx-auto lg:mx-0"
+            style={{ backgroundColor: style.tint }}
           >
-            <path d={style.glyph} />
-          </svg>
-        </div>
-
-        <div className="rise flex flex-col gap-4" style={{ ['--rise-delay' as string]: '80ms' }}>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              {listing.commodityName}
-              {listing.varietyName && (
-                <span className="font-normal text-muted-foreground"> · {listing.varietyName}</span>
-              )}
-            </h1>
-            <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-              <svg aria-hidden viewBox="0 0 24 24" className="size-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75">
-                <path d="M12 21s-7-5.4-7-10a7 7 0 1 1 14 0c0 4.6-7 10-7 10Z" strokeLinejoin="round" />
-                <circle cx="12" cy="11" r="2.4" />
+            {style.image ? (
+              <img
+                src={style.image}
+                alt={listing.commodityName}
+                className="size-full object-cover"
+              />
+            ) : (
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                className="size-24"
+                fill="none"
+                stroke={style.hue}
+                strokeWidth="1.25"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d={style.glyph} />
               </svg>
-              {listing.cooperativeName} · {listing.village}, {listing.district}, {listing.province}
-            </p>
+            )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Card>
-              <p className="text-xs text-muted-foreground">Proyeksi tersedia</p>
-              <p className="mt-1 flex items-baseline gap-1">
-                <span className="font-mono text-3xl font-medium tracking-tight" style={{ color: style.hue }}>
-                  {formatNumberId(listing.tonnes)}
+          {/* Details Column */}
+          <div className="flex flex-col gap-6">
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+                {listing.commodityName}
+                {listing.varietyName && (
+                  <span className="font-semibold text-muted-foreground"> · {listing.varietyName}</span>
+                )}
+              </h1>
+
+              <p className="mt-2.5 flex items-center gap-1.5 text-xs sm:text-sm font-medium text-muted-foreground">
+                <MapPin className="size-4 shrink-0 text-[var(--terrion-green-600)]" />
+                <span>
+                  <strong className="text-foreground">{listing.cooperativeName}</strong> · {listing.village}, {listing.district}, {listing.province}
                 </span>
-                <span className="text-sm text-muted-foreground">ton</span>
               </p>
-            </Card>
+            </div>
 
-            <Card>
-              <p className="text-xs text-muted-foreground">Jendela panen</p>
-              <div className="mt-1.5">
-                <HarvestWindow
-                  week={{ start: listing.weekStart, end: listing.weekEnd, basis: listing.basis }}
-                />
+            {/* Metrics Grid */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-xl bg-[var(--terrion-green-50)]/70 p-4 border border-[var(--terrion-green-200)]/60">
+                <span className="text-[0.6875rem] font-bold uppercase tracking-wider text-muted-foreground">
+                  Proyeksi Pasokan Tersedia
+                </span>
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="font-mono text-3xl font-extrabold text-[var(--terrion-green-700)] tabular-nums">
+                    {formatNumberId(listing.tonnes)}
+                  </span>
+                  <span className="text-xs font-bold text-[var(--terrion-green-700)]">ton</span>
+                </div>
+                <p className="mt-1 text-[0.6875rem] text-muted-foreground">
+                  Total ketersediaan yang diproyeksikan
+                </p>
               </div>
-            </Card>
-          </div>
 
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {listingSummary({ tonnes: listing.tonnes, cooperativeName: listing.cooperativeName })}
-          </p>
+              <div className="rounded-xl bg-muted/40 p-4 border border-border/60">
+                <span className="text-[0.6875rem] font-bold uppercase tracking-wider text-muted-foreground">
+                  Perkiraan Jendela Panen
+                </span>
+                <div className="mt-2">
+                  <HarvestWindow
+                    size="md"
+                    week={{ start: listing.weekStart, end: listing.weekEnd, basis: listing.basis }}
+                  />
+                </div>
+                <p className="mt-1.5 text-[0.6875rem] text-muted-foreground">
+                  Rentang waktu estimasi panen lapangan
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* ─── ACTION SECTION (FORM / LOGIN CTA) ─────────────────────────────── */}
       {user?.role === 'buyer' ? (
         existingRequest ? (
-          <Card className="mt-6 text-sm">
-            <p className="font-semibold text-foreground">
-              {requestStatusLabel(existingRequest.status)}
-            </p>
-            <p className="mt-1 text-muted-foreground">
-              Anda sudah mengajukan permintaan untuk panen ini.
-            </p>
-            <Link
-              href="/my-requests"
-              className="mt-2 inline-block font-medium text-foreground underline"
-            >
-              Lihat permintaan saya
-            </Link>
-          </Card>
+          <div className="mt-6 rounded-2xl border border-[var(--terrion-green-300)] bg-[var(--terrion-green-50)]/70 p-6 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <span className="badge-tag bg-[var(--terrion-green-200)] text-[var(--terrion-green-900)] font-bold">
+                  {requestStatusLabel(existingRequest.status)}
+                </span>
+                <h3 className="mt-2 text-base font-bold text-foreground">Permintaan Pasokan Telah Terkirim</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Anda sudah mengajukan permintaan untuk panen ini kepada {listing.cooperativeName}.
+                </p>
+              </div>
+              <Link
+                href="/my-requests"
+                className="pill pill-solid interactive lift bg-[var(--terrion-green-700)] text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider shadow-2xs shrink-0 text-center"
+              >
+                Lihat Permintaan Saya
+              </Link>
+            </div>
+          </div>
         ) : (
-          <RequestForm
-            listingId={listing.id}
-            projectedTonnes={listing.tonnes}
-            className="mt-6"
-          />
+          <div className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-2xs">
+            <h2 className="text-base font-bold text-foreground mb-4">Formulir Pengajuan Kontrak Pasokan</h2>
+            <RequestForm
+              listingId={listing.id}
+              projectedTonnes={listing.tonnes}
+            />
+          </div>
         )
       ) : user ? (
-        // Signed in, but on the cooperative side. Telling them to sign in would
-        // be nonsense -- they already have; they are simply not a buyer.
-        <div className="mt-6 rounded-xl border border-dashed border-border p-4 text-sm">
-          <p className="text-muted-foreground">
-            Anda masuk sebagai akun koperasi. Hanya akun pembeli yang dapat
-            mengajukan kontrak pasokan.
-          </p>
+        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/70 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+          <div className="flex items-center gap-3">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700 shrink-0">
+              <Building2 className="size-4" />
+            </span>
+            <div>
+              <p className="font-bold text-amber-900">Anda Masuk Sebagai Akun Koperasi</p>
+              <p className="text-amber-700">Hanya akun pembeli terdaftar yang dapat mengajukan kontrak pasokan.</p>
+            </div>
+          </div>
           <Link
             href="/dashboard"
-            className="mt-2 inline-block font-medium text-foreground underline"
+            className="pill interactive shrink-0 bg-amber-800 text-white px-4 py-2 font-bold hover:bg-amber-900 text-center"
           >
-            Ke dasbor koperasi
+            Ke Dasbor Koperasi
           </Link>
         </div>
       ) : (
-        <div className="mt-6 rounded-xl border border-dashed border-border p-4 text-sm">
-          <p className="text-muted-foreground">
-            Masuk sebagai pembeli untuk mengajukan kontrak pasokan.
-          </p>
-          {/* Both doors, because the catalogue is public so that strangers
-              find it. Offering only "Masuk" ends the journey for everyone who
-              does not already have an account. */}
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <div className="mt-6 rounded-2xl border border-[var(--terrion-green-200)] bg-gradient-to-br from-[var(--terrion-green-50)]/70 via-card to-card p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+          <div className="space-y-1.5 max-w-xl">
+            <div className="flex items-center gap-2">
+              <span className="flex size-7 items-center justify-center rounded-lg bg-[var(--terrion-green-100)] text-[var(--terrion-green-700)]">
+                <Store className="size-4" />
+              </span>
+              <h3 className="text-base font-bold text-foreground">
+                Ajukan Kontrak Pasokan Panen Ini
+              </h3>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Masuk atau daftar sebagai pembeli terdaftar untuk langsung mengajukan kontrak permintaan pasokan kepada <strong className="text-foreground">{listing.cooperativeName}</strong>.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
             <Link
               href={`/login?next=${encodeURIComponent(`/catalog/${listing.id}`)}`}
-              className="inline-block font-medium text-foreground underline"
+              className="pill pill-solid interactive lift bg-[var(--terrion-green-700)] text-white hover:bg-[var(--terrion-green-900)] px-5 py-2.5 text-xs font-bold uppercase tracking-wider shadow-2xs flex items-center gap-1.5"
             >
-              Masuk
+              <LogIn className="size-3.5" />
+              Masuk Pembeli
             </Link>
-            <Link href="/signup" className="inline-block font-medium text-foreground underline">
-              Daftar sebagai pembeli
+            <Link
+              href="/signup"
+              className="pill interactive lift bg-card text-foreground border border-border hover:bg-muted/50 px-5 py-2.5 text-xs font-semibold tracking-wider shadow-2xs flex items-center gap-1.5"
+            >
+              <UserPlus className="size-3.5" />
+              Daftar Akun Pembeli
             </Link>
           </div>
         </div>

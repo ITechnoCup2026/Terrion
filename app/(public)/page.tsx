@@ -18,6 +18,7 @@ import {
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
+import { AuthMenu } from '@/components/auth/AuthMenu'
 import { Archipelago } from '@/components/landing/Archipelago'
 import { AtlasInteractiveSteps } from '@/components/landing/AtlasInteractiveSteps'
 import { ClosingCtaPoster } from '@/components/landing/ClosingCtaPoster'
@@ -45,11 +46,7 @@ export const metadata = {
     'Proyeksi panen berbasis GDD, agregasi kebutuhan pupuk RDKK, dan katalog pasokan untuk koperasi tani.',
 }
 
-/** The header's own bar. Only routes that exist — a nav is a promise. */
-const NAV: [string, string][] = [
-  ['/atlas', 'Atlas Pasokan'],
-  ['/catalog', 'Katalog Pasokan'],
-]
+
 
 /**
  * Derived analysis outputs with custom visual micro-widget keys
@@ -206,39 +203,8 @@ export default async function LandingPage() {
           columns. The words are placed in their own GRID ROWS rather than
           absolutely, which is what keeps the overlap deliberate — the map can
           pass behind them at any width without a collision. */}
-      <section className="hero-stage flex min-h-[78vh] sm:min-h-[82vh] flex-col">
-        <div className="mx-auto flex w-full max-w-[86rem] flex-1 flex-col px-5 pt-5 sm:px-8 sm:pt-6 lg:px-10">
-          {/* Header Navigation */}
-          <nav
-            aria-label="Navigasi utama"
-            className="enter relative z-30 flex shrink-0 items-center justify-between gap-4"
-          >
-            <Link
-              href="/"
-              className="interactive flex items-center gap-2.5"
-            >
-              <Logo size={32} withWordmark={true} className="brightness-0 invert drop-shadow-xs" />
-            </Link>
-
-            <div className="hidden items-center gap-9 sm:flex">
-              {NAV.map(([href, label]) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="interactive text-[0.875rem] font-medium text-white/75 transition-colors hover:text-white"
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-
-            <Link
-              href="/login"
-              className="pill interactive lift bg-white px-6 py-2.5 text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-[var(--terrion-green-700)] shadow-sm hover:bg-[var(--terrion-green-50)]"
-            >
-              Masuk Koperasi
-            </Link>
-          </nav>
+      <section className="hero-stage flex min-h-[82vh] sm:min-h-[86vh] flex-col pt-[var(--public-header)]">
+        <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 pt-6 sm:px-8 lg:px-10">
 
           {/* The poster. Three rows: the first word, the reading it produces,
               the second word — with the archipelago spanning all three behind
