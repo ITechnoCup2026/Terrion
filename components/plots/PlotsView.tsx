@@ -8,8 +8,8 @@ import { PlotForm } from '@/components/plots/PlotForm'
 import { PlotBrowser } from '@/components/plots/PlotBrowser'
 import type { CommodityRef } from '@/components/plots/PlotCard'
 import { Button } from '@/components/ui/button'
-import { PageHeader } from '@/components/ui/Page'
 import type { PlotSummary } from '@/lib/plots/summary'
+import { cn } from '@/lib/utils'
 
 type Commodity = { id: string; name: string }
 type Variety = { id: string; commodity_id: string; name: string }
@@ -63,30 +63,32 @@ export function PlotsView({ plots, commodities, formData }: Props) {
   }
 
   return (
-    <>
-      <PageHeader
-        title="Lahan"
-        description="Setiap lahan koperasi ini, dengan perkiraan panen terdekatnya."
-        actions={
-          <Button
-            onClick={toggleForm}
-            variant={formOpen ? 'outline' : 'default'}
-            className="interactive transition-all"
-          >
-            {formOpen ? (
-              <>
-                <ChevronUp className="mr-1.5 size-4" />
-                Tutup Form
-              </>
-            ) : (
-              <>
-                <Plus className="mr-1.5 size-4" />
-                Daftarkan Lahan
-              </>
-            )}
-          </Button>
-        }
-      />
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+          Daftar Lahan Koperasi
+        </h2>
+        <Button
+          onClick={toggleForm}
+          variant={formOpen ? 'outline' : 'default'}
+          className={cn(
+            'interactive transition-all gap-1.5 font-semibold text-xs sm:text-sm h-9 px-4 rounded-lg',
+            !formOpen && 'bg-[var(--terrion-green-700)] hover:bg-[var(--terrion-green-900)] text-white shadow-xs'
+          )}
+        >
+          {formOpen ? (
+            <>
+              <ChevronUp className="size-4" />
+              Tutup Form
+            </>
+          ) : (
+            <>
+              <Plus className="size-4" />
+              Daftarkan Lahan
+            </>
+          )}
+        </Button>
+      </div>
 
       {/* Expandable Dropdown Form Card */}
       {formOpen && (
@@ -140,6 +142,6 @@ export function PlotsView({ plots, commodities, formData }: Props) {
         commodities={commodities}
         onRegisterClick={() => setFormOpen(true)}
       />
-    </>
+    </div>
   )
 }

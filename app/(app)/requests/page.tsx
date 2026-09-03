@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { CheckCircle2, Clock, Inbox, XCircle } from 'lucide-react'
 
 import { RequestsTable } from '@/components/requests/RequestsTable'
 import { MetricRow, type Metric } from '@/components/ui/Card'
@@ -27,19 +28,32 @@ export default async function RequestsPage() {
   const acceptedCount = rows.filter(r => r.status === 'accepted').length
   const declinedCount = rows.filter(r => r.status === 'declined').length
 
-  // Only the pending figure is gold. "Diterima" is a settled count, not a
-  // decision waiting on anybody, and a row where three of four figures are
-  // emphasised emphasises nothing.
   const kpis: Metric[] = [
-    { label: 'Total permintaan', value: formatNumberId(rows.length) },
+    {
+      label: 'Total permintaan',
+      value: formatNumberId(rows.length),
+      icon: Inbox,
+      tone: 'info',
+    },
     {
       label: 'Menunggu persetujuan',
       value: formatNumberId(pendingCount),
+      icon: Clock,
       tone: pendingCount > 0 ? 'accent' : 'default',
-      hint: 'Perlu keputusan pengurus',
+      hint: pendingCount > 0 ? 'Perlu keputusan pengurus' : 'Semua diproses',
     },
-    { label: 'Diterima', value: formatNumberId(acceptedCount) },
-    { label: 'Ditolak atau ditarik', value: formatNumberId(declinedCount) },
+    {
+      label: 'Diterima',
+      value: formatNumberId(acceptedCount),
+      icon: CheckCircle2,
+      tone: 'positive',
+    },
+    {
+      label: 'Ditolak atau ditarik',
+      value: formatNumberId(declinedCount),
+      icon: XCircle,
+      tone: 'negative',
+    },
   ]
 
   return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Building2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
@@ -68,15 +68,13 @@ export function AppShell({
 
   // Starts expanded on both server and client, then adopts the stored
   // preference after mount. Reading localStorage during render would make the
-  // first client paint disagree with the server's HTML, which React reports as
-  // a hydration error and repairs by throwing the markup away.
+  // server markup mismatch the hydration pass.
   const [collapsed, setCollapsed] = useState(false)
   useEffect(() => {
     try {
-      setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === '1')
+      if (window.localStorage.getItem(COLLAPSE_KEY) === '1') setCollapsed(true)
     } catch {
-      // Private mode, or storage disabled by policy. An expanded rail is a
-      // perfectly good answer; losing the preference is not worth a crash.
+      /* storage blocked by privacy settings */
     }
   }, [])
 
@@ -91,32 +89,24 @@ export function AppShell({
   const openSearch = useCallback(() => setSearchOpen(true), [])
   useCommandShortcut(openSearch)
 
-  // The workspace block. No badge chip: gold in this product means "over a
-  // limit", and a cooperative's own initials are not a warning. Collapsed, the
-  // mark alone is the identity; expanded, the name is, and it is set as plain
-  // text because a name in a tinted card reads as a status.
+  // Header content rendered inside the sidebar rail.
   const workspaceBlock = collapsed ? (
     <div className="flex justify-center" title={workspace?.name ?? 'Terrion'}>
       <Logo size={24} withWordmark={false} />
     </div>
   ) : (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 px-1">
-        <Logo size={22} withWordmark={false} />
-        <span className="text-[0.9375rem] font-semibold tracking-tight text-foreground">
-          Terrion
-        </span>
+      <div className="flex items-center px-1 py-0.5">
+        <Logo size={26} withWordmark={true} />
       </div>
-      {/* Only when there is one. An account with no organisation used to get
-          the word "Koperasi" under the wordmark, which for a buyer is the name
-          of something they do not belong to. */}
       {workspace && (
-        <div className="min-w-0 border-t border-border px-1 pt-2.5 leading-tight">
-          <p className="truncate text-[0.8125rem] font-medium text-foreground">
-            {workspace.name}
-          </p>
+        <div className="min-w-0 rounded-lg border border-border/70 bg-muted/40 px-3 py-2.5 leading-tight">
+          <div className="flex items-center gap-1.5 font-semibold text-foreground text-xs">
+            <Building2 className="size-3.5 text-[var(--terrion-green-700)] shrink-0" />
+            <span className="truncate">{workspace.name}</span>
+          </div>
           {workspace.detail && (
-            <p className="mt-0.5 truncate text-[0.6875rem] text-[var(--terrion-ink-faint)]">
+            <p className="mt-1 truncate text-[0.6875rem] text-muted-foreground pl-5">
               {workspace.detail}
             </p>
           )}
@@ -139,6 +129,7 @@ export function AppShell({
       organisation={workspace?.name ?? null}
       role={role}
       signOutTo={signOutTo}
+      hideNavItems={true}
     />
   )
 
@@ -150,6 +141,7 @@ export function AppShell({
       role={role}
       signOutTo={signOutTo}
       triggerClassName="shadow-[var(--shadow-md)]"
+      hideNavItems={true}
     />
   )
 

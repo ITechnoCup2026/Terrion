@@ -1,5 +1,6 @@
 'use client'
 
+import { Search } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
@@ -49,14 +50,6 @@ export function PlotBrowser({
   const [filter, setFilter] = useState<PlotFilter>(() => parsePlotFilter(searchParams))
 
   // Keep the address bar in step, so a filtered list can be sent to somebody.
-  //
-  // The native History API rather than `router.replace`, which is what Next
-  // documents for search-param-only updates and what this needs: the list is
-  // already filtered in the browser, so a router navigation would ask the
-  // server to re-render a page whose output cannot change -- on a
-  // force-dynamic route, once per keystroke. replaceState still syncs
-  // usePathname and useSearchParams, and being a replace it keeps three typed
-  // letters from becoming three entries in the back button.
   useEffect(() => {
     const query = plotFilterParams(filter).toString()
     window.history.replaceState(null, '', query ? `${pathname}?${query}` : pathname)
@@ -64,8 +57,7 @@ export function PlotBrowser({
 
   const byId = useMemo(() => new Map(commodities.map(c => [c.id, c])), [commodities])
 
-  // Only commodities somebody is actually growing. A chip for a crop no plot
-  // has is a filter that can only ever empty the list.
+  // Only commodities somebody is actually growing.
   const grown = useMemo(() => {
     const ids = new Set(plots.flatMap(p => p.commodityIds))
     return commodities.filter(c => ids.has(c.id))
@@ -101,32 +93,32 @@ export function PlotBrowser({
 
   return (
     <>
-      {/* Sticky, because the controls are useless once you have scrolled past
-          them and the list is what you scroll. */}
-      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-card px-4 py-3.5 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      {/* Sticky controls toolbar */}
+      <div className="sticky top-0 z-20 -mx-4 border-b border-border/80 bg-card/95 backdrop-blur-md px-4 py-3.5 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="search"
-            value={filter.query}
-            onChange={e => setFilter(f => ({ ...f, query: e.target.value }))}
-            placeholder="Cari lahan atau nama petani"
-            aria-label="Cari lahan atau nama petani"
-            className="min-w-64 flex-1 rounded-xl border border-border bg-card px-3.5 py-2 text-sm
-              outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-          />
+          <div className="relative min-w-64 flex-1">
+            <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+            <input
+              type="search"
+              value={filter.query}
+              onChange={e => setFilter(f => ({ ...f, query: e.target.value }))}
+              placeholder="Cari lahan atau nama petani..."
+              aria-label="Cari lahan atau nama petani"
+              className="interactive h-9 w-full rounded-lg border border-input/80 bg-card pl-9 pr-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/70 focus:border-ring focus:ring-1 focus:ring-ring/40 focus:outline-none"
+            />
+          </div>
 
           <select
             value={filter.sort}
             onChange={e => setFilter(f => ({ ...f, sort: e.target.value as SortKey }))}
             aria-label="Urutkan"
-            className="rounded-xl border border-border bg-card px-3.5 py-2 text-sm
-              outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="interactive h-9 rounded-lg border border-input/80 bg-card px-3 text-xs sm:text-sm text-foreground font-medium focus:border-ring focus:ring-1 focus:ring-ring/40 focus:outline-none"
           >
             {SORTS.map(s => <option key={s.value} value={s.value}>Urut: {s.label}</option>)}
           </select>
         </div>
 
-        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <fieldset className="flex flex-wrap items-center gap-1.5">
             <legend className="sr-only">Jendela panen</legend>
             {HORIZONS.map(h => (
@@ -141,7 +133,7 @@ export function PlotBrowser({
           </fieldset>
 
           {grown.length > 1 && (
-            <fieldset className="flex flex-wrap items-center gap-1.5">
+            <fieldset className="flex flex-wrap items-center gap-1.5 border-l border-border/60 pl-3">
               <legend className="sr-only">Komoditas</legend>
               {grown.map(c => (
                 <Chip
@@ -156,7 +148,7 @@ export function PlotBrowser({
             </fieldset>
           )}
 
-          <p className="ml-auto text-xs font-semibold text-muted-foreground">
+          <p className="ml-auto text-xs font-semibold tabular-nums text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-full border border-border/50">
             {isDefaultFilter(filter)
               ? `${plots.length} lahan`
               : `${shown.length} dari ${plots.length} lahan`}
