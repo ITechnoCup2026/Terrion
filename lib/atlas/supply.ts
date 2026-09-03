@@ -134,3 +134,43 @@ export function supplyStep(tonnes: number, peak: number): 0 | 1 | 2 | 3 | 4 {
   const quartile = Math.ceil((tonnes / peak) * 4)
   return Math.min(4, Math.max(1, quartile)) as 1 | 2 | 3 | 4
 }
+
+/** One week the Atlas can be scrubbed to. */
+export type SupplyWeek = {
+  isoWeek: string
+  weekStart: Date
+}
+
+/**
+ * Every week the catalogue covers, earliest first.
+ *
+ * Taken from the listings themselves rather than generated from a start date
+ * and a horizon: the map may only be scrubbed to a week some cooperative
+ * actually has a projection for, so the track cannot run off the end of what
+ * the product can see.
+ */
+export function supplyWeeks(listings: readonly Listing[]): SupplyWeek[] {
+  const byWeek = new Map<string, Date>()
+  for (const listing of listings) {
+    if (!byWeek.has(listing.isoWeek)) byWeek.set(listing.isoWeek, listing.weekStart)
+  }
+
+  return [...byWeek.entries()]
+    .map(([isoWeek, weekStart]) => ({ isoWeek, weekStart }))
+    .sort((a, b) => a.weekStart.getTime() - b.weekStart.getTime())
+}
+
+/**
+ * The listings for one week, or all of them.
+ *
+ * Null means the whole horizon, which is what the map opens on: the first
+ * question is "where is there supply at all", and only then "when". Scrubbing
+ * re-shades the same regions from a narrower slice, so a province that is dark
+ * across twelve weeks can be seen to be dark in exactly two of them.
+ */
+export function listingsInWeek(
+  listings: readonly Listing[], isoWeek: string | null,
+): Listing[] {
+  if (isoWeek === null) return [...listings]
+  return listings.filter(listing => listing.isoWeek === isoWeek)
+}

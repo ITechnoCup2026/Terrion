@@ -1,12 +1,13 @@
 'use client'
 
-import { Building2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 
 import { AccountMenu } from '@/components/auth/AccountMenu'
 import { CommandPalette, useCommandShortcut } from '@/components/ui/CommandPalette'
+import { ImmersiveChromeProvider } from '@/components/ui/ImmersiveChrome'
 import { Logo } from '@/components/ui/Logo'
 import { MobileNav } from '@/components/ui/MobileNav'
 import { Sidebar } from '@/components/ui/Sidebar'
@@ -63,7 +64,6 @@ export function AppShell({
   const immersive = isImmersiveRoute(pathname)
   const groups = navGroupsFor(role)
 
-  const [navOpen, setNavOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
 
   // Starts expanded on both server and client, then adopts the stored
@@ -90,11 +90,18 @@ export function AppShell({
   useCommandShortcut(openSearch)
 
   // Header content rendered inside the sidebar rail.
-  const workspaceBlock = collapsed ? (
+  //
+  // Kept as two named blocks rather than one conditional, because the rail may
+  // be collapsed while the immersive panel still wants the full card: that
+  // panel is a column of its own and has the room, and a lone glyph at the top
+  // of it would say nothing about whose farm is on screen.
+  const collapsedWorkspace = (
     <div className="flex justify-center" title={workspace?.name ?? 'Terrion'}>
       <Logo size={24} withWordmark={false} />
     </div>
-  ) : (
+  )
+
+  const expandedWorkspace = (
     <div className="flex flex-col gap-3">
       <div className="flex items-center px-1 py-0.5">
         <Logo size={26} withWordmark={true} />
@@ -115,6 +122,8 @@ export function AppShell({
     </div>
   )
 
+  const workspaceBlock = collapsed ? collapsedWorkspace : expandedWorkspace
+
   // One account control, in one place, on both sides of the product. It used
   // to be three: a row in the rail's foot, a stacked pair in the collapsed
   // rail, and a bare glyph in the phone's top bar -- three arrangements of the
@@ -133,18 +142,6 @@ export function AppShell({
     />
   )
 
-  // The same control over the farm canvas, lifted so it reads against a field.
-  const floatingAccount = (
-    <AccountMenu
-      fullName={userName}
-      organisation={workspace?.name ?? null}
-      role={role}
-      signOutTo={signOutTo}
-      triggerClassName="shadow-[var(--shadow-md)]"
-      hideNavItems={true}
-    />
-  )
-
   const palette = (
     <CommandPalette groups={groups} open={searchOpen} onOpenChange={setSearchOpen} />
   )
@@ -153,37 +150,21 @@ export function AppShell({
     return (
       // fixed, not h-dvh: this has to escape any scroll container above it and
       // sit exactly on the viewport, with nothing able to add a scrollbar.
+      //
+      // The chrome no longer floats over the picture in three detached cards.
+      // It is handed to the page instead, which seats it at the top of its own
+      // panel -- so a farm and the Atlas are laid out the same way, and the
+      // canvas is never partly covered by a control the reader cannot move.
       <div className="fixed inset-0 overflow-hidden">
-        {children}
-
-        {/* Chrome floats. pointer-events-none on the rail so the canvas can be
-            dragged everywhere the cards themselves are not. */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-between gap-3 p-3">
-          <div className="pointer-events-auto flex items-start gap-2">
-            <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-[var(--shadow-md)]">
-              {workspaceBlock}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setNavOpen(o => !o)}
-              aria-expanded={navOpen}
-              aria-label={navOpen ? 'Sembunyikan navigasi' : 'Tampilkan navigasi'}
-              className="interactive flex size-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-[var(--shadow-md)] hover:text-foreground"
-            >
-              {navOpen
-                ? <PanelLeftClose aria-hidden className="size-4" />
-                : <PanelLeftOpen aria-hidden className="size-4" />}
-            </button>
-          </div>
-
-          <div className="pointer-events-auto">{floatingAccount}</div>
-        </div>
-
-        {/* Collapsed by default. The farm is the reason this page exists, and a
-            permanent rail down its left is a column of it nobody asked for. */}
-        {navOpen && <FloatingNav groups={groups} pathname={pathname} />}
-
+        <ImmersiveChromeProvider
+          value={{
+            workspace: workspaceBlock,
+            nav: <ImmersiveNav groups={groups} pathname={pathname} />,
+            account,
+          }}
+        >
+          {children}
+        </ImmersiveChromeProvider>
         {palette}
       </div>
     )
@@ -218,11 +199,13 @@ export function AppShell({
 }
 
 /**
- * The rail over the farm canvas: glyphs only, as a detached card. It is not
- * <Sidebar> because that one is a column with a border and a full-height
- * scroller, and over a picture both of those are wrong.
+ * Navigation inside an immersive page's panel.
+ *
+ * A wrapping row of glyphs rather than <Sidebar>, which is a full-height
+ * column with its own border and scroller -- inside a panel that already has
+ * both, that would be a second rail nested in the first.
  */
-function FloatingNav({
+function ImmersiveNav({
   groups, pathname,
 }: {
   groups: ReturnType<typeof navGroupsFor>
@@ -231,34 +214,29 @@ function FloatingNav({
   return (
     <nav
       aria-label="Navigasi utama"
-      className="absolute top-16 left-3 z-40 flex flex-col gap-px rounded-lg border border-border bg-card p-1.5 shadow-[var(--shadow-md)]"
+      className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border px-3 py-2"
     >
-      {groups.flatMap((group, groupIndex) => [
-        groupIndex > 0 && (
-          <div key={`${group.label}-rule`} aria-hidden className="mx-1 my-0.5 h-px bg-border" />
-        ),
-        ...group.items.map(item => {
-          const active = isActivePath(pathname, item.href)
-          const Icon = item.icon
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={item.label}
-              aria-label={item.label}
-              aria-current={active ? 'page' : undefined}
-              className={cn(
-                'interactive flex size-9 items-center justify-center rounded-md',
-                active
-                  ? 'bg-secondary text-primary'
-                  : 'text-[var(--terrion-ink-faint)] hover:bg-muted hover:text-foreground',
-              )}
-            >
-              <Icon aria-hidden className="size-4" />
-            </Link>
-          )
-        }),
-      ])}
+      {groups.flatMap(group => group.items).map(item => {
+        const active = isActivePath(pathname, item.href)
+        const Icon = item.icon
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            title={item.label}
+            aria-label={item.label}
+            aria-current={active ? 'page' : undefined}
+            className={cn(
+              'interactive flex size-8 items-center justify-center rounded-md',
+              active
+                ? 'bg-secondary text-primary'
+                : 'text-[var(--terrion-ink-faint)] hover:bg-muted hover:text-foreground',
+            )}
+          >
+            <Icon aria-hidden className="size-4" />
+          </Link>
+        )
+      })}
     </nav>
   )
 }

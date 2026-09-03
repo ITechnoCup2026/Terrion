@@ -16,7 +16,7 @@ import {
  * daily GDD series, so moving this makes no request; see lib/canvas/timeline.
  */
 export function TimeSlider({
-  bounds, value, onChange, className, projectedFrom = null,
+  bounds, value, onChange, className, projectedFrom = null, bare = false,
 }: {
   bounds: TimelineBounds
   value: Date
@@ -28,6 +28,10 @@ export function TimeSlider({
    *  for an observed one. Null when the crop already matured within known
    *  weather -- there is nothing to mark. */
   projectedFrom?: Date | null
+  /** Drops the card chrome, for a slider seated in a panel that already has a
+   *  border and a background of its own. Floating over the canvas it needs
+   *  both; inside the panel they read as a card nested in a card. */
+  bare?: boolean
 }) {
   const days = timelineDays(bounds)
   const position = Math.round(fractionOfDate(bounds, value) * days)
@@ -38,7 +42,10 @@ export function TimeSlider({
 
   return (
     <div
-      className={`rounded-xl border border-border bg-card/95 px-4 py-3 backdrop-blur-sm ${className ?? ''}`}
+      className={[
+        bare ? '' : 'rounded-xl border border-border bg-card/95 px-4 py-3 backdrop-blur-sm',
+        className ?? '',
+      ].filter(Boolean).join(' ')}
     >
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
         <span className="text-xs text-muted-foreground">Lihat tanggal</span>

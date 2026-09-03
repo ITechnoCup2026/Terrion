@@ -4,13 +4,14 @@ import { notFound } from 'next/navigation'
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
 import { HarvestGantt, type GanttRow } from '@/components/plots/HarvestGantt'
 import { PlotNeighbours } from '@/components/plots/PlotNeighbours'
-import { PlotStage, type StageBlock } from '@/components/plots/PlotStage'
+import { FarmWorkspace } from '@/components/plots/FarmWorkspace'
+import { HarvestCardButton } from '@/components/plots/HarvestCardButton'
+import type { StageBlock } from '@/components/plots/PlotStage'
 import { ShareLink } from '@/components/plots/ShareLink'
-import { Card, MetricRow } from '@/components/ui/Card'
-import { Page, PageHeader, SectionHeading } from '@/components/ui/Page'
+import { Logo } from '@/components/ui/Logo'
 import { phaseLabel } from '@/lib/agronomy/phase'
 import { formatNumberId } from '@/lib/format/number'
-import { MONTHS_ID } from '@/lib/harvest/format'
+import { formatHarvestRange, MONTHS_ID } from '@/lib/harvest/format'
 import { loadPublicPlot, type PublicBlock } from '@/lib/plots/public-load'
 
 // Indexed by commodity.sprite_row, matching the crop sheet's row order.
@@ -101,17 +102,15 @@ export default async function GardenPage({
     stage: b.window?.stage ?? 0,
     commodityName: b.commodityName,
     plantingDateLabel: plantedOn(b.plantingDate),
-    // Without the daily GDD series. It crosses to the browser here, and this
-    // page is built for a phone on a village connection -- the panel renders a
-    // range, which needs the dates and nothing else. The signed-in plot page
-    // keeps the series, because the time slider resolves stages from it.
-    window: b.window ? { ...b.window, cumulativeGdd: [] } : null,
-    // No series here, so timelineBounds returns null and the time slider does
-    // not appear. That is deliberate rather than incidental: a scrubber would
-    // be a pleasure on this page, but it costs the daily GDD series per block
-    // in the payload, and this page is for a phone on a village connection.
+    // With the daily GDD series, which is what lets the time slider work here
+    // as it does on the signed-in page. This used to be stripped to keep the
+    // payload small for a phone on a village connection -- a fair worry, but
+    // measured against the wrong thing: GET /api/public/plots/:id already
+    // sends the series (see HarvestWindowToResponse's withSeries), so the cost
+    // of keeping it is a few kilobytes of flight data, not a second request.
+    window: b.window,
     plantingDate: b.plantingDate.toISOString().slice(0, 10),
-    gddRequired: 0,
+    gddRequired: b.window?.gddRequired ?? 0,
     // Carried only on this page: the per-tile panel is the only thing that
     // says them, and the signed-in plot page has a different panel.
     varietyName: b.varietyName,
@@ -130,213 +129,202 @@ export default async function GardenPage({
   }))
 
   return (
-    <Page className="flex flex-col gap-6">
-      {/* The way back out. A shared link drops a reader straight onto this page
-          with no history behind it, so "back" cannot be the browser's button --
-          and the badge says what kind of page they landed on before they wonder
-          whether they are seeing something they should not. */}
-      <nav
-        aria-label="Jejak halaman"
-        className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground"
-      >
-        <Link href="/atlas" className="interactive font-medium text-foreground hover:underline">
-          ← Peta koperasi
-        </Link>
-        <span aria-hidden>·</span>
-        <span>{plot.cooperativeName || `Desa ${plot.village}`}</span>
-        <span aria-hidden>·</span>
-        <span className="text-foreground">{plot.name}</span>
-        <span className="rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground">
-          Halaman publik
-        </span>
-      </nav>
+    // Laid out like the Atlas and the signed-in plot page: the garden IS the
+    // picture, and everything said about it sits in one panel beside it. This
+    // page used to be a document with the farm embedded in it as a card, so
+    // the diagram -- the thing a farmer shares this link to show -- was a
+    // letterboxed strip a reader had to scroll past.
+    //
+    // It sits outside the (public) route group for the same reason /atlas
+    // does: that group's sticky header and footer cannot wrap a page that is
+    // exactly the viewport. The way back out is in the panel instead.
+    <div className="h-dvh w-full overflow-hidden">
+      <FarmWorkspace
+        plotAreaHa={plot.areaHa}
+        blocks={stageBlocks}
+        terrainSeed={plot.terrainSeed}
+        degraded={plot.degraded}
+        detail="tile"
+        panelLabel={`Rincian ${plot.name}`}
+        header={
+          <div className="shrink-0 border-b border-border px-4 py-3">
+            {/* A shared link drops a reader here with no history behind it, so
+                "back" cannot be the browser's button -- and the badge says what
+                kind of page they landed on before they wonder whether they are
+                seeing something they should not. */}
+            <div className="flex items-center justify-between gap-3">
+              <Link href="/" aria-label="Terrion — beranda">
+                <Logo size={22} />
+              </Link>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[0.6875rem] font-medium text-muted-foreground">
+                Halaman publik
+              </span>
+            </div>
 
-      <PageHeader
-        title={plot.name}
-        description={
-          <>
-            {plot.memberName && `${plot.memberName} · `}
-            {formatNumberId(plot.areaHa)} ha di {plot.village}, {plot.district}
-          </>
+            <nav aria-label="Jejak halaman" className="mt-2.5 text-xs text-muted-foreground">
+              <Link href="/atlas" className="interactive font-medium text-foreground hover:underline">
+                ← Peta koperasi
+              </Link>
+              {plot.cooperativeName && <span className="ml-2">{plot.cooperativeName}</span>}
+            </nav>
+
+            <h1 className="mt-2 text-lg font-semibold text-foreground">{plot.name}</h1>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {plot.memberName && `${plot.memberName} · `}
+              {formatNumberId(plot.areaHa)} ha di {plot.village}, {plot.district}
+            </p>
+          </div>
         }
-      />
+      >
+        <section className="border-b border-border px-4 py-4">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+            {[
+              ['Luas lahan', `${formatNumberId(plot.areaHa)} ha`],
+              ['Jumlah blok', String(plot.blocks.length)],
+              [
+                'Komoditas utama',
+                lead ? `${lead.name} · ${Math.round(lead.sharePct)}%` : '—',
+              ],
+              [
+                'Perkiraan hasil',
+                yields
+                  ? `${formatNumberId(yields.min)}–${formatNumberId(yields.max)} t`
+                  : '—',
+              ],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-[0.6875rem] text-muted-foreground">{label}</dt>
+                <dd className="mt-0.5 text-base leading-tight font-semibold text-foreground">
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
 
-      <div>
-        <MetricRow
-          items={[
-            { label: 'Luas lahan', value: `${formatNumberId(plot.areaHa)} ha` },
-            { label: 'Jumlah blok', value: plot.blocks.length },
-            {
-              label: 'Komoditas utama',
-              value: lead ? (
-                <span className="text-base">
-                  {lead.name}
-                  <span className="ml-1 text-xs font-normal text-muted-foreground">
-                    {Math.round(lead.sharePct)}%
+          {yields && yields.missing > 0 && (
+            <p className="mt-2.5 text-xs text-muted-foreground">
+              Perkiraan hasil mencakup {plot.blocks.length - yields.missing} dari{' '}
+              {plot.blocks.length} blok; sisanya belum punya rentang hasil varietas.
+            </p>
+          )}
+        </section>
+
+        {plot.blocks.length > 0 && (
+          // A stacked list, not the six-column table this used to be. That
+          // table needed 36rem and lived in its own sideways scroller; the
+          // panel is 22rem, and a column of rows says the same six things
+          // without asking anybody to scroll across.
+          <section className="border-b border-border px-4 py-4">
+            <h2 className="text-xs font-medium text-muted-foreground">Blok tanam</h2>
+            <ul className="mt-3 flex list-none flex-col gap-4">
+              {plot.blocks.map(b => (
+                <li key={b.id} className="flex flex-col gap-1">
+                  <span className="flex items-center gap-2">
+                    <span
+                      aria-hidden
+                      className="size-2.5 shrink-0 rounded-[3px]"
+                      style={{ backgroundColor: colourFor(b.spriteRow) }}
+                    />
+                    <span className="text-sm font-medium text-foreground">
+                      {b.commodityName}
+                    </span>
+                    <span className="ml-auto text-xs tabular-nums text-muted-foreground">
+                      {formatNumberId(b.areaHa, 2)} ha
+                    </span>
                   </span>
-                </span>
-              ) : '—',
-            },
-            {
-              label: 'Perkiraan hasil',
-              value: yields
-                ? `${formatNumberId(yields.min)}–${formatNumberId(yields.max)} t`
-                : '—',
-            },
-          ]}
-        />
-        {yields && yields.missing > 0 && (
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            Perkiraan hasil mencakup {plot.blocks.length - yields.missing} dari{' '}
-            {plot.blocks.length} blok; sisanya belum punya rentang hasil varietas.
+
+                  <span className="pl-[1.125rem] text-xs text-muted-foreground">
+                    {b.label}
+                    {b.varietyName && ` · ${b.varietyName}`}
+                    {' · ditanam '}
+                    {plantedOn(b.plantingDate)}
+                    {/* Phase comes from the window's stage, so a block with no
+                        prediction has no phase to claim either. */}
+                    {b.window && ` · ${phaseLabel(b.window.stage)}`}
+                  </span>
+
+                  <span className="pl-[1.125rem]">
+                    <HarvestWindow window={b.window} degraded={plot.degraded} size="sm" />
+                  </span>
+
+                  {b.yieldRangeTonnes && (
+                    <span className="pl-[1.125rem] text-xs tabular-nums text-muted-foreground">
+                      {formatNumberId(b.yieldRangeTonnes.min)}–
+                      {formatNumberId(b.yieldRangeTonnes.max)} t
+                      <span className="ml-1">rentang varietas</span>
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            {/* The tile grid is a diagram, never a map. Saying so is the whole
+                reason this project can show a plot at all without claiming to
+                know where its boundaries are. */}
+            <p className="mt-4 text-xs text-muted-foreground">
+              Ketuk satu ubin pada diagram untuk rinciannya. Ukuran blok
+              sebanding dengan luasnya, bukan peta lokasi.
+            </p>
+          </section>
+        )}
+
+        {ganttRows.some(r => r.window) && (
+          <section className="border-b border-border px-4 py-4">
+            <h2 className="text-xs font-medium text-muted-foreground">
+              Jendela panen lahan ini
+            </h2>
+            <div className="mt-3">
+              <HarvestGantt rows={ganttRows} />
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              Setiap batang adalah rentang, bukan satu tanggal. Blok yang
+              batangnya berdekatan akan panen bersamaan.
+            </p>
+          </section>
+        )}
+
+        {plot.blocks.length === 0 && (
+          <p className="px-4 py-4 text-sm text-muted-foreground">
+            Tidak ada tanaman yang sedang tumbuh di lahan ini saat ini.
           </p>
         )}
-      </div>
 
-      {stageBlocks.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <SectionHeading>Diagram blok tanam</SectionHeading>
-            <p className="text-xs text-muted-foreground">Ketuk satu ubin untuk rinciannya</p>
-          </div>
+        <section className="flex flex-col gap-2 border-b border-border px-4 py-4">
+          <ShareLink title={`${plot.name} — ${plot.memberName}`} />
+          {/* A picture for the group chat, where a link is a grey preview box
+              somebody has to tap and an image is just there. */}
+          <HarvestCardButton
+            facts={{
+              plotName: plot.name,
+              memberName: plot.memberName,
+              place: `${plot.village}, ${plot.district}`,
+              areaHa: plot.areaHa,
+              degraded: plot.degraded,
+              crops: plot.blocks.map(b => ({
+                name: b.commodityName,
+                window: b.window ? formatHarvestRange(b.window.start, b.window.end) : null,
+                tonnes: b.yieldRangeTonnes
+                  ? `${formatNumberId(b.yieldRangeTonnes.min)}–`
+                    + `${formatNumberId(b.yieldRangeTonnes.max)} t`
+                  : null,
+              })),
+            }}
+          />
+        </section>
 
-          <PlotStage
-            plotAreaHa={plot.areaHa}
-            blocks={stageBlocks}
-            terrainSeed={plot.terrainSeed}
-            degraded={plot.degraded}
-            variant="card"
-            detail="tile"
+        <section className="px-4 py-4">
+          <PlotNeighbours
+            neighbours={plot.neighbours}
+            cooperativeName={plot.cooperativeName}
+            village={plot.village}
           />
 
-          {/* Legend, so the colours in the diagram, the table and the harvest
-              chart are all readable as the same three things. */}
-          <ul className="flex list-none flex-wrap gap-x-4 gap-y-1.5">
-            {plot.blocks.map(b => (
-              <li key={b.id} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span
-                  aria-hidden
-                  className="size-2.5 shrink-0 rounded-[3px]"
-                  style={{ backgroundColor: colourFor(b.spriteRow) }}
-                />
-                {b.commodityName}
-                <span className="text-muted-foreground/70">{b.label}</span>
-              </li>
-            ))}
-          </ul>
-
-          {/* The tile grid is a diagram, never a map. Saying so is the whole
-              reason this project can show a plot at all without claiming to
-              know where its boundaries are. */}
-          <p className="text-xs text-muted-foreground">
-            Diagram lahan — ukuran blok sebanding dengan luasnya, bukan peta lokasi.
+          <p className="mt-4 border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
+            Halaman ini dibagikan oleh koperasi. Perkiraan panen dihitung dari
+            cuaca yang tercatat dan dapat berubah. Terrion adalah penyedia sistem.
           </p>
         </section>
-      )}
-
-      {plot.blocks.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <SectionHeading>Detail blok</SectionHeading>
-          {/* A table, in its own scroller. Six columns of crop data do not fold
-              onto a phone, and a page that scrolls sideways as a whole loses the
-              reader their place in the column of text. */}
-          <Card pad="none" className="overflow-x-auto">
-            <table className="w-full min-w-[36rem] border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-border text-left">
-                  <th scope="col" className="px-3 py-2 font-medium text-muted-foreground">Komoditas</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium text-muted-foreground">Luas</th>
-                  <th scope="col" className="px-3 py-2 font-medium text-muted-foreground">Ditanam</th>
-                  <th scope="col" className="px-3 py-2 font-medium text-muted-foreground">Fase</th>
-                  <th scope="col" className="px-3 py-2 font-medium text-muted-foreground">Perkiraan panen</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium text-muted-foreground">Hasil</th>
-                </tr>
-              </thead>
-              <tbody>
-                {plot.blocks.map(b => (
-                  <tr key={b.id} className="border-b border-border align-top last:border-0">
-                    <td className="px-3 py-2.5">
-                      <span className="flex items-center gap-1.5">
-                        <span
-                          aria-hidden
-                          className="size-2.5 shrink-0 rounded-[3px]"
-                          style={{ backgroundColor: colourFor(b.spriteRow) }}
-                        />
-                        <span className="font-medium text-foreground">{b.commodityName}</span>
-                      </span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {b.label}
-                        {b.varietyName && ` · ${b.varietyName}`}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-foreground">
-                      {formatNumberId(b.areaHa, 2)} ha
-                    </td>
-                    <td className="px-3 py-2.5 text-muted-foreground">
-                      {plantedOn(b.plantingDate)}
-                    </td>
-                    <td className="px-3 py-2.5 text-muted-foreground">
-                      {/* Phase comes from the window's stage, so a block with no
-                          prediction has no phase to claim either. */}
-                      {b.window ? phaseLabel(b.window.stage) : '—'}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <HarvestWindow window={b.window} degraded={plot.degraded} size="sm" />
-                    </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums">
-                      {b.yieldRangeTonnes ? (
-                        <>
-                          <span className="text-foreground">
-                            {formatNumberId(b.yieldRangeTonnes.min)}–
-                            {formatNumberId(b.yieldRangeTonnes.max)} t
-                          </span>
-                          <span className="mt-0.5 block text-xs text-muted-foreground">
-                            rentang varietas
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-        </section>
-      )}
-
-      {ganttRows.some(r => r.window) && (
-        <section className="flex flex-col gap-2">
-          <SectionHeading>Jendela panen lahan ini</SectionHeading>
-          <Card>
-            <HarvestGantt rows={ganttRows} />
-          </Card>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Setiap batang adalah rentang, bukan satu tanggal. Blok yang batangnya
-            berdekatan akan panen bersamaan.
-          </p>
-        </section>
-      )}
-
-      {plot.blocks.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          Tidak ada tanaman yang sedang tumbuh di lahan ini saat ini.
-        </p>
-      )}
-
-      <ShareLink title={`${plot.name} — ${plot.memberName}`} />
-
-      <PlotNeighbours
-        neighbours={plot.neighbours}
-        cooperativeName={plot.cooperativeName}
-        village={plot.village}
-      />
-
-      <p className="border-t border-border pt-4 text-xs text-muted-foreground">
-        Halaman ini dibagikan oleh koperasi. Perkiraan panen dihitung dari cuaca
-        yang tercatat dan dapat berubah. Terrion adalah penyedia sistem.
-      </p>
-    </Page>
+      </FarmWorkspace>
+    </div>
   )
 }

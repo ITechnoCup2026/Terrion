@@ -1,7 +1,9 @@
 import { notFound, redirect } from 'next/navigation'
 
+import { HarvestWindow } from '@/components/harvest/HarvestWindow'
 import type { FarmSummary } from '@/components/plots/FarmSummaryPanel'
-import { PlotStage, type StageBlock } from '@/components/plots/PlotStage'
+import { FarmWorkspace } from '@/components/plots/FarmWorkspace'
+import type { StageBlock } from '@/components/plots/PlotStage'
 import type { ReferenceCommodity, ReferenceVariety } from '@/components/plots/SplitBlockForm'
 import { Page, PageHeader } from '@/components/ui/Page'
 import { currentAppUser } from '@/lib/auth/session'
@@ -78,38 +80,87 @@ export default async function PlotPage({ params }: { params: Promise<{ id: strin
     c.varieties.map(v => ({ id: v.id, commodity_id: v.commodityId, name: v.name })))
 
   return (
-    // Full-bleed: the farm IS the screen. AppShell puts this route in its
-    // immersive frame, so this fills the viewport exactly and nothing above it
-    // adds padding or a scrollbar.
+    // The farm IS the screen. AppShell puts this route in its immersive frame,
+    // so this fills the viewport exactly and nothing above it adds padding or
+    // a scrollbar. FarmWorkspace then splits it the way the Atlas is split:
+    // the picture on one side, everything said about it on the other.
     <main className="relative h-full w-full overflow-hidden">
       {stageBlocks.length > 0 ? (
-        <>
-          <PlotStage
-            plotAreaHa={plot.areaHa}
-            blocks={stageBlocks}
-            terrainSeed={plot.terrainSeed}
-            summary={summary}
-            degraded={plot.degraded}
-            editing={canEdit
-              ? { commodities: editingCommodities, varieties: editingVarieties }
-              : undefined}
-          />
+        <FarmWorkspace
+          plotAreaHa={plot.areaHa}
+          blocks={stageBlocks}
+          terrainSeed={plot.terrainSeed}
+          summary={summary}
+          degraded={plot.degraded}
+          editing={canEdit
+            ? { commodities: editingCommodities, varieties: editingVarieties }
+            : undefined}
+          panelLabel={`Rincian ${plot.name}`}
+          header={
+            <div className="shrink-0 border-b border-border px-4 py-3">
+              <h1 className="text-lg font-semibold text-foreground">{plot.name}</h1>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {plot.memberName || 'Petani tidak tercatat'}
+              </p>
+            </div>
+          }
+        >
+          <section className="border-b border-border px-4 py-4">
+            <h2 className="text-xs font-medium text-muted-foreground">Lahan ini</h2>
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+              {[
+                ['Luas', `${plot.areaHa.toFixed(2)} ha`],
+                ['Blok', String(stageBlocks.length)],
+                [
+                  'Perkiraan hasil',
+                  summary.tonnesMin > 0 || summary.tonnesMax > 0
+                    ? `${summary.tonnesMin.toFixed(1)}–${summary.tonnesMax.toFixed(1)} t`
+                    : '—',
+                ],
+                ['Kode publik', plot.publicId],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-[0.6875rem] text-muted-foreground">{label}</dt>
+                  <dd className="mt-0.5 text-base leading-none font-semibold tabular-nums text-foreground">
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
 
-          {/* A card, not a bar with a gradient under it. The gradient was there
-              to keep the title legible over the canvas, but it dimmed the top
-              of the farm to do it -- which is the part of the picture the eye
-              lands on first. A card carries its own background instead.
-
-              Top-centre on a wide screen, because the shell's own cards hold
-              the two top corners; below them on a narrow one. */}
-          <header className="absolute inset-x-3 top-16 z-30 w-fit max-w-[calc(100%-1.5rem)] rounded-lg border border-border bg-card px-3 py-2 shadow-[var(--shadow-md)] md:inset-x-auto md:top-3 md:left-1/2 md:-translate-x-1/2">
-            <h1 className="text-sm font-semibold text-foreground">{plot.name}</h1>
-            <p className="text-xs text-muted-foreground">
-              {plot.areaHa.toFixed(2)} ha · {stageBlocks.length} blok ·
-              kode publik {plot.publicId}
-            </p>
-          </header>
-        </>
+          {/* One row per field. The canvas colours each block and this is the
+              key to those colours, so a reader can look from one to the other
+              without counting rectangles. */}
+          <section className="px-4 py-4">
+            <h2 className="text-xs font-medium text-muted-foreground">Blok tanam</h2>
+            <ul className="mt-3 flex list-none flex-col gap-3">
+              {plot.blocks.map(block => (
+                <li key={block.id} className="flex flex-col gap-1">
+                  <span className="flex items-center gap-2">
+                    <span
+                      aria-hidden
+                      className="size-2.5 shrink-0 rounded-[3px]"
+                      style={{ backgroundColor: commodityColour(block.spriteRow) }}
+                    />
+                    <span className="text-sm font-medium text-foreground">
+                      {block.commodityName}
+                    </span>
+                    <span className="ml-auto text-xs tabular-nums text-muted-foreground">
+                      {block.areaHa.toFixed(2)} ha
+                    </span>
+                  </span>
+                  <span className="pl-[1.125rem] text-xs text-muted-foreground">
+                    {block.label} · ditanam {formatDateId(block.plantingDate)}
+                  </span>
+                  <span className="pl-[1.125rem]">
+                    <HarvestWindow window={block.window} degraded={plot.degraded} size="sm" />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </FarmWorkspace>
       ) : (
         <Page className="flex flex-col gap-4">
           <PageHeader

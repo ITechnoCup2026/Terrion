@@ -5,13 +5,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { PlotCanvas } from '@/components/canvas/PlotCanvas'
 import { FRAME_TILES_DESKTOP, FRAME_TILES_MOBILE, frameFarm } from '@/lib/canvas/frame'
 import { scaleStep } from '@/lib/canvas/view'
-import { TimeSlider } from '@/components/canvas/TimeSlider'
 import { AnchoredPanel } from '@/components/ui/AnchoredPanel'
 import type { Point } from '@/lib/ui/anchor'
 import { loadCrops } from '@/lib/canvas/crops'
 import type { BlockStyle } from '@/lib/canvas/renderer'
 import { loadTerrainSheets, type TerrainSheets } from '@/lib/canvas/sheets'
-import { stageOn, timelineBounds } from '@/lib/canvas/timeline'
+import { stageOn, timelineBounds, type TimelineBounds } from '@/lib/canvas/timeline'
 import { generateTerrain } from '@/lib/terrain/generate'
 import type { HarvestWindow as HarvestWindowData } from '@/lib/agronomy/types'
 import { allocateTiles } from '@/lib/tilegrid/allocate'
@@ -57,8 +56,8 @@ type Selection =
 // Client wrapper around the canvas: the page computes blocks on the server,
 // this owns the sprite sheets, the generated scenery and the open panel.
 export function PlotStage({
-  plotAreaHa, blocks, terrainSeed, summary, degraded, variant = 'full',
-  detail = 'block', editing,
+  plotAreaHa, blocks, terrainSeed, summary, degraded,
+  detail = 'block', editing, viewDate,
 }: {
   plotAreaHa: number
   blocks: StageBlock[]
@@ -67,15 +66,6 @@ export function PlotStage({
    *  offers points back at the page the reader is already on. */
   summary?: FarmSummary
   degraded: boolean
-  /** How the stage is sized.
-   *
-   *  'full' fills its parent, for the plot page, where the farm is the screen.
-   *
-   *  'card' is a self-sizing card, for the public garden page, where the farm
-   *  sits in a column of text. That page had no variant and got 'full', whose
-   *  h-full resolved against an auto-height parent -- so the canvas fell back
-   *  to its intrinsic 150px and the farm rendered as a strip. */
-  variant?: 'full' | 'card'
   /** What a tap opens.
    *
    *  'block' is the working view: one panel per field, with the split form
@@ -93,6 +83,12 @@ export function PlotStage({
     commodities: ReferenceCommodity[]
     varieties: ReferenceVariety[]
   }
+  /** Which day to draw the crops at, or null for today.
+   *
+   *  Owned by the page rather than by this component, because the control that
+   *  sets it is the time slider and that now lives in the page's panel. A
+   *  canvas cannot hold state a sibling has to read. */
+  viewDate: Date | null
 }) {
   // One selection, not two booleans: a block and the farmhouse are alternative
   // answers to the same click, so "opening one closes the other" is a property
@@ -105,8 +101,6 @@ export function PlotStage({
   const stageRef = useRef<HTMLDivElement>(null)
   const [box, setBox] = useState<{ width: number; height: number } | null>(null)
   const [margin, setMargin] = useState(FRAME_TILES_DESKTOP)
-  // null means today. Set only by dragging the slider.
-  const [viewDate, setViewDate] = useState<Date | null>(null)
 
   // Both loaders resolve to null rather than rejecting, so a missing sheet
   // leaves the canvas drawing its clean grid instead of throwing mid-render.
@@ -175,29 +169,6 @@ export function PlotStage({
     [terrainSeed, layout.cols, layout.rows, frame],
   )
 
-  // The span the slider covers. Null when no block carries a series, which is
-  // what hides the control -- a track with nothing to scrub would be a lie.
-  const bounds = useMemo(
-    () => timelineBounds(blocks.map(b => ({
-      plantingDate: new Date(b.plantingDate),
-      gddRequired: b.gddRequired,
-      cumulativeGdd: b.window?.cumulativeGdd ?? [],
-    }))),
-    [blocks],
-  )
-
-  // Earliest projection start across blocks, so the slider marks the first
-  // date any of them stops resting on real weather. A block still fully
-  // inside known weather contributes null and does not affect this.
-  const projectedFrom = useMemo(() => {
-    const starts = blocks
-      .map(b => b.window?.projectedFrom ?? null)
-      .filter((d): d is Date => d !== null)
-    return starts.length > 0
-      ? new Date(Math.min(...starts.map(d => d.getTime())))
-      : null
-  }, [blocks])
-
   // Stages come from the server for today, and from the series while scrubbing.
   // Recomputing them is a binary search per block, so a drag re-rasterises the
   // crop layer and touches the network not at all.
@@ -244,14 +215,7 @@ export function PlotStage({
   }, [selection, layout])
 
   return (
-    <div
-      ref={stageRef}
-      className={
-        variant === 'card'
-          ? 'relative aspect-[4/3] max-h-[70vh] w-full overflow-hidden rounded-xl border border-border bg-card'
-          : 'relative h-full w-full overflow-hidden'
-      }
-    >
+    <div ref={stageRef} className="relative h-full w-full overflow-hidden">
       <PlotCanvas
         layout={layout}
         styles={styles}
@@ -304,16 +268,39 @@ export function PlotStage({
           )}
         </AnchoredPanel>
       )}
-
-      {bounds && (
-        <TimeSlider
-          bounds={bounds}
-          value={viewDate ?? new Date()}
-          onChange={setViewDate}
-          projectedFrom={projectedFrom}
-          className="absolute bottom-4 left-1/2 z-20 w-[min(22rem,calc(100%-1.5rem))] -translate-x-1/2"
-        />
-      )}
     </div>
   )
+}
+
+/**
+ * The span a farm's time slider covers, and where its weather runs out.
+ *
+ * Lives here rather than in the page because it is derived from StageBlock,
+ * which is this module's shape. Returns bounds of null when no block carries a
+ * daily GDD series: a track with nothing to scrub would be a lie, and that is
+ * what hides the control.
+ */
+export function stageTimeline(blocks: StageBlock[]): {
+  bounds: TimelineBounds | null
+  projectedFrom: Date | null
+} {
+  const bounds = timelineBounds(blocks.map(b => ({
+    plantingDate: new Date(b.plantingDate),
+    gddRequired: b.gddRequired,
+    cumulativeGdd: b.window?.cumulativeGdd ?? [],
+  })))
+
+  // Earliest projection start across blocks, so the slider marks the first
+  // date any of them stops resting on real weather. A block still fully
+  // inside known weather contributes null and does not affect this.
+  const starts = blocks
+    .map(b => b.window?.projectedFrom ?? null)
+    .filter((d): d is Date => d !== null)
+
+  return {
+    bounds,
+    projectedFrom: starts.length > 0
+      ? new Date(Math.min(...starts.map(d => d.getTime())))
+      : null,
+  }
 }

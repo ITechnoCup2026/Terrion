@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
 import { Button } from '@/components/ui/button'
+import { RecordHarvestForm } from './RecordHarvestForm'
 import {
   SplitBlockForm, type ReferenceCommodity, type ReferenceVariety,
 } from './SplitBlockForm'
@@ -38,9 +39,25 @@ export function BlockDetailPanel({
     varieties: ReferenceVariety[]
   }
 }) {
-  const [splitting, setSplitting] = useState(false)
+  // One face at a time. A block is either being read, being split, or being
+  // closed off with a harvest -- and each of the three replaces the panel
+  // rather than stacking inside it, because they are all about the same field.
+  const [face, setFace] = useState<'details' | 'split' | 'harvest'>('details')
 
-  if (splitting && editing) {
+  if (face === 'harvest' && editing) {
+    return (
+      <RecordHarvestForm
+        blockId={block.id}
+        blockLabel={block.label}
+        commodityName={block.commodityName}
+        plantingDate={new Date(block.plantingDate)}
+        onDone={onClose}
+        onCancel={() => setFace('details')}
+      />
+    )
+  }
+
+  if (face === 'split' && editing) {
     return (
       <SplitBlockForm
         blockId={block.id}
@@ -49,7 +66,7 @@ export function BlockDetailPanel({
         commodities={editing.commodities}
         varieties={editing.varieties}
         onDone={onClose}
-        onCancel={() => setSplitting(false)}
+        onCancel={() => setFace('details')}
       />
     )
   }
@@ -81,13 +98,28 @@ export function BlockDetailPanel({
       </div>
 
       {editing && (
-        <div className="mt-3 border-t border-border pt-3">
-          <Button variant="outline" size="sm" onClick={() => setSplitting(true)}>
-            Pecah blok
-          </Button>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            Tanam komoditas lain di sebagian lahan ini.
-          </p>
+        <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3">
+          {/* Recording the harvest comes first. It is the more common action --
+              every block ends in one, while only some are ever split -- and it
+              is the one that feeds the prediction everything else is read
+              through. */}
+          <div>
+            <Button size="sm" onClick={() => setFace('harvest')}>
+              Catat panen
+            </Button>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Simpan hasil sebenarnya. Perkiraan panen berikutnya ikut menyesuaikan.
+            </p>
+          </div>
+
+          <div>
+            <Button variant="outline" size="sm" onClick={() => setFace('split')}>
+              Pecah blok
+            </Button>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Tanam komoditas lain di sebagian lahan ini.
+            </p>
+          </div>
         </div>
       )}
     </>

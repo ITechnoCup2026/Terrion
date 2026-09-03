@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { utcDate } from '@/lib/agronomy/dates'
 import type { AtlasCooperative } from '@/lib/atlas/load'
 import {
-  peakTonnes, regionKey, supplyByProvince, supplyByRegency, supplyStep,
+  listingsInWeek, peakTonnes, regionKey, supplyByProvince, supplyByRegency,
+  supplyStep, supplyWeeks,
 } from '@/lib/atlas/supply'
 import type { Listing } from '@/lib/catalog/listings'
 
@@ -136,5 +137,41 @@ describe('peakTonnes', () => {
 
   it('is zero when nothing is projected anywhere', () => {
     expect(peakTonnes(supplyByProvince([coop()], []).values())).toBe(0)
+  })
+})
+
+describe('supplyWeeks', () => {
+  it('lists each week once, earliest first', () => {
+    const weeks = supplyWeeks([
+      listing({ isoWeek: '2026-W42', weekStart: new Date('2026-10-12T00:00:00Z') }),
+      listing({ isoWeek: '2026-W40', weekStart: new Date('2026-09-28T00:00:00Z') }),
+      listing({ isoWeek: '2026-W42', weekStart: new Date('2026-10-12T00:00:00Z') }),
+    ])
+    expect(weeks.map(w => w.isoWeek)).toEqual(['2026-W40', '2026-W42'])
+  })
+
+  it('is empty when nothing is projected', () => {
+    expect(supplyWeeks([])).toEqual([])
+  })
+})
+
+describe('listingsInWeek', () => {
+  const rows = [
+    listing({ isoWeek: '2026-W40', tonnes: 5 }),
+    listing({ isoWeek: '2026-W42', tonnes: 9 }),
+  ]
+
+  it('returns the whole horizon for null', () => {
+    expect(listingsInWeek(rows, null)).toHaveLength(2)
+  })
+
+  it('narrows to one week', () => {
+    const only = listingsInWeek(rows, '2026-W42')
+    expect(only).toHaveLength(1)
+    expect(only[0].tonnes).toBe(9)
+  })
+
+  it('returns nothing for a week no cooperative projects into', () => {
+    expect(listingsInWeek(rows, '2026-W01')).toEqual([])
   })
 })

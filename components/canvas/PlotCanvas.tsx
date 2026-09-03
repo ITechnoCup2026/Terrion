@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useRef } from 'react'
 import type { TileLayout } from '@/lib/tilegrid/types'
 import {
-  drawBaseLayer, drawBlockLabels, drawGrid, drawSelection, drawSpriteLayer, type BlockStyle,
+  drawBaseLayer, drawBlockLabels, drawGrid, drawSelection, drawSpriteLayer, drawVignette,
+  type BlockStyle,
 } from '@/lib/canvas/renderer'
 import {
   drawFieldSoil, drawHouse, drawTerrainLayer, drawWaterLayer,
@@ -143,7 +144,8 @@ export function PlotCanvas({
     // Every write to viewRef (drag, pinch, wheel, resize) lands here before it
     // is ever drawn, so this is the one place the world's edge has to be
     // enforced rather than in each gesture handler separately.
-    viewRef.current = clampView(viewRef.current, fullCols * cellPx, fullRows * cellPx, w, h)
+    viewRef.current = clampView(
+      viewRef.current, fullCols * cellPx, fullRows * cellPx, w, h, scaleStep(dpr))
     const v = viewRef.current
 
     ctx.setTransform(dpr * v.scale, 0, 0, dpr * v.scale, dpr * v.offsetX, dpr * v.offsetY)
@@ -166,6 +168,13 @@ export function PlotCanvas({
     blit(spriteRef.current)
 
     if (terrain && sheets && placement) drawHouse(ctx, terrain, sheets, placement, cellPx)
+
+    // Over the scenery but under the grid, labels and selection, so nothing
+    // the reader has to act on is dimmed. Screen space, hence the reset.
+    ctx.save()
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    drawVignette(ctx, w, h)
+    ctx.restore()
 
     // The grid is drawn here rather than baked into the base layer, because
     // how much of it to draw depends on the zoom -- and the cached layer has
