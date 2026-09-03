@@ -4,6 +4,7 @@ import { ChevronRight, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-reac
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+import type { UserRole } from '@/lib/auth/roles'
 import { breadcrumbsFor } from '@/lib/nav/breadcrumbs'
 import { cn } from '@/lib/utils'
 
@@ -24,17 +25,19 @@ export function Topbar({
   onToggleCollapse,
   onOpenSearch,
   account,
+  role,
 }: {
   collapsed: boolean
   onToggleCollapse: () => void
   onOpenSearch: () => void
   account: React.ReactNode
+  role: UserRole
 }) {
   const pathname = usePathname()
-  const crumbs = breadcrumbsFor(pathname)
+  const crumbs = breadcrumbsFor(pathname, role)
 
   return (
-    <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background px-3 sm:px-4 print:hidden">
+    <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-card px-3 sm:px-4 print:hidden">
       <button
         type="button"
         onClick={onToggleCollapse}
@@ -53,7 +56,7 @@ export function Topbar({
         <button
           type="button"
           onClick={onOpenSearch}
-          className="interactive flex h-8 items-center gap-2 rounded-md border border-border bg-background px-2.5 text-[var(--terrion-ink-faint)] hover:border-input hover:bg-muted hover:text-foreground sm:w-56"
+          className="interactive flex h-8 items-center gap-2 rounded-md border border-border bg-card px-2.5 text-[var(--terrion-ink-faint)] hover:border-input hover:bg-muted hover:text-foreground sm:w-56"
           aria-label="Cari halaman"
         >
           <Search aria-hidden className="size-4 shrink-0" />

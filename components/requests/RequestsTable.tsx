@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/DataTable'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { utcDate } from '@/lib/agronomy/dates'
-import { INBOX_EMPTY, requestBuyerLabel } from '@/lib/catalog/copy'
+import { INBOX_EMPTY, REQUEST_STATUS_LABEL, requestBuyerLabel } from '@/lib/catalog/copy'
 import { formatDateId } from '@/lib/harvest/format'
 import { formatNumberId } from '@/lib/format/number'
 import type { SupplyRequest } from '@/lib/supply-requests/load'
@@ -30,10 +30,6 @@ type Decision = 'accepted' | 'declined'
 
 const STATUS_FILTERS: StatusFilter[] = ['all', 'pending', 'accepted', 'declined', 'withdrawn']
 
-const STATUS_LABEL: Record<StatusFilter, string> = {
-  all: 'Semua', pending: 'Menunggu', accepted: 'Diterima',
-  declined: 'Ditolak', withdrawn: 'Ditarik',
-}
 
 const STATUS_TONE: Record<SupplyRequest['status'], 'neutral' | 'positive' | 'negative' | 'warning'> = {
   pending: 'warning', accepted: 'positive', declined: 'negative', withdrawn: 'neutral',
@@ -148,7 +144,7 @@ export function RequestsTable({
           onChange={setStatusFilter}
           options={STATUS_FILTERS.map(filter => ({
             value: filter,
-            label: STATUS_LABEL[filter],
+            label: REQUEST_STATUS_LABEL[filter],
             count: filter === 'all' ? rows.length : rows.filter(r => r.status === filter).length,
           }))}
         />
@@ -173,7 +169,7 @@ export function RequestsTable({
 
       {sorted.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          Tidak ada permintaan berstatus {STATUS_LABEL[statusFilter].toLowerCase()}.
+          Tidak ada permintaan berstatus {REQUEST_STATUS_LABEL[statusFilter].toLowerCase()}.
         </p>
       ) : (
         // Capped rather than unbounded: the inbox grows without limit, and the
@@ -245,7 +241,7 @@ export function RequestsTable({
                     />
                   </Td>
                   <Td>
-                    <Badge tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</Badge>
+                    <Badge tone={STATUS_TONE[r.status]}>{REQUEST_STATUS_LABEL[r.status]}</Badge>
                   </Td>
                   <Td className="min-w-40">
                     {r.status === 'pending' ? (

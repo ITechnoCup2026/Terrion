@@ -1,12 +1,9 @@
-import { LogOut } from 'lucide-react'
 import { redirect } from 'next/navigation'
 
-import { signOut } from '@/app/actions/auth'
 import { AppShell } from '@/components/ui/AppShell'
 import { BackendDownState } from '@/components/ui/BackendDownState'
 import { isBackendDown } from '@/lib/api/client'
 import { loadAtlasCooperativesIfUp } from '@/lib/atlas/load'
-import { initialsOf } from '@/lib/auth/display'
 import { currentAppUser, type AppUser } from '@/lib/auth/session'
 
 /**
@@ -58,35 +55,20 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
   // the root global-error screen over a subtitle.
   const cooperatives = await loadAtlasCooperativesIfUp()
   const match = cooperatives?.find(c => c.id === user.cooperative_id)
-  const cooperative = match
-    ? { name: match.name, village: match.village, district: match.district }
+  const workspace = match
+    ? { name: match.name, detail: `${match.village}, ${match.district}` }
     : null
 
-  const initials = initialsOf(user.full_name)
-
+  // No sign-out form built here any more: <AccountMenu> inside the shell owns
+  // it, and imports the Server Action itself. A client component may import a
+  // Server Action directly -- it is passed as a reference, not executed -- so
+  // routing it down through props bought nothing and cost this side its own
+  // bespoke account control.
   return (
     <AppShell
-      cooperative={cooperative ?? null}
+      workspace={workspace}
       userName={user.full_name}
       role={user.role}
-      initials={initials}
-      signOutButton={
-        // Glyph rather than the word "Keluar": this button is rendered into
-        // three slots of very different widths -- the expanded rail's foot, the
-        // 60 px collapsed rail, and the phone's top bar -- and only a square
-        // fits all three. The name survives in aria-label and title, which is
-        // what a screen reader and a hover both read.
-        <form action={signOut.bind(null, '/login')}>
-          <button
-            type="submit"
-            title="Keluar"
-            aria-label="Keluar"
-            className="interactive flex size-7 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:border-input hover:bg-muted hover:text-foreground"
-          >
-            <LogOut aria-hidden className="size-3.5" />
-          </button>
-        </form>
-      }
     >
       {children}
     </AppShell>

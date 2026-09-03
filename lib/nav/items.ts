@@ -11,12 +11,15 @@ import {
 
 import type { UserRole } from '@/lib/auth/roles'
 
+/** Everyone who works inside a cooperative. Not a buyer. */
+const COOPERATIVE: readonly UserRole[] = ['kader', 'pengurus']
+
 /**
  * The cooperative app's navigation, as data.
  *
  * It used to be a flat four-item array inside <AppNav>, which is why the
  * sidebar could not say anything about the shape of the product: "Lahan" and
- * "Dasbor" are what you look at, "Pembelian" and "Permintaan" are what you
+ * "Dashboard" are what you look at, "Pembelian" and "Permintaan" are what you
  * commit the cooperative to, and the catalogue is somebody else's screen you
  * are allowed to visit. An ERP earns its density from that grouping -- a rail
  * of six unlabelled links is a menu, a rail of three named groups is a map of
@@ -38,6 +41,11 @@ export type NavItem = {
    * redirected straight back to the dashboard by the page's own guard, so
    * showing them the link is an invitation to a dead end -- the guard stays
    * (this is not a security boundary), but the rail stops lying.
+   *
+   * Absent means everyone, which is why the cooperative's own pages all name
+   * COOPERATIVE explicitly. They did not have to while only cooperative users
+   * had a rail; the moment a buyer got one, "absent means everyone" pointed
+   * them at four screens whose guards bounce them straight to /login.
    */
   roles?: readonly UserRole[]
 }
@@ -54,15 +62,17 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       {
         href: '/dashboard',
-        label: 'Dasbor',
+        label: 'Dashboard',
         hint: 'Proyeksi panen 12 minggu dan penumpukan',
         icon: LayoutDashboard,
+        roles: COOPERATIVE,
       },
       {
         href: '/plots',
         label: 'Lahan',
         hint: 'Daftar lahan koperasi dan jadwal panennya',
         icon: Sprout,
+        roles: COOPERATIVE,
       },
     ],
   },
@@ -74,6 +84,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         label: 'Pembelian',
         hint: 'Kebutuhan pupuk musim ini dan pesanan kelompok',
         icon: ShoppingCart,
+        roles: COOPERATIVE,
       },
       {
         href: '/requests',
@@ -96,8 +107,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       },
       {
         href: '/my-requests',
-        label: 'Permintaan Saya',
-        hint: 'Status pengajuan kontrak pasokan Anda (ACC / Menunggu / Ditolak)',
+        label: 'Permintaan saya',
+        hint: 'Status pengajuan kontrak pasokan Anda: diterima, menunggu, ditolak',
         icon: ClipboardList,
         roles: ['buyer'],
       },

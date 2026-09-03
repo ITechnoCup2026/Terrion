@@ -12,7 +12,7 @@ import type { UseFormRegisterReturn } from 'react-hook-form'
  * show/hide toggle -- copy-pasting that across two forms is how they drift.
  */
 const fieldShell =
-  'interactive flex h-11 items-center gap-2.5 rounded-lg border border-input bg-background px-3 ' +
+  'interactive flex h-11 items-center gap-2.5 rounded-lg border border-input bg-card px-3 ' +
   'text-foreground transition-colors focus-within:border-ring has-[input:focus]:border-ring ' +
   'hover:border-ring/40'
 

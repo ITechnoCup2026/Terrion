@@ -23,7 +23,7 @@ function formatterFor(maxDecimals: number): Intl.NumberFormat {
  *
  * Trailing zero decimals are dropped, so a whole tonnage reads `112` rather
  * than `112,0`. Zero formats as `0` — deciding that a figure is *absent*
- * rather than zero belongs to the caller (see `<StatTile>`), never here.
+ * rather than zero belongs to the caller (see `<ImpactPanel>`), never here.
  */
 export function formatNumberId(value: number, maxDecimals = 1): string {
   if (!Number.isFinite(value)) return '—'

@@ -102,7 +102,7 @@ export default async function PlotPage({ params }: { params: Promise<{ id: strin
 
               Top-centre on a wide screen, because the shell's own cards hold
               the two top corners; below them on a narrow one. */}
-          <header className="absolute inset-x-3 top-16 z-30 w-fit max-w-[calc(100%-1.5rem)] rounded-lg border border-border bg-background px-3 py-2 shadow-[var(--shadow-md)] md:inset-x-auto md:top-3 md:left-1/2 md:-translate-x-1/2">
+          <header className="absolute inset-x-3 top-16 z-30 w-fit max-w-[calc(100%-1.5rem)] rounded-lg border border-border bg-card px-3 py-2 shadow-[var(--shadow-md)] md:inset-x-auto md:top-3 md:left-1/2 md:-translate-x-1/2">
             <h1 className="text-sm font-semibold text-foreground">{plot.name}</h1>
             <p className="text-xs text-muted-foreground">
               {plot.areaHa.toFixed(2)} ha · {stageBlocks.length} blok ·

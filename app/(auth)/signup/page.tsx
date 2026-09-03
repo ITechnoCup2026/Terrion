@@ -18,7 +18,7 @@ export default function SignupPage() {
     <main className="grid min-h-dvh lg:grid-cols-2">
       <AuthShowcasePanel variant="signup" />
 
-      <div className="relative flex flex-col items-center justify-center bg-background p-6">
+      <div className="relative flex flex-col items-center justify-center bg-card p-6">
         <AuthBackButton />
 
         <div className="w-full max-w-sm">

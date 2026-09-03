@@ -1,5 +1,6 @@
+import type { UserRole } from '@/lib/auth/roles'
 import { isActivePath } from '@/lib/nav/active'
-import { NAV_GROUPS } from '@/lib/nav/items'
+import { NAV_GROUPS, navGroupsFor } from '@/lib/nav/items'
 
 /**
  * Where you are, as a trail.
@@ -39,14 +40,20 @@ const LEAF_KIND: Record<string, string> = {
   '/my-requests': 'Permintaan saya',
 }
 
-export function breadcrumbsFor(pathname: string): Crumb[] {
+/**
+ * @param role Whose navigation this is. A buyer sees one group, and a section
+ *   label above the only section names nothing — so the trail drops it, the
+ *   same rule the rail follows. Omitted, every group is in scope.
+ */
+export function breadcrumbsFor(pathname: string, role?: UserRole): Crumb[] {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
+  const groups = role ? navGroupsFor(role) : NAV_GROUPS
 
-  for (const group of NAV_GROUPS) {
+  for (const group of groups) {
     for (const item of group.items) {
       if (!isActivePath(path, item.href)) continue
 
-      const trail: Crumb[] = [{ label: group.label }]
+      const trail: Crumb[] = groups.length > 1 ? [{ label: group.label }] : []
 
       // The section itself is the last crumb when you are standing on it, and
       // a link back to it when you are not.

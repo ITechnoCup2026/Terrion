@@ -5,13 +5,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 
+import { AccountMenu } from '@/components/auth/AccountMenu'
 import { CommandPalette, useCommandShortcut } from '@/components/ui/CommandPalette'
 import { Logo } from '@/components/ui/Logo'
 import { MobileNav } from '@/components/ui/MobileNav'
 import { Sidebar } from '@/components/ui/Sidebar'
 import { Topbar } from '@/components/ui/Topbar'
 import type { UserRole } from '@/lib/auth/roles'
-import { roleLabel } from '@/lib/auth/display'
 import { isActivePath } from '@/lib/nav/active'
 import { isImmersiveRoute } from '@/lib/nav/immersive'
 import { navGroupsFor } from '@/lib/nav/items'
@@ -41,20 +41,22 @@ import { cn } from '@/lib/utils'
  * layout that pads its children cannot have a child that fills the screen --
  * which is the bug this component exists to fix.
  */
-export type ShellCooperative = { name: string; village: string; district: string } | null
+/**
+ * Whose workspace this frame belongs to: a cooperative for a kader or
+ * pengurus, the buying organisation for a buyer, and null when the account has
+ * neither (a buyer who signed up without naming a company).
+ */
+export type ShellWorkspace = { name: string; detail: string | null } | null
 
 /** Where the rail's width is remembered between visits. */
 const COLLAPSE_KEY = 'terrion:nav-collapsed'
 
 export function AppShell({
-  cooperative, userName, role, initials, signOutButton, children,
+  workspace, userName, role, children,
 }: {
-  cooperative: ShellCooperative
+  workspace: ShellWorkspace
   userName: string
   role: UserRole
-  initials: string
-  /** The sign-out form, built on the server so its Server Action stays there. */
-  signOutButton: React.ReactNode
   children: React.ReactNode
 }) {
   const pathname = usePathname()
@@ -93,8 +95,8 @@ export function AppShell({
   // limit", and a cooperative's own initials are not a warning. Collapsed, the
   // mark alone is the identity; expanded, the name is, and it is set as plain
   // text because a name in a tinted card reads as a status.
-  const workspace = collapsed ? (
-    <div className="flex justify-center" title={cooperative?.name ?? 'Koperasi'}>
+  const workspaceBlock = collapsed ? (
+    <div className="flex justify-center" title={workspace?.name ?? 'Terrion'}>
       <Logo size={24} withWordmark={false} />
     </div>
   ) : (
@@ -105,51 +107,50 @@ export function AppShell({
           Terrion
         </span>
       </div>
-      <div className="min-w-0 border-t border-border px-1 pt-2.5 leading-tight">
-        <p className="truncate text-[0.8125rem] font-medium text-foreground">
-          {cooperative?.name ?? 'Koperasi'}
-        </p>
-        {cooperative && (
-          <p className="mt-0.5 truncate text-[0.6875rem] text-[var(--terrion-ink-faint)]">
-            {cooperative.village}, {cooperative.district}
+      {/* Only when there is one. An account with no organisation used to get
+          the word "Koperasi" under the wordmark, which for a buyer is the name
+          of something they do not belong to. */}
+      {workspace && (
+        <div className="min-w-0 border-t border-border px-1 pt-2.5 leading-tight">
+          <p className="truncate text-[0.8125rem] font-medium text-foreground">
+            {workspace.name}
           </p>
-        )}
-      </div>
+          {workspace.detail && (
+            <p className="mt-0.5 truncate text-[0.6875rem] text-[var(--terrion-ink-faint)]">
+              {workspace.detail}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 
-  const avatar = (
-    <span
-      aria-hidden
-      className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[0.6875rem] font-medium text-secondary-foreground"
-    >
-      {initials}
-    </span>
+  // One account control, in one place, on both sides of the product. It used
+  // to be three: a row in the rail's foot, a stacked pair in the collapsed
+  // rail, and a bare glyph in the phone's top bar -- three arrangements of the
+  // same two facts, none of which matched what a buyer sees.
+  // A buyer signed out of this frame belongs back on the public site; a kader
+  // has nowhere to be but the login screen.
+  const signOutTo = role === 'buyer' ? '/' : '/login'
+
+  const account = (
+    <AccountMenu
+      fullName={userName}
+      organisation={workspace?.name ?? null}
+      role={role}
+      signOutTo={signOutTo}
+    />
   )
 
-  const railAccount = collapsed ? (
-    <div className="flex flex-col items-center gap-2" title={userName}>
-      {avatar}
-      {signOutButton}
-    </div>
-  ) : (
-    <div className="flex items-center gap-2 px-1 py-0.5">
-      {avatar}
-      <div className="min-w-0 flex-1 leading-tight">
-        <p className="truncate text-[0.75rem] font-medium text-foreground">{userName}</p>
-        <p className="truncate text-[0.6875rem] text-[var(--terrion-ink-faint)]">{roleLabel(role)}</p>
-      </div>
-      {signOutButton}
-    </div>
-  )
-
-  // Phone: no rail, so the top bar carries it. Same element tree, rendered a
-  // second time -- a React element is a description, not an instance.
-  const barAccount = (
-    <div className="flex items-center gap-2 md:hidden">
-      {avatar}
-      {signOutButton}
-    </div>
+  // The same control over the farm canvas, lifted so it reads against a field.
+  const floatingAccount = (
+    <AccountMenu
+      fullName={userName}
+      organisation={workspace?.name ?? null}
+      role={role}
+      signOutTo={signOutTo}
+      triggerClassName="shadow-[var(--shadow-md)]"
+    />
   )
 
   const palette = (
@@ -167,8 +168,8 @@ export function AppShell({
             dragged everywhere the cards themselves are not. */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-between gap-3 p-3">
           <div className="pointer-events-auto flex items-start gap-2">
-            <div className="rounded-lg border border-border bg-background px-3 py-2 shadow-[var(--shadow-md)]">
-              {workspace}
+            <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-[var(--shadow-md)]">
+              {workspaceBlock}
             </div>
 
             <button
@@ -176,7 +177,7 @@ export function AppShell({
               onClick={() => setNavOpen(o => !o)}
               aria-expanded={navOpen}
               aria-label={navOpen ? 'Sembunyikan navigasi' : 'Tampilkan navigasi'}
-              className="interactive flex size-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground shadow-[var(--shadow-md)] hover:text-foreground"
+              className="interactive flex size-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-[var(--shadow-md)] hover:text-foreground"
             >
               {navOpen
                 ? <PanelLeftClose aria-hidden className="size-4" />
@@ -184,11 +185,7 @@ export function AppShell({
             </button>
           </div>
 
-          <div className="pointer-events-auto flex items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-2 shadow-[var(--shadow-md)]">
-            {avatar}
-            <p className="hidden text-xs text-muted-foreground sm:block">{userName}</p>
-            {signOutButton}
-          </div>
+          <div className="pointer-events-auto">{floatingAccount}</div>
         </div>
 
         {/* Collapsed by default. The farm is the reason this page exists, and a
@@ -205,14 +202,15 @@ export function AppShell({
     // no outer scrollbar and a child asking for full height gets it.
     // print:h-auto, because the RDKK form is several pages tall on paper.
     <div className="flex h-dvh overflow-hidden print:block print:h-auto print:overflow-visible">
-      <Sidebar groups={groups} collapsed={collapsed} header={workspace} footer={railAccount} />
+      <Sidebar groups={groups} collapsed={collapsed} header={workspaceBlock} />
 
       <div className="flex min-w-0 flex-1 flex-col print:block">
         <Topbar
           collapsed={collapsed}
           onToggleCollapse={toggleCollapsed}
           onOpenSearch={openSearch}
-          account={barAccount}
+          account={account}
+          role={role}
         />
 
         <main className="min-h-0 flex-1 overflow-y-auto print:overflow-visible">
@@ -241,7 +239,7 @@ function FloatingNav({
   return (
     <nav
       aria-label="Navigasi utama"
-      className="absolute top-16 left-3 z-40 flex flex-col gap-px rounded-lg border border-border bg-background p-1.5 shadow-[var(--shadow-md)]"
+      className="absolute top-16 left-3 z-40 flex flex-col gap-px rounded-lg border border-border bg-card p-1.5 shadow-[var(--shadow-md)]"
     >
       {groups.flatMap((group, groupIndex) => [
         groupIndex > 0 && (

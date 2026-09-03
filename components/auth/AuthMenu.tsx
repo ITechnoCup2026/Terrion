@@ -29,7 +29,13 @@ export function AuthMenu() {
       </Menu.Trigger>
 
       <Menu.Portal>
-        <Menu.Positioner side="bottom" align="end" sideOffset={8}>
+        {/* z-50: the popup is portalled to the end of <body>, which puts it
+            LAST in the DOM but not on top. A positioned element with a real
+            z-index paints in a later layer than one with z-index:auto, so the
+            catalogue's sticky filter bar (z-30) and this header itself (z-40)
+            were both painting over a menu that had no z-index at all. DOM
+            order does not settle this; a stacking order does. */}
+        <Menu.Positioner className="z-50" side="bottom" align="end" sideOffset={8}>
           <Menu.Popup
             className={cn(
               'w-64 rounded-xl border border-border bg-card p-1.5 shadow-[var(--shadow-lg)]',
