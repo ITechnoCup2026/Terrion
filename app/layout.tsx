@@ -13,9 +13,15 @@ import './globals.css'
  * large x-height, and unambiguous 1/l/I and 0/O — which matters when the
  * reader is a kader entering a figure on a phone in bright sun.
  *
- * Weights stop at 600. The product's hierarchy is carried by size, space and
- * colour; a heavier weight on a screen of figures only makes it louder. Adding
- * a 700 here is how that rule gets quietly broken.
+ * Weights stop at 600 INSIDE THE PRODUCT. The app's hierarchy is carried by
+ * size, space and colour; a heavier weight on a screen of figures only makes
+ * it louder, and a 700 on a dashboard is how that rule gets quietly broken.
+ *
+ * The 700 loaded here exists for exactly one thing: the landing hero's display
+ * words, which are set at 100px+ and are a poster rather than an instrument.
+ * At that size 600 reads thin and the counter-forms open up. It is scoped by
+ * convention, not by the loader — if it starts appearing on a table heading,
+ * that is the rule breaking, not the weight.
  *
  * The variable names matter — globals.css maps `--font-sans` and `--font-mono`
  * onto these, and if the two ever disagree the whole app silently falls back
@@ -24,7 +30,7 @@ import './globals.css'
 const plexSans = IBM_Plex_Sans({
   variable: '--font-plex-sans',
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
 })
 
