@@ -4,6 +4,9 @@ import { useState } from 'react'
 
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
 import { Button } from '@/components/ui/button'
+import { formatRupiah } from '@/lib/format/rupiah'
+import { formatDateId } from '@/lib/harvest/format'
+import { formatSeasonalGap, seasonalGap, type PriceBenchmark } from '@/lib/price/benchmark'
 import { RecordHarvestForm } from './RecordHarvestForm'
 import {
   SplitBlockForm, type ReferenceCommodity, type ReferenceVariety,
@@ -97,6 +100,10 @@ export function BlockDetailPanel({
         <HarvestWindow window={block.window} degraded={degraded} size="sm" />
       </div>
 
+      {/* Directly under the window, because that is what the seasonal price is
+          keyed to -- move one and the other stops meaning anything. */}
+      {block.price && <PriceReference price={block.price} />}
+
       {editing && (
         <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3">
           {/* Recording the harvest comes first. It is the more common action --
@@ -123,5 +130,65 @@ export function BlockDetailPanel({
         </div>
       )}
     </>
+  )
+}
+
+/**
+ * The market reference, as two numbers and the distance between them.
+ *
+ * Never one number. A single price on this panel would be read as what the
+ * crop will fetch, and nobody knows that -- the harvest is weeks away and the
+ * panel only publishes weeks that have already happened. Showing today's level
+ * beside the same week a year ago says what is actually known: whether this
+ * window has historically opened into a stronger or weaker patch of the year.
+ *
+ * The source line is not decoration. The seeded panel is synthetic, and a
+ * farmer must be able to see whose number they are about to sell against.
+ */
+function PriceReference({ price }: { price: PriceBenchmark }) {
+  const gap = seasonalGap(price)
+
+  return (
+    <div className="mt-3 border-t border-border pt-3">
+      <p className="mb-1 text-xs text-muted-foreground">Harga acuan</p>
+
+      <dl className="space-y-1 text-sm">
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="text-muted-foreground">Minggu ini</dt>
+          <dd className="tabular-nums text-foreground">
+            {formatRupiah(price.latest.pricePerKg)}/kg
+          </dd>
+        </div>
+
+        {price.seasonal ? (
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="text-muted-foreground">Minggu panen, tahun lalu</dt>
+            <dd className="tabular-nums text-foreground">
+              {formatRupiah(price.seasonal.pricePerKg)}/kg
+              {gap !== null && (
+                <span className="ml-1.5 text-xs text-muted-foreground">
+                  {formatSeasonalGap(gap)}
+                </span>
+              )}
+            </dd>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Belum ada harga untuk minggu panen tahun lalu.
+          </p>
+        )}
+      </dl>
+
+      {price.seasonal && (
+        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+          Pekan {formatDateId(price.seasonal.weekStart)}. Acuan pasar, bukan
+          perkiraan harga jual.
+        </p>
+      )}
+
+      <p className="mt-1.5 text-[0.6875rem] leading-relaxed text-muted-foreground">
+        Sumber: {price.source}
+      </p>
+    </div>
   )
 }

@@ -40,6 +40,10 @@ export default async function PlotPage({ params }: { params: Promise<{ id: strin
     window: b.window,
     plantingDate: b.plantingDate.toISOString().slice(0, 10),
     gddRequired: b.window?.gddRequired ?? 0,
+    // Signed-in only. The public garden gets the same blocks without this: a
+    // price on a page anyone can open reads as an asking price, and the
+    // cooperative has not offered one.
+    price: b.price,
   }))
 
   // What the farmhouse popup shows: the totals the per-block panel does not.

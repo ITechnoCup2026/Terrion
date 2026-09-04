@@ -286,6 +286,19 @@ export type PlotListItemRaw = {
 
 // ---- GET /api/plots/:id --------------------------------------------------------
 
+export type WeekPriceRaw = {
+  price_per_kg: number
+  week_start: string
+}
+
+export type PriceBenchmarkRaw = {
+  latest: WeekPriceRaw
+  /** Null when the panel published no week matching the harvest window a year
+   *  back. The screen says so rather than falling back to `latest`. */
+  seasonal: WeekPriceRaw | null
+  source: string
+}
+
 export type PlotBlockRaw = {
   id: string
   label: string
@@ -299,6 +312,8 @@ export type PlotBlockRaw = {
   planting_date: string
   window: HarvestWindowRaw | null
   expected_tonnes: number | null
+  /** Null where no price panel covers the plot's province and commodity. */
+  price: PriceBenchmarkRaw | null
 }
 
 export type PlotDetailResponseRaw = {

@@ -13,6 +13,7 @@ import { loadTerrainSheets, type TerrainSheets } from '@/lib/canvas/sheets'
 import { stageOn, timelineBounds, type TimelineBounds } from '@/lib/canvas/timeline'
 import { generateTerrain } from '@/lib/terrain/generate'
 import type { HarvestWindow as HarvestWindowData } from '@/lib/agronomy/types'
+import type { PriceBenchmark } from '@/lib/price/benchmark'
 import { allocateTiles } from '@/lib/tilegrid/allocate'
 import type { TileHit } from '@/lib/canvas/hittest'
 import { BlockDetailPanel } from './BlockDetailPanel'
@@ -39,6 +40,9 @@ export type StageBlock = {
   /** Only the public garden passes these, because only its panel says them. */
   varietyName?: string | null
   yieldRangeTonnes?: { min: number; max: number } | null
+  /** Only the signed-in plot page passes this. The public garden deliberately
+   *  does not: a price on a page anyone can open reads as an offer. */
+  price?: PriceBenchmark | null
 }
 
 const MOBILE_MAX_PX = 640
