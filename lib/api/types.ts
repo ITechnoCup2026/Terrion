@@ -237,6 +237,36 @@ export type DashboardResponseRaw = {
     input_cost_saved: number | null
     tonnes_diverted: number | null
   }
+  calibrations: CalibrationRaw[]
+}
+
+/**
+ * What one cooperative's recorded harvests have taught the predictor about one
+ * variety.
+ *
+ * `offset_days` is what those harvests say on their own; `applied_offset_days`
+ * is what the prediction actually moves by, after the estimate is shrunk toward
+ * the base model in proportion to how few harvests back it. Both cross the wire
+ * because the gap between them is the honest part: two harvests do not get to
+ * move a prediction as far as twenty do.
+ */
+export type CalibrationRaw = {
+  variety_id: string
+  variety_name: string
+  commodity_name: string
+  offset_days: number
+  applied_offset_days: number
+  n_observations: number
+  residual_sd: number
+}
+
+// ---- PATCH /api/blocks/:id/harvest --------------------------------------------
+
+export type RecordHarvestResponseRaw = {
+  block_id: string
+  plot_id: string
+  /** Null when there was nothing yet to fit. */
+  calibration: CalibrationRaw | null
 }
 
 // ---- GET /api/plots -----------------------------------------------------------
@@ -256,6 +286,19 @@ export type PlotListItemRaw = {
 
 // ---- GET /api/plots/:id --------------------------------------------------------
 
+export type WeekPriceRaw = {
+  price_per_kg: number
+  week_start: string
+}
+
+export type PriceBenchmarkRaw = {
+  latest: WeekPriceRaw
+  /** Null when the panel published no week matching the harvest window a year
+   *  back. The screen says so rather than falling back to `latest`. */
+  seasonal: WeekPriceRaw | null
+  source: string
+}
+
 export type PlotBlockRaw = {
   id: string
   label: string
@@ -269,6 +312,8 @@ export type PlotBlockRaw = {
   planting_date: string
   window: HarvestWindowRaw | null
   expected_tonnes: number | null
+  /** Null where no price panel covers the plot's province and commodity. */
+  price: PriceBenchmarkRaw | null
 }
 
 export type PlotDetailResponseRaw = {

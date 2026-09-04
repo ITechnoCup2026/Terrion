@@ -150,6 +150,39 @@ export function drawGrid(
 }
 
 /**
+ * A soft darkening towards the edge of the viewport.
+ *
+ * The world is generated out to the edges of the screen now, which is what
+ * stopped the farm sitting on a white rectangle -- but it also means the
+ * picture has no edge of its own, and the eye wanders to the corners where
+ * there is nothing to see. This weights the middle, where the field is.
+ *
+ * Drawn in SCREEN space, not world space: it follows the viewport rather than
+ * the terrain, so panning does not drag a dark patch across the ground.
+ *
+ * The gradient is rebuilt only when the viewport is resized. It is one fill on
+ * a frame that is already blitting four layers.
+ */
+let vignette: { w: number; h: number; fill: CanvasGradient } | null = null
+
+export function drawVignette(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  if (!vignette || vignette.w !== w || vignette.h !== h) {
+    const radius = Math.hypot(w, h) / 2
+    const fill = ctx.createRadialGradient(w / 2, h / 2, radius * 0.55, w / 2, h / 2, radius)
+    fill.addColorStop(0, 'rgb(16 35 26 / 0)')
+    fill.addColorStop(1, 'rgb(16 35 26 / 0.16)')
+    vignette = { w, h, fill }
+  }
+  ctx.fillStyle = vignette.fill
+  ctx.fillRect(0, 0, w, h)
+}
+
+/** Drops the cached vignette. For tests, and for a changed palette. */
+export function resetVignette(): void {
+  vignette = null
+}
+
+/**
  * Outlines the selected block on the visible canvas.
  * Drawn after the cached layers, never into them, so selecting is cheap.
  * Line width is divided by the zoom so the outline looks the same at every scale.

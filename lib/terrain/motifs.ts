@@ -1,12 +1,20 @@
 /**
  * The six edge motifs the decorative border is composed from.
  *
- * Deliberately NOT an autotiling engine. Generating arbitrary water bodies or
- * tree patches from the pack's blob tiles would need neighbour bitmasks, a
- * 47-variant lookup and corner resolution -- expensive, and easy to get subtly
- * wrong in ways that look visibly broken. Six hand-composed motifs, one picked
- * per edge with a seeded offset, give thousands of distinct farms with no
- * autotiling and no corner bugs.
+ * These decide WHICH ground goes where. They do not decide how one ground meets
+ * another: that is lib/terrain/autotile.ts, which resolves each boundary from
+ * the pack's own blob sets so the change reads as an organic edge rather than a
+ * 32px step.
+ *
+ * This file used to say it deliberately did without autotiling, on the grounds
+ * that a 47-variant lookup was expensive and easy to get subtly wrong. That was
+ * right about the method it had in mind and wrong about the conclusion. The
+ * variants are assembled once at build time rather than resolved per cell, and
+ * the runtime rule reduces to four independent corners, so the cost is a table
+ * lookup and the correctness is a test over all 256 arrangements.
+ *
+ * Six hand-composed motifs, one picked per edge with a seeded offset, still
+ * give thousands of distinct farms.
  *
  * `depth` is how far a cell sits from the outside of the border: 0 is the
  * outermost ring, `border - 1` is the ring touching the plot fence. Motifs use
@@ -31,6 +39,47 @@ export type GroundName = (typeof GROUND)[number]
 
 /** Index of a ground tile by name, so motifs read as words not numbers. */
 const g = (name: GroundName): number => GROUND.indexOf(name)
+
+/**
+ * Which ground covers which, indexed by ground tile.
+ *
+ * Ground types are not peers: where two meet, one of them visibly grows over
+ * the other, and it is always the same one. Soil is the bare bottom, sand
+ * drifts across it, and both grasses close over the top. Ranking them settles
+ * every boundary the same way round, so a farm never shows sand overlapping
+ * grass on one edge and grass overlapping sand on the other.
+ *
+ * A tile's variants share its rank -- the three grass tufts are still grass --
+ * so the tufts scattered through a patch never punch holes in their own rim.
+ *
+ * The numbers line up with scripts/build-sprites.ts TRANSITION_MATERIALS,
+ * which writes one rim set per rank above soil, in this order.
+ */
+export const MATERIAL_RANK: readonly number[] = GROUND.map(name => {
+  switch (name) {
+    case 'soil':
+    case 'soil_pebble_a':
+    case 'soil_pebble_b':
+      return 0
+    case 'sand':
+      return 1
+    case 'grass_dark':
+      return 2
+    default:
+      return 3
+  }
+})
+
+/** Soil is the bottom of the stack and has no rim of its own. */
+export const LOWEST_RANK = 0
+
+/**
+ * Where this rank's thirteen pictures start in transitions.png.
+ * Soil has no set, so the sheet begins at rank 1.
+ */
+export function transitionMaterial(rank: number): number {
+  return rank - 1
+}
 
 export type MotifName = 'river' | 'treeline' | 'grass' | 'pasture' | 'rocky' | 'mixed'
 

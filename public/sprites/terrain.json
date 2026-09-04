@@ -16,6 +16,14 @@
     "fence_v",
     "fence_post"
   ],
+  "transitions": {
+    "materials": [
+      "sand",
+      "grass_dark",
+      "grass"
+    ],
+    "pieces": 13
+  },
   "water": {
     "frames": 6
   },

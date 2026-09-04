@@ -3,6 +3,7 @@ import { Calendar, PackageCheck, Sprout } from 'lucide-react'
 
 import { CollisionAlert, type CollisionAlertData } from '@/components/dashboard/CollisionAlert'
 import { GroupPurchaseAlert } from '@/components/dashboard/GroupPurchaseAlert'
+import { CalibrationPanel } from '@/components/dashboard/CalibrationPanel'
 import { ImpactPanel } from '@/components/dashboard/ImpactPanel'
 import { ProjectionPanel } from '@/components/dashboard/ProjectionPanel'
 import type { ChartWeek } from '@/components/dashboard/ProjectionChart'
@@ -194,6 +195,8 @@ export function DashboardView({
           commoditiesWithoutRates={commoditiesWithoutRates}
         />
       </div>
+
+      <CalibrationPanel calibrations={dashboard.calibrations} />
 
       <ImpactPanel figures={dashboard.impact} />
     </Page>

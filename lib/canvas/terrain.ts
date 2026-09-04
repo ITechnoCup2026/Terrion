@@ -9,10 +9,158 @@
  * is drawn on the ring immediately outside it.
  */
 
+import { PIECE, PIECE_COUNT, rimQuadrants } from '@/lib/terrain/autotile'
 import type { ScatterItem, TerrainLayout } from '@/lib/terrain/generate'
 import { patchNoise, terrainIndex } from '@/lib/terrain/generate'
+import { LOWEST_RANK, MATERIAL_RANK, transitionMaterial } from '@/lib/terrain/motifs'
 import type { TileLayout } from '@/lib/tilegrid/types'
 import { TERRAIN_TILE, TREE_CELL, type TerrainSheets } from './sheets'
+
+/**
+ * What rank a cell's ground is, or Infinity where there is nothing to draw.
+ *
+ * Infinity rather than -1 because the callers all ask the same question of it:
+ * "does the neighbour cover me?". Off the edge of the world, and inside the
+ * plot rectangle where a different pass paints the ground, the answer has to be
+ * yes -- otherwise every farm would draw a rim around the whole picture and
+ * another one facing its own field.
+ */
+type RankAt = (col: number, row: number) => number
+
+/** Half a tile, in the sheet's own pixels. One quadrant of a transition piece. */
+const QUADRANT = TERRAIN_TILE / 2
+
+/**
+ * The transition sheet, recoloured to flat darkness but keeping its shape.
+ *
+ * This is how a ground edge casts a shadow that follows its actual ragged
+ * outline instead of a straight band: stamp this a pixel down and right of
+ * where the rim is about to go. Built once from the loaded sheet and kept,
+ * because it is the same picture for the life of the page.
+ */
+let shadowSheet: { source: HTMLImageElement; canvas: HTMLCanvasElement } | null = null
+
+function transitionShadow(sheet: HTMLImageElement): HTMLCanvasElement | null {
+  if (shadowSheet?.source === sheet) return shadowSheet.canvas
+
+  const canvas = document.createElement('canvas')
+  canvas.width = sheet.width
+  canvas.height = sheet.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  ctx.drawImage(sheet, 0, 0)
+  // source-in keeps the alpha it just drew and replaces every colour, so the
+  // result is the silhouette of the rim rather than a rectangle.
+  ctx.globalCompositeOperation = 'source-in'
+  ctx.fillStyle = '#1d2b16'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  shadowSheet = { source: sheet, canvas }
+  return canvas
+}
+
+/** Drops the cached shadow sheet. For tests, and for a reloaded sprite set. */
+export function resetTransitionShadow(): void {
+  shadowSheet = null
+}
+
+/**
+ * Walks a rectangle of cells, handing each one that needs a rim to `stamp`.
+ *
+ * Cells whose corners are all buried are skipped, which is most of them: only
+ * the boundary pays for an overlay, and everywhere else keeps the tufted or
+ * pebbled ground tile that was already painted there.
+ */
+function eachRimCell(
+  bounds: { col: number; row: number; cols: number; rows: number },
+  rankAt: RankAt,
+  stamp: (col: number, row: number, rank: number,
+          quadrants: ReturnType<typeof rimQuadrants>) => void,
+) {
+  for (let row = bounds.row; row < bounds.row + bounds.rows; row++) {
+    for (let col = bounds.col; col < bounds.col + bounds.cols; col++) {
+      const rank = rankAt(col, row)
+      if (!Number.isFinite(rank) || rank <= LOWEST_RANK) continue
+
+      const quadrants = rimQuadrants(
+        (dc, dr) => rankAt(col + dc, row + dr) >= rank)
+      if (!quadrants) continue
+
+      stamp(col, row, rank, quadrants)
+    }
+  }
+}
+
+/**
+ * The shadow each ground edge casts onto the ground below it.
+ *
+ * A whole pass of its own, run before any rim is drawn, so that a cell's
+ * shadow can never land on a neighbour's finished edge.
+ */
+function drawRimShadows(
+  ctx: CanvasRenderingContext2D,
+  sheets: TerrainSheets,
+  cellPx: number,
+  bounds: { col: number; row: number; cols: number; rows: number },
+  rankAt: RankAt,
+) {
+  const shadow = transitionShadow(sheets.transitions)
+  if (!shadow) return
+
+  const half = cellPx / 2
+  const offset = Math.max(1, Math.round(cellPx / 16))
+
+  ctx.save()
+  ctx.globalAlpha = 0.18
+
+  eachRimCell(bounds, rankAt, (col, row, rank, quadrants) => {
+    const material = transitionMaterial(rank)
+    for (const quadrant of quadrants!) {
+      // A buried corner is a solid square; its shadow would be a dark block.
+      if (quadrant.piece === PIECE.interior) continue
+      const sx = (material * PIECE_COUNT + quadrant.piece) * TERRAIN_TILE
+        + quadrant.qx * QUADRANT
+      ctx.drawImage(
+        shadow, sx, quadrant.qy * QUADRANT, QUADRANT, QUADRANT,
+        col * cellPx + quadrant.qx * half + offset,
+        row * cellPx + quadrant.qy * half + offset,
+        half, half)
+    }
+  })
+
+  ctx.restore()
+}
+
+/**
+ * The organic edge itself, stamped a quadrant at a time.
+ *
+ * Every boundary in the picture goes through here: grass meeting soil outside
+ * the fence, sand meeting soil, the yard meeting the tilled field inside it.
+ * One set of pictures serves all of them because the pack draws its rims on
+ * transparent backgrounds, so whatever was painted underneath shows through.
+ */
+function drawRims(
+  ctx: CanvasRenderingContext2D,
+  sheets: TerrainSheets,
+  cellPx: number,
+  bounds: { col: number; row: number; cols: number; rows: number },
+  rankAt: RankAt,
+) {
+  const half = cellPx / 2
+
+  eachRimCell(bounds, rankAt, (col, row, rank, quadrants) => {
+    const material = transitionMaterial(rank)
+    for (const quadrant of quadrants!) {
+      const sx = (material * PIECE_COUNT + quadrant.piece) * TERRAIN_TILE
+        + quadrant.qx * QUADRANT
+      ctx.drawImage(
+        sheets.transitions, sx, quadrant.qy * QUADRANT, QUADRANT, QUADRANT,
+        col * cellPx + quadrant.qx * half,
+        row * cellPx + quadrant.qy * half,
+        half, half)
+    }
+  })
+}
 
 /** Where the farmhouse stands, in terrain tile coordinates. */
 export type HousePlacement = { col: number; row: number }
@@ -139,6 +287,18 @@ export function drawTerrainLayer(
     }
   }
 
+  // Now soften every boundary between two ground types. Off the edge of the
+  // world, and inside the plot rectangle, nothing is drawn -- both read as
+  // covered, so no rim is ever drawn facing them.
+  const rankAt: RankAt = (col, row) => {
+    if (col < 0 || row < 0 || col >= terrain.cols || row >= terrain.rows) return Infinity
+    const cell = terrain.cells[terrainIndex(terrain, col, row)]
+    return cell ? MATERIAL_RANK[cell.ground] : Infinity
+  }
+  const whole = { col: 0, row: 0, cols: terrain.cols, rows: terrain.rows }
+  drawRimShadows(ctx, sheets, cellPx, whole, rankAt)
+  drawRims(ctx, sheets, cellPx, whole, rankAt)
+
   // Sorted by row so a tree lower down overlaps the one behind it.
   for (const item of [...terrain.scatter].sort((a, b) => a.row - b.row)) {
     drawScatterItem(ctx, sheets, item, cellPx)
@@ -230,6 +390,10 @@ export function drawFieldSoil(
   const GRASS = 0, TUFT_A = 1, TUFT_B = 2
   const SOIL_PATCH = 3.5
 
+  // Which tile each cell got, kept so the rim pass can read the ground back
+  // without repeating the noise lookup or, worse, disagreeing with it.
+  const tiles = new Array<number>(plot.cols * plot.rows)
+
   for (let row = plot.row; row < plot.row + plot.rows; row++) {
     for (let col = plot.col; col < plot.col + plot.cols; col++) {
       const n = patchNoise(terrain.seed ^ 0x5f3a, col, row, SOIL_PATCH)
@@ -239,10 +403,25 @@ export function drawFieldSoil(
       const tile = owned
         ? (n < 0.62 ? SOIL : n < 0.84 ? PEBBLE_A : PEBBLE_B)
         : (n < 0.55 ? GRASS : n < 0.8 ? TUFT_A : TUFT_B)
+      tiles[(row - plot.row) * plot.cols + (col - plot.col)] = tile
       stamp(ctx, sheets.ground, tile, sheets.groundCount, TERRAIN_TILE,
         col * cellPx, row * cellPx, cellPx, cellPx)
     }
   }
+
+  // The yard grass closes over the edge of the tilled ground, the same way it
+  // does everywhere else in the picture.
+  //
+  // This changes only the EDGE ART. Which cells are soil still comes from
+  // layout.tiles and nothing here touches it, so tilled ground is still
+  // exactly the planted area and the soil is still the hectares.
+  const rankAt: RankAt = (col, row) => {
+    const c = col - plot.col, r = row - plot.row
+    if (c < 0 || r < 0 || c >= plot.cols || r >= plot.rows) return Infinity
+    return MATERIAL_RANK[tiles[r * plot.cols + c]]
+  }
+  drawRimShadows(ctx, sheets, cellPx, plot, rankAt)
+  drawRims(ctx, sheets, cellPx, plot, rankAt)
 
   // The fence throws a short shadow onto the field it encloses, which is what
   // stops it reading as a sticker laid over the picture.
@@ -250,11 +429,24 @@ export function drawFieldSoil(
   // It belongs here rather than in drawFence because this layer is painted
   // AFTER the terrain (see PlotCanvas), so a shadow drawn with the fence would
   // be covered by the soil a moment later.
+  //
+  // Stepped rather than flat: a shadow with an edge as hard as the thing
+  // casting it reads as a painted stripe. Three bands is enough to fall off
+  // convincingly and costs three fills.
   ctx.save()
-  ctx.globalAlpha = 0.15
   ctx.fillStyle = '#1d2b16'
-  ctx.fillRect(plot.col * cellPx, plot.row * cellPx, plot.cols * cellPx, cellPx * 0.3)
-  ctx.fillRect(plot.col * cellPx, plot.row * cellPx, cellPx * 0.24, plot.rows * cellPx)
+  const BANDS = [
+    { alpha: 0.16, depth: 0.12 },
+    { alpha: 0.10, depth: 0.24 },
+    { alpha: 0.06, depth: 0.38 },
+  ]
+  for (const band of BANDS) {
+    ctx.globalAlpha = band.alpha
+    ctx.fillRect(plot.col * cellPx, plot.row * cellPx,
+      plot.cols * cellPx, cellPx * band.depth)
+    ctx.fillRect(plot.col * cellPx, plot.row * cellPx,
+      cellPx * band.depth * 0.8, plot.rows * cellPx)
+  }
   ctx.restore()
 }
 

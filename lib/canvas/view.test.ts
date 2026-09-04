@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  clampOffset, clampView, fitView, snapScale, pinchScale, scaleStep, MIN_SCALE, MAX_SCALE,
+  clampOffset, clampView, coverScale, fitView, minScaleFor, snapScale, pinchScale,
+  scaleStep, MIN_SCALE, MAX_SCALE,
   type View,
 } from './view'
 
@@ -146,5 +147,64 @@ describe('clampView', () => {
     const clamped = clampView(dragged, 16 * 32, 14 * 32, 800, 600)
     expect(clamped.offsetX).toBe(0)
     expect(clamped.offsetY).toBe(600 - 14 * 32 * 2)
+  })
+})
+
+describe('coverScale', () => {
+  it('is the ratio of the axis that falls short first', () => {
+    // A wide viewport over a square world: width is the tighter constraint.
+    expect(coverScale(1000, 1000, 2000, 1000)).toBe(2)
+    expect(coverScale(1000, 1000, 1000, 3000)).toBe(3)
+  })
+
+  it('is 1 when the world has no size to cover with', () => {
+    expect(coverScale(0, 0, 800, 600)).toBe(MIN_SCALE)
+  })
+})
+
+describe('minScaleFor', () => {
+  it('rounds up onto a notch, so zooming out can never uncover the world', () => {
+    // Covering needs 1.2x; halves are the notch, so 1.5x is the first that works.
+    expect(minScaleFor(1000, 1000, 1200, 1200, 0.5)).toBe(1.5)
+    // Whole notches only: 2x.
+    expect(minScaleFor(1000, 1000, 1200, 1200, 1)).toBe(2)
+  })
+
+  it('leaves a world that covers exactly where it is', () => {
+    // The frame is built to cover exactly, so floating point must not nudge
+    // the opening shot up a step.
+    expect(minScaleFor(1000, 1000, 1000, 1000, 0.5)).toBe(1)
+    expect(minScaleFor(640, 480, 1280, 960, 0.5)).toBe(2)
+  })
+
+  it('never falls below MIN_SCALE or climbs past MAX_SCALE', () => {
+    expect(minScaleFor(10000, 10000, 100, 100, 1)).toBe(MIN_SCALE)
+    expect(minScaleFor(10, 10, 5000, 5000, 1)).toBe(MAX_SCALE)
+  })
+})
+
+describe('clampView zoom floor', () => {
+  const world = { w: 1000, h: 1000 }
+
+  it('refuses a scale that would show background around the world', () => {
+    // 1x over a 1000px world in a 1500px viewport leaves 500px of nothing.
+    const clamped = clampView(
+      { scale: 1, offsetX: 0, offsetY: 0 }, world.w, world.h, 1500, 1500, 0.5)
+    expect(clamped.scale).toBe(1.5)
+  })
+
+  it('leaves a scale that already covers alone', () => {
+    const clamped = clampView(
+      { scale: 3, offsetX: 0, offsetY: 0 }, world.w, world.h, 1500, 1500, 0.5)
+    expect(clamped.scale).toBe(3)
+  })
+
+  it('pans against the clamped scale, not the one it was handed', () => {
+    // At the floor the world exactly covers, so there is nowhere left to pan.
+    const clamped = clampView(
+      { scale: 1, offsetX: -400, offsetY: -400 }, world.w, world.h, 1500, 1500, 0.5)
+    expect(clamped.scale).toBe(1.5)
+    expect(clamped.offsetX).toBe(0)
+    expect(clamped.offsetY).toBe(0)
   })
 })

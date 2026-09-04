@@ -78,11 +78,60 @@ export function clampOffset(offset: number, worldSize: number, viewportSize: num
   return Math.min(0, Math.max(viewportSize - worldSize, offset))
 }
 
-/** Clamps both axes of a view against the world's pixel size at its current scale. */
-export function clampView(view: View, worldW: number, worldH: number, w: number, h: number): View {
+/**
+ * The exact scale at which the world stops covering the viewport.
+ *
+ * Below this the picture is smaller than the screen and the page background
+ * shows around it -- the white margin that used to appear on the plot page
+ * after a couple of notches of zooming out.
+ *
+ * The larger of the two ratios, not the smaller: covering means neither axis
+ * may fall short, so the tighter axis decides.
+ */
+export function coverScale(worldW: number, worldH: number, w: number, h: number): number {
+  if (worldW <= 0 || worldH <= 0) return MIN_SCALE
+  return Math.max(w / worldW, h / worldH)
+}
+
+/**
+ * The zoom floor for one world in one viewport.
+ *
+ * MIN_SCALE alone cannot do this job. It is a constant, and whether 1x leaves
+ * white depends entirely on how much world was generated -- which lib/canvas/
+ * frame.ts sizes to cover the viewport at the OPENING camera. Zooming out from
+ * there asks for world that was never made.
+ *
+ * Rounded UP onto a notch rather than used raw: an arbitrary scale puts source
+ * pixels across fractional device pixels and the crops shimmer, which is the
+ * whole reason scaleStep exists. Up rather than down, because down is the
+ * direction that uncovers the world again.
+ *
+ * The epsilon keeps a world that covers exactly -- the common case, since the
+ * frame is built to -- from being nudged onto the next notch up by floating
+ * point, which would silently zoom the opening shot in by a step.
+ */
+export function minScaleFor(
+  worldW: number, worldH: number, w: number, h: number, step: number = 1,
+): number {
+  const snapped = Math.ceil((coverScale(worldW, worldH, w, h) - 1e-9) / step) * step
+  return Math.min(MAX_SCALE, Math.max(MIN_SCALE, snapped))
+}
+
+/**
+ * Clamps a view against the world: first how far out it may zoom, then how far
+ * it may pan at the scale that survives.
+ *
+ * Order matters. Clamping the offsets against the old scale and then changing
+ * the scale would leave the camera outside the world for a frame.
+ */
+export function clampView(
+  view: View, worldW: number, worldH: number, w: number, h: number, step: number = 1,
+): View {
+  const scale = Math.min(
+    MAX_SCALE, Math.max(minScaleFor(worldW, worldH, w, h, step), view.scale))
   return {
-    scale: view.scale,
-    offsetX: clampOffset(view.offsetX, worldW * view.scale, w),
-    offsetY: clampOffset(view.offsetY, worldH * view.scale, h),
+    scale,
+    offsetX: clampOffset(view.offsetX, worldW * scale, w),
+    offsetY: clampOffset(view.offsetY, worldH * scale, h),
   }
 }

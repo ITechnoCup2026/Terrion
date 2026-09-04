@@ -1,8 +1,11 @@
 import { utcDate } from '@/lib/agronomy/dates'
 import type { HarvestWindow } from '@/lib/agronomy/types'
 import { apiFetch, isNotFound } from '@/lib/api/client'
-import type { HarvestWindowRaw, PlotBlockRaw, PlotDetailResponseRaw, PlotListItemRaw } from '@/lib/api/types'
+import type {
+  HarvestWindowRaw, PlotBlockRaw, PlotDetailResponseRaw, PlotListItemRaw, PriceBenchmarkRaw,
+} from '@/lib/api/types'
 import { currentSessionId } from '@/lib/auth/session'
+import type { PriceBenchmark } from '@/lib/price/benchmark'
 import type { PlotSummary } from '@/lib/plots/summary'
 
 function toHarvestWindow(raw: HarvestWindowRaw): HarvestWindow {
@@ -58,6 +61,8 @@ export type PlotDetailBlock = {
   plantingDate: Date
   window: HarvestWindow | null
   expectedTonnes: number | null
+  /** Null where no price panel covers this plot's province and commodity. */
+  price: PriceBenchmark | null
 }
 
 export type PlotDetail = {
@@ -87,6 +92,17 @@ function toPlotDetailBlock(raw: PlotBlockRaw): PlotDetailBlock {
     plantingDate: utcDate(raw.planting_date),
     window: raw.window ? toHarvestWindow(raw.window) : null,
     expectedTonnes: raw.expected_tonnes,
+    price: raw.price ? toPriceBenchmark(raw.price) : null,
+  }
+}
+
+function toPriceBenchmark(raw: PriceBenchmarkRaw): PriceBenchmark {
+  return {
+    latest: { pricePerKg: raw.latest.price_per_kg, weekStart: utcDate(raw.latest.week_start) },
+    seasonal: raw.seasonal
+      ? { pricePerKg: raw.seasonal.price_per_kg, weekStart: utcDate(raw.seasonal.week_start) }
+      : null,
+    source: raw.source,
   }
 }
 

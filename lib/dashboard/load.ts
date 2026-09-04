@@ -3,6 +3,7 @@ import type { ImpactFigures } from '@/lib/agronomy/impact'
 import { apiFetch } from '@/lib/api/client'
 import type { DashboardResponseRaw, ThresholdBasis } from '@/lib/api/types'
 import { currentSessionId } from '@/lib/auth/session'
+import { toCalibration, type Calibration } from '@/lib/calibration/model'
 import type { UpcomingHarvest } from '@/lib/dashboard/upcoming'
 
 export type DashboardWeek = {
@@ -43,6 +44,8 @@ export type DashboardData = {
   suggestions: DashboardSuggestion[]
   upcoming: { rows: UpcomingHarvest[]; totalTonnes: number }
   impact: ImpactFigures
+  /** Empty until this cooperative records a harvest of its own. */
+  calibrations: Calibration[]
 }
 
 function toFlaggedWeek(raw: DashboardResponseRaw['flagged'][number]): DashboardFlaggedWeek {
@@ -108,5 +111,6 @@ export async function loadDashboard(): Promise<DashboardData> {
       inputCostSaved: raw.impact.input_cost_saved,
       tonnesDiverted: raw.impact.tonnes_diverted,
     },
+    calibrations: (raw.calibrations ?? []).map(toCalibration),
   }
 }

@@ -6,7 +6,8 @@ import { AtlasPanel, type RegionListItem } from '@/components/atlas/AtlasPanel'
 import { MAP, SUPPLY_RAMP } from '@/components/atlas/palette'
 import type { AtlasCooperative } from '@/lib/atlas/load'
 import {
-  peakTonnes, regionKey, supplyByProvince, supplyByRegency, supplyStep,
+  listingsInWeek, peakTonnes, regionKey, supplyByProvince, supplyByRegency,
+  supplyStep, supplyWeeks,
   type RegionSupply,
 } from '@/lib/atlas/supply'
 import {
@@ -16,6 +17,7 @@ import {
 import {
   INDONESIA_BBOX, fitViewBox, geometryToPath, padBbox, project, type Bbox,
 } from '@/lib/atlas/projection'
+import { SupplyWeekScrubber } from '@/components/atlas/SupplyWeekScrubber'
 import type { Listing } from '@/lib/catalog/listings'
 import { cn } from '@/lib/utils'
 
@@ -202,10 +204,16 @@ export function Atlas({
   const coopsByProvince = useMemo(() => groupBy(cooperatives, c => regionKey(c.province)), [cooperatives])
   const coopsByRegency = useMemo(() => groupBy(cooperatives, c => regionKey(c.district)), [cooperatives])
 
+  // null is the whole horizon, which is what the map opens on: where there is
+  // supply at all comes before when it lands.
+  const [week, setWeek] = useState<string | null>(null)
+  const weeks = useMemo(() => supplyWeeks(listings), [listings])
+  const shown = useMemo(() => listingsInWeek(listings, week), [listings, week])
+
   const provinceSupply = useMemo(
-    () => supplyByProvince(cooperatives, listings), [cooperatives, listings])
+    () => supplyByProvince(cooperatives, shown), [cooperatives, shown])
   const regencySupply = useMemo(
-    () => supplyByRegency(cooperatives, listings), [cooperatives, listings])
+    () => supplyByRegency(cooperatives, shown), [cooperatives, shown])
 
   // The shading scale is relative to the heaviest region AT THE LEVEL BEING
   // LOOKED AT. Scaling regency shades against the national peak would render
@@ -218,9 +226,9 @@ export function Atlas({
     cooperatives: cooperatives.length,
     plots: cooperatives.reduce((s, c) => s + c.plotCount, 0),
     hectares: cooperatives.reduce((s, c) => s + c.hectares, 0),
-    tonnes: listings.reduce((s, l) => s + l.tonnes, 0),
-    listings,
-  }), [cooperatives, listings])
+    tonnes: shown.reduce((s, l) => s + l.tonnes, 0),
+    listings: shown,
+  }), [cooperatives, shown])
 
   // Animate the camera to a bounding box rather than snapping to it.
   const flyTo = useCallback((box: Bbox) => {
@@ -651,6 +659,15 @@ export function Atlas({
         {/* The only chrome left over the map. Zoom is arithmetic, so + and −
             stay glyphs; everything else that used to float here — breadcrumb,
             reset, legend, counts, links — is the panel's job now. */}
+        {/* Bottom-centre: the zoom buttons hold the right corner and the
+            illustration note holds the left. */}
+        <SupplyWeekScrubber
+          weeks={weeks}
+          value={week}
+          onChange={setWeek}
+          className="absolute bottom-4 left-1/2 z-10 w-[min(24rem,calc(100%-9rem))] -translate-x-1/2"
+        />
+
         <div className="absolute right-4 bottom-4 flex flex-col overflow-hidden rounded-md border border-border bg-card shadow-[var(--shadow-md)]">
           <CameraButton label="Perbesar" onClick={() => stepZoom(1 / 1.6)}>+</CameraButton>
           <span aria-hidden className="h-px bg-border" />
