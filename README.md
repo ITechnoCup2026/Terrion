@@ -83,7 +83,7 @@ git clone https://github.com/ITechnoCup2026/Terrion_Frontend.git
 cd Terrion_Frontend
 pnpm install
 
-echo "NEXT_PUBLIC_API_URL=http://localhost:8080" > .env.local
+cp .env.example .env.local
 ```
 
 | Variabel | Guna |
