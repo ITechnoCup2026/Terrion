@@ -1,4 +1,5 @@
 import {
+  CalendarRange,
   ClipboardList,
   Inbox,
   LayoutDashboard,
@@ -72,6 +73,13 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         label: 'Lahan',
         hint: 'Daftar lahan koperasi dan jadwal panennya',
         icon: Sprout,
+        roles: COOPERATIVE,
+      },
+      {
+        href: '/plans',
+        label: 'Rencana tanam',
+        hint: 'Tiga rencana untuk musim depan, dibandingkan berdampingan',
+        icon: CalendarRange,
         roles: COOPERATIVE,
       },
     ],

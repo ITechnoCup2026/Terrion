@@ -427,3 +427,70 @@ export type SupplyRequestRaw = {
 export type StaggerResponseRaw = { shifted: number }
 
 export type StaggerNothingToShiftData = { already_planted: number; would_be_in_the_past: number }
+
+// ---- POST /api/plans/propose, POST /api/plans, DELETE /api/plans/:id -----------------
+
+export type PlanObjective = 'aman' | 'pendapatan' | 'pasar'
+
+/** Which machine produced the assignments. Reported, never hidden. */
+export type PlanEngine = 'ai-service' | 'fallback'
+
+export type PlanAssignmentRaw = {
+  candidate_id: string
+  plot_id: string
+  plot_name: string
+  commodity_id: string
+  variety_id: string
+  area_ha: number
+  planting_date: string
+  harvest_start: string
+  harvest_end: string
+  tonnes_low: number
+  tonnes_mid: number
+  tonnes_high: number
+  plausibility: string
+}
+
+/**
+ * `peak_tonnes_p50` and `p90` are null whenever the Go solver produced the
+ * plan: those quantiles need the Monte Carlo that only the AI service runs,
+ * and the backend refuses to report a substitute under the same name.
+ *
+ * `gross_value_source` is the provenance of the reference price panel. While
+ * it reads SINTETIS the rupiah is a ranking between plans, not a budget.
+ */
+export type PlanMetricsRaw = {
+  expected_peak_tonnes: number
+  worst_case_peak_tonnes: number
+  peak_tonnes_p50: number | null
+  peak_tonnes_p90: number | null
+  total_tonnes: number
+  gross_value: number | null
+  gross_value_source: string | null
+  demand_covered_kg: number
+  capacity_tonnes_per_week: number | null
+}
+
+export type PlanRaw = {
+  objective: PlanObjective
+  assignments: PlanAssignmentRaw[]
+  metrics: PlanMetricsRaw
+  narrative: string | null
+  narrative_source: 'llm' | 'template' | 'none'
+}
+
+export type ProposePlanResponseRaw = {
+  season: { label: string; start: string; end: string }
+  engine: PlanEngine
+  plans: PlanRaw[]
+  diagnostics: { candidate_count: number; evaluations: number; degraded: string[] }
+}
+
+export type ApplyPlanResponseRaw = {
+  plan_id: string
+  blocks_created: number
+  objective: PlanObjective
+  season_label: string
+  season_start: string
+  replaced_existing: boolean
+}

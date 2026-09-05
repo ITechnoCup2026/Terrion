@@ -15,6 +15,15 @@ describe('navGroupsFor', () => {
     expect(navGroupsFor('buyer')).toHaveLength(1)
   })
 
+  // A kader may draw plans -- proposing stores nothing -- but only a pengurus
+  // may apply one. That split lives in the page guard and the backend, not in
+  // the rail, so the link is offered to both.
+  it('offers planning to everyone who works inside the cooperative', () => {
+    expect(flatNavItems('kader').map(i => i.href)).toContain('/plans')
+    expect(flatNavItems('pengurus').map(i => i.href)).toContain('/plans')
+    expect(flatNavItems('buyer').map(i => i.href)).not.toContain('/plans')
+  })
+
   it('keeps the pengurus-only inbox away from a kader', () => {
     expect(flatNavItems('kader').map(i => i.href)).not.toContain('/requests')
     expect(flatNavItems('pengurus').map(i => i.href)).toContain('/requests')
@@ -22,7 +31,7 @@ describe('navGroupsFor', () => {
 
   it('still gives the cooperative its own screens', () => {
     expect(flatNavItems('pengurus').map(i => i.href)).toEqual(
-      ['/dashboard', '/plots', '/purchases', '/requests', '/atlas'],
+      ['/dashboard', '/plots', '/plans', '/purchases', '/requests', '/atlas'],
     )
   })
 })
