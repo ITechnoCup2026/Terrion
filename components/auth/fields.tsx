@@ -10,11 +10,32 @@ import type { UseFormRegisterReturn } from 'react-hook-form'
  * Both forms used to inline the same border/focus classes on a bare
  * `<input>`. Pulled out once both grew an icon and the password field grew a
  * show/hide toggle -- copy-pasting that across two forms is how they drift.
+ *
+ * Sized and shaped to the landing page rather than to the app: a 0.75rem
+ * radius against the panel's 1.25rem, and the focus state is the green ring
+ * rather than a grey one, because under `.landing` every hairline on the
+ * screen is already warmed towards the green and a slate focus ring is the
+ * one object that would give away that this screen came from a UI kit.
+ *
+ * The label is a rail -- small, wide-tracked, quiet -- which is the same
+ * device the landing page uses to name a section, and it lets the value
+ * inside the field be the loudest thing in the row.
  */
 const fieldShell =
-  'interactive flex h-11 items-center gap-2.5 rounded-lg border border-input bg-card px-3 ' +
-  'text-foreground transition-colors focus-within:border-ring has-[input:focus]:border-ring ' +
-  'hover:border-ring/40'
+  'interactive flex h-12 items-center gap-2.5 rounded-xl border border-input bg-card px-3.5 ' +
+  'text-foreground shadow-2xs transition-colors focus-within:border-[var(--terrion-green-600)] ' +
+  'focus-within:ring-2 focus-within:ring-[var(--terrion-green-600)]/15 hover:border-[var(--terrion-green-300)]'
+
+const fieldShellInvalid =
+  'interactive flex h-12 items-center gap-2.5 rounded-xl border border-destructive/50 bg-card px-3.5 ' +
+  'text-foreground shadow-2xs transition-colors focus-within:border-destructive ' +
+  'focus-within:ring-2 focus-within:ring-destructive/15'
+
+const labelRow =
+  'text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-[var(--terrion-green-700)]'
+
+const inputBase =
+  'h-full w-full bg-transparent text-[0.9375rem] font-normal outline-none placeholder:font-normal placeholder:text-muted-foreground/55'
 
 type BaseProps = {
   icon: LucideIcon
@@ -32,19 +53,23 @@ export function AuthField({
 }: BaseProps &
   (React.InputHTMLAttributes<HTMLInputElement> | UseFormRegisterReturn)) {
   return (
-    <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground">
-      {label}
-      <span className={fieldShell}>
-        <Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+    <label className="flex flex-col gap-1.5">
+      <span className={labelRow}>{label}</span>
+      <span className={error ? fieldShellInvalid : fieldShell}>
+        <Icon
+          aria-hidden
+          className="size-4 shrink-0 text-[var(--terrion-green-600)]/70"
+        />
         <input
           {...(input as React.InputHTMLAttributes<HTMLInputElement>)}
-          className="h-full w-full bg-transparent text-base font-normal outline-none placeholder:text-muted-foreground/60"
+          aria-invalid={error ? true : undefined}
+          className={inputBase}
         />
       </span>
       {error ? (
-        <span className="text-xs text-destructive">{error}</span>
+        <span className="text-xs font-medium text-destructive">{error}</span>
       ) : hint ? (
-        <span className="text-xs text-muted-foreground">{hint}</span>
+        <span className="text-xs leading-relaxed text-muted-foreground">{hint}</span>
       ) : null}
     </label>
   )
@@ -60,25 +85,29 @@ export function AuthPasswordField({
   const [visible, setVisible] = useState(false)
 
   return (
-    <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground">
-      {label}
-      <span className={fieldShell}>
-        <Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+    <label className="flex flex-col gap-1.5">
+      <span className={labelRow}>{label}</span>
+      <span className={error ? fieldShellInvalid : fieldShell}>
+        <Icon
+          aria-hidden
+          className="size-4 shrink-0 text-[var(--terrion-green-600)]/70"
+        />
         <input
           {...(input as React.InputHTMLAttributes<HTMLInputElement>)}
           type={visible ? 'text' : 'password'}
-          className="h-full w-full bg-transparent text-base font-normal outline-none placeholder:text-muted-foreground/60"
+          aria-invalid={error ? true : undefined}
+          className={inputBase}
         />
         <button
           type="button"
           onClick={() => setVisible(v => !v)}
           aria-label={visible ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
-          className="interactive shrink-0 text-muted-foreground hover:text-foreground"
+          className="interactive shrink-0 rounded-md text-muted-foreground hover:text-[var(--terrion-green-700)]"
         >
           {visible ? <EyeOff aria-hidden className="size-4" /> : <Eye aria-hidden className="size-4" />}
         </button>
       </span>
-      {error && <span className="text-xs text-destructive">{error}</span>}
+      {error && <span className="text-xs font-medium text-destructive">{error}</span>}
     </label>
   )
 }
@@ -117,8 +146,8 @@ export function PasswordStrength({ value }: { value: string }) {
   const level = strengthLevels[Math.max(score - 1, 0)]
 
   return (
-    <div className="-mt-1 flex items-center gap-2" aria-live="polite">
-      <div className="flex h-1 flex-1 gap-1 overflow-hidden rounded-full bg-muted">
+    <div className="-mt-1 flex items-center gap-2.5" aria-live="polite">
+      <div className="flex h-1 flex-1 gap-1 overflow-hidden rounded-full bg-[var(--terrion-green-100)]">
         {strengthLevels.map((_, i) => (
           <span
             key={i}
@@ -127,7 +156,9 @@ export function PasswordStrength({ value }: { value: string }) {
           />
         ))}
       </div>
-      <span className="text-xs text-muted-foreground">{level.label}</span>
+      <span className="font-mono text-[0.6875rem] tracking-[0.04em] text-muted-foreground">
+        {level.label}
+      </span>
     </div>
   )
 }

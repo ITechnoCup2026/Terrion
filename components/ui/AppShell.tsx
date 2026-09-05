@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2 } from 'lucide-react'
+import { Building2, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
@@ -44,10 +44,24 @@ import { cn } from '@/lib/utils'
  */
 /**
  * Whose workspace this frame belongs to: a cooperative for a kader or
- * pengurus, the buying organisation for a buyer, and null when the account has
- * neither (a buyer who signed up without naming a company).
+ * pengurus, the buyer themselves for a pembeli, and null when the account has
+ * no identity to print at all.
  */
-export type ShellWorkspace = { name: string; detail: string | null } | null
+export type ShellWorkspace = {
+  name: string
+  detail: string | null
+  /**
+   * What the top line names, which decides the glyph beside it.
+   *
+   * The buyer's rail used to print the company alone under a building — no
+   * name anywhere in the column, and nothing at all for a buyer who signed up
+   * without naming one. Their side reads the other way round: the person is
+   * who the account is, and the company is where they buy for. A building
+   * glyph over a person's surname is the kind of small wrongness that makes a
+   * screen feel machine-assembled, so the two cases carry their own mark.
+   */
+  kind?: 'organisation' | 'person'
+} | null
 
 /** Where the rail's width is remembered between visits. */
 const COLLAPSE_KEY = 'terrion:nav-collapsed'
@@ -109,7 +123,11 @@ export function AppShell({
       {workspace && (
         <div className="min-w-0 rounded-lg border border-border/70 bg-muted/40 px-3 py-2.5 leading-tight">
           <div className="flex items-center gap-1.5 font-semibold text-foreground text-xs">
-            <Building2 className="size-3.5 text-[var(--terrion-green-700)] shrink-0" />
+            {workspace.kind === 'person' ? (
+              <UserRound aria-hidden className="size-3.5 shrink-0 text-[var(--terrion-green-700)]" />
+            ) : (
+              <Building2 aria-hidden className="size-3.5 shrink-0 text-[var(--terrion-green-700)]" />
+            )}
             <span className="truncate">{workspace.name}</span>
           </div>
           {workspace.detail && (
@@ -132,10 +150,19 @@ export function AppShell({
   // has nowhere to be but the login screen.
   const signOutTo = role === 'buyer' ? '/' : '/login'
 
+  // Which line of the identity block is the organisation depends on what the
+  // block is naming. On the cooperative side it is the top line; on the
+  // buyer's it is the second, because the top line is the buyer. Reading
+  // `workspace.name` unconditionally, as this did, made the menu introduce a
+  // pembeli as "Pembeli · Budi Santoso".
+  const organisation = workspace
+    ? (workspace.kind === 'person' ? workspace.detail : workspace.name)
+    : null
+
   const account = (
     <AccountMenu
       fullName={userName}
-      organisation={workspace?.name ?? null}
+      organisation={organisation}
       role={role}
       signOutTo={signOutTo}
       hideNavItems={true}

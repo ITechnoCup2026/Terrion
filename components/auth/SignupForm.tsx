@@ -1,14 +1,15 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Building2, Lock, Mail, User } from 'lucide-react'
+import { ArrowRight, Building2, Lock, Mail, MailCheck, User } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { signUpBuyer } from '@/app/actions/signup'
 import { AuthField, AuthPasswordField, PasswordStrength } from '@/components/auth/fields'
-import { Button } from '@/components/ui/button'
+import { AuthError } from '@/components/auth/frame'
+import { homeFor } from '@/lib/auth/display'
 import { signupSchema, type SignupInput } from '@/lib/schemas/signup'
 
 /**
@@ -36,7 +37,7 @@ export function SignupForm() {
     try {
       const result = await signUpBuyer(values)
       if (result.outcome === 'signed_in') {
-        router.push('/catalog')
+        router.push(homeFor('buyer'))
         router.refresh()
         return
       }
@@ -60,12 +61,23 @@ export function SignupForm() {
   // so this form cannot be used to find out who has an account.
   if (sentTo) {
     return (
-      <div className="rise mt-7 rounded-lg border border-border bg-card p-6">
-        <p className="text-sm font-semibold text-foreground">Periksa email Anda</p>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Kami mengirim tautan konfirmasi ke <span className="text-foreground">{sentTo}</span>.
-          Buka tautan itu untuk mengaktifkan akun, lalu masuk.
-        </p>
+      <div className="panel rise mt-7 flex gap-4 p-6 sm:p-7">
+        <span
+          aria-hidden
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--terrion-green-50)] text-[var(--terrion-green-700)]"
+        >
+          <MailCheck className="size-5" />
+        </span>
+        <div>
+          <p className="text-[0.9375rem] font-bold text-[var(--terrion-green-700)]">
+            Periksa email Anda
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Kami mengirim tautan konfirmasi ke{' '}
+            <span className="font-medium text-foreground">{sentTo}</span>. Buka
+            tautan itu untuk mengaktifkan akun, lalu masuk.
+          </p>
+        </div>
       </div>
     )
   }
@@ -73,10 +85,9 @@ export function SignupForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="rise relative mt-7 flex flex-col gap-4 overflow-hidden rounded-lg border border-border bg-card p-6"
+      className="panel rise mt-7 flex flex-col gap-4 p-6 sm:p-7"
       style={{ ['--rise-delay' as string]: '80ms' }}
     >
-
       <AuthField
         icon={User}
         label="Nama lengkap"
@@ -112,6 +123,7 @@ export function SignupForm() {
           label="Kata sandi"
           {...register('password')}
           autoComplete="new-password"
+          placeholder="Minimal 8 karakter"
           error={errors.password?.message}
         />
         <PasswordStrength value={password ?? ''} />
@@ -122,19 +134,25 @@ export function SignupForm() {
         label="Konfirmasi kata sandi"
         {...register('confirmPassword')}
         autoComplete="new-password"
+        placeholder="Ulangi kata sandi"
         error={errors.confirmPassword?.message}
       />
 
-      {submitError && (
-        <p role="alert"
-          className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {submitError}
-        </p>
-      )}
+      {submitError && <AuthError>{submitError}</AuthError>}
 
-      <Button type="submit" size="lg" disabled={isSubmitting} className="interactive mt-1">
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="pill pill-solid interactive lift group mt-2 w-full justify-center text-sm font-semibold disabled:pointer-events-none disabled:opacity-60"
+      >
         {isSubmitting ? 'Memproses…' : 'Daftar sebagai pembeli'}
-      </Button>
+        {!isSubmitting && (
+          <ArrowRight
+            aria-hidden
+            className="size-4 transition-transform group-hover:translate-x-1"
+          />
+        )}
+      </button>
     </form>
   )
 }

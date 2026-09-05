@@ -37,9 +37,14 @@ export function roleLabel(role: UserRole): string {
 
 /**
  * Where this role's own work lives. A buyer has no cooperative by
- * construction, so /dashboard would only ever answer 403 for them -- the
- * catalogue is the thing they signed in for.
+ * construction, so /dashboard would only ever answer 403 for them.
+ *
+ * It used to be /catalog, on the grounds that browsing is what a buyer signed
+ * in for. That made the shop window their home: a buyer arriving after signing
+ * in was shown forty cards of somebody else's harvest and nothing at all about
+ * the requests they had already sent. /beranda is the page that answers "where
+ * do I stand" first; the catalogue keeps its own job.
  */
 export function homeFor(role: UserRole): string {
-  return role === 'buyer' ? '/catalog' : '/dashboard'
+  return role === 'buyer' ? '/beranda' : '/dashboard'
 }

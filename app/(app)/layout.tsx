@@ -4,6 +4,7 @@ import { AppShell } from '@/components/ui/AppShell'
 import { BackendDownState } from '@/components/ui/BackendDownState'
 import { isBackendDown } from '@/lib/api/client'
 import { loadAtlasCooperativesIfUp } from '@/lib/atlas/load'
+import { homeFor } from '@/lib/auth/display'
 import { currentAppUser, type AppUser } from '@/lib/auth/session'
 
 /**
@@ -41,8 +42,12 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
   if (!user) redirect('/login')
 
   // Buyers have no cooperative by construction (see the buyer_has_no_coop
-  // check constraint), so this shell is not theirs.
-  if (!user.cooperative_id) redirect('/catalog')
+  // check constraint), so these pages are not theirs. They are not thrown out
+  // of the frame, though: their own screens wear the same shell, and
+  // homeFor() is the one place that says where a role's work lives — it used
+  // to be spelled '/catalog' here, which sent a buyer to the shop window
+  // rather than to the page that answers "where do I stand".
+  if (!user.cooperative_id) redirect(homeFor(user.role))
 
   // GET /api/me doesn't return the cooperative's name/village/district, and
   // there is no dedicated "my cooperative" endpoint -- but /api/atlas/cooperatives

@@ -1,9 +1,13 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft, Building2, LogIn, MapPin, Store, UserPlus } from 'lucide-react'
+import { ArrowLeft, Building2, Calendar, CheckCircle2, ChevronRight, FileCheck, Info, Lock, MapPin, ShieldCheck, Sparkles, Sprout } from 'lucide-react'
 
 import { RequestForm } from '@/components/commerce/RequestForm'
 import { HarvestWindow } from '@/components/harvest/HarvestWindow'
+import { Badge } from '@/components/ui/Badge'
+import { buttonVariants } from '@/components/ui/button'
+import { Card, CardHeader } from '@/components/ui/Card'
 import { Page } from '@/components/ui/Page'
 import { toISODate } from '@/lib/agronomy/dates'
 import { currentAppUser } from '@/lib/auth/session'
@@ -13,6 +17,7 @@ import { loadCooperativeListings } from '@/lib/catalog/load'
 import { commodityStyle } from '@/lib/catalog/commodity-style'
 import { formatNumberId } from '@/lib/format/number'
 import { loadSupplyRequests } from '@/lib/supply-requests/load'
+import { cn } from '@/lib/utils'
 
 export default async function ListingPage({
   params,
@@ -46,184 +51,248 @@ export default async function ListingPage({
     : null
 
   return (
-    <Page width="wide" className="pb-16">
-      {/* ─── BREADCRUMB ────────────────────────────────────────────────────── */}
-      <nav aria-label="Remah roti" className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-        <Link href="/catalog" className="interactive inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
-          <ArrowLeft className="size-3.5" />
-          Katalog Pasokan
-        </Link>
-        <span aria-hidden className="text-muted-foreground/60">/</span>
-        <span className="text-foreground font-bold">{listing.commodityName}</span>
-      </nav>
-
-      {/* ─── MAIN PRODUCT DETAIL CARD ─────────────────────────────────────── */}
-      <div className="mt-6 rounded-2xl border border-border/80 bg-card p-6 sm:p-8 shadow-xs">
-        <div className="grid gap-8 lg:grid-cols-[16rem_1fr] lg:items-start">
-          {/* Crop Identity Icon Box */}
-          <div
-            className="flex aspect-square w-full max-w-[16rem] items-center justify-center overflow-hidden rounded-2xl border border-border/60 shadow-2xs mx-auto lg:mx-0"
-            style={{ backgroundColor: style.tint }}
+    <Page className="flex max-w-7xl flex-col gap-6 pb-16">
+      {/* ─── BREADCRUMBS & BACK BUTTON ─────────────────────────────────── */}
+      <div className="flex items-center justify-between">
+        <nav aria-label="Remah roti" className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Link
+            href="/catalog"
+            className="interactive inline-flex items-center gap-1 font-medium text-muted-foreground hover:text-[var(--terrion-green-700)]"
           >
-            {style.image ? (
-              <img
-                src={style.image}
-                alt={listing.commodityName}
-                className="size-full object-cover"
-              />
-            ) : (
-              <svg
-                aria-hidden
-                viewBox="0 0 24 24"
-                className="size-24"
-                fill="none"
-                stroke={style.hue}
-                strokeWidth="1.25"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d={style.glyph} />
-              </svg>
-            )}
-          </div>
-
-          {/* Details Column */}
-          <div className="flex flex-col gap-6">
-            <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-                {listing.commodityName}
-                {listing.varietyName && (
-                  <span className="font-semibold text-muted-foreground"> · {listing.varietyName}</span>
-                )}
-              </h1>
-
-              <p className="mt-2.5 flex items-center gap-1.5 text-xs sm:text-sm font-medium text-muted-foreground">
-                <MapPin className="size-4 shrink-0 text-[var(--terrion-green-600)]" />
-                <span>
-                  <strong className="text-foreground">{listing.cooperativeName}</strong> · {listing.village}, {listing.district}, {listing.province}
-                </span>
-              </p>
-            </div>
-
-            {/* Metrics Grid */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-xl bg-[var(--terrion-green-50)]/70 p-4 border border-[var(--terrion-green-200)]/60">
-                <span className="text-[0.6875rem] font-bold uppercase tracking-wider text-muted-foreground">
-                  Proyeksi Pasokan Tersedia
-                </span>
-                <div className="mt-1 flex items-baseline gap-1.5">
-                  <span className="font-mono text-3xl font-extrabold text-[var(--terrion-green-700)] tabular-nums">
-                    {formatNumberId(listing.tonnes)}
-                  </span>
-                  <span className="text-xs font-bold text-[var(--terrion-green-700)]">ton</span>
-                </div>
-                <p className="mt-1 text-[0.6875rem] text-muted-foreground">
-                  Total ketersediaan yang diproyeksikan
-                </p>
-              </div>
-
-              <div className="rounded-xl bg-muted/40 p-4 border border-border/60">
-                <span className="text-[0.6875rem] font-bold uppercase tracking-wider text-muted-foreground">
-                  Perkiraan Jendela Panen
-                </span>
-                <div className="mt-2">
-                  <HarvestWindow
-                    size="md"
-                    week={{ start: listing.weekStart, end: listing.weekEnd, basis: listing.basis }}
-                  />
-                </div>
-                <p className="mt-1.5 text-[0.6875rem] text-muted-foreground">
-                  Rentang waktu estimasi panen lapangan
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+            <ArrowLeft className="size-3.5" />
+            Katalog pasokan
+          </Link>
+          <ChevronRight aria-hidden className="size-3 text-muted-foreground/60" />
+          <span className="font-semibold text-foreground">{listing.commodityName}</span>
+          <span className="text-muted-foreground/60">·</span>
+          <span className="truncate max-w-40 sm:max-w-none">{listing.cooperativeName}</span>
+        </nav>
       </div>
 
-      {/* ─── ACTION SECTION (FORM / LOGIN CTA) ─────────────────────────────── */}
-      {user?.role === 'buyer' ? (
-        existingRequest ? (
-          <div className="mt-6 rounded-2xl border border-[var(--terrion-green-300)] bg-[var(--terrion-green-50)]/70 p-6 shadow-2xs">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <span className="badge-tag bg-[var(--terrion-green-200)] text-[var(--terrion-green-900)] font-bold">
-                  {requestStatusLabel(existingRequest.status)}
+      {/* ─── TWO-COLUMN DETAIL GRID ───────────────────────────────────── */}
+      <div className="grid gap-8 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start xl:grid-cols-[24rem_minmax(0,1fr)]">
+        {/* LEFT COLUMN: Media Showcase & Cooperative Card */}
+        <div className="flex flex-col gap-5">
+          {/* Main Visual Card */}
+          <div className="relative overflow-hidden rounded-lg border border-border/80 bg-card shadow-xs">
+            <div
+              className="relative aspect-[4/3] w-full overflow-hidden"
+              style={{ background: style.tint }}
+            >
+              {style.image ? (
+                <Image
+                  src={style.image}
+                  alt={listing.commodityName}
+                  fill
+                  sizes="(min-width: 1024px) 384px, 100vw"
+                  className="object-cover"
+                  priority
+                />
+              ) : (
+                <svg
+                  aria-hidden
+                  viewBox="0 0 24 24"
+                  className="size-full p-16"
+                  fill="none"
+                  stroke={style.hue}
+                  strokeWidth="1"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity="0.75"
+                >
+                  <path d={style.glyph} />
+                </svg>
+              )}
+
+              {/* Floating badges */}
+              <div className="absolute inset-x-3 top-3 flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-background/90 px-3 py-1 text-xs font-bold text-foreground backdrop-blur-md shadow-xs border border-white/20">
+                  <Sprout className="size-3 text-[var(--terrion-green-600)]" />
+                  {listing.varietyName ?? 'Varietas Unggul'}
                 </span>
-                <h3 className="mt-2 text-base font-bold text-foreground">Permintaan Pasokan Telah Terkirim</h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Anda sudah mengajukan permintaan untuk panen ini kepada {listing.cooperativeName}.
+                <span className="rounded-full bg-[var(--terrion-green-900)]/85 px-2.5 py-0.5 text-xs font-bold text-white backdrop-blur-md shadow-xs">
+                  {listing.isoWeek.replace('2026-', '')}
+                </span>
+              </div>
+            </div>
+
+            <div className="border-t border-border/70 p-4 bg-muted/20">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Sparkles className="size-4 text-[var(--terrion-green-600)]" />
+                <span>Basis Proyeksi: <strong className="text-foreground capitalize">{listing.basis}</strong> (Terkalibrasi Data Lapangan)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Cooperative Profile Card */}
+          <div className="rounded-lg border border-border/80 bg-card p-5 shadow-xs">
+            <div className="flex items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--terrion-green-100)] text-[var(--terrion-green-700)]">
+                <Building2 className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="truncate text-sm font-bold text-foreground">
+                    {listing.cooperativeName}
+                  </h3>
+                  <span title="Koperasi Terverifikasi" className="flex shrink-0">
+                    <CheckCircle2
+                      aria-label="Koperasi terverifikasi"
+                      className="size-3.5 text-[var(--terrion-green-600)]"
+                    />
+                  </span>
+                </div>
+                <p className="mt-0.5 flex items-start gap-1 text-xs text-muted-foreground">
+                  <MapPin className="mt-0.5 size-3 shrink-0" />
+                  <span>{listing.village}, {listing.district}, {listing.province}</span>
                 </p>
               </div>
-              <Link
-                href="/my-requests"
-                className="pill pill-solid interactive lift bg-[var(--terrion-green-700)] text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider shadow-2xs shrink-0 text-center"
-              >
-                Lihat Permintaan Saya
-              </Link>
+            </div>
+
+            <div className="mt-4 space-y-2 border-t border-border/70 pt-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="size-4 text-[var(--terrion-green-600)] shrink-0" />
+                <span>Kemitraan resmi gabungan kelompok tani</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FileCheck className="size-4 text-[var(--terrion-green-600)] shrink-0" />
+                <span>Dokumen legalitas & timbang tara terpusat</span>
+              </div>
             </div>
           </div>
-        ) : (
-          <div className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-2xs">
-            <h2 className="text-base font-bold text-foreground mb-4">Formulir Pengajuan Kontrak Pasokan</h2>
-            <RequestForm
-              listingId={listing.id}
-              projectedTonnes={listing.tonnes}
-            />
-          </div>
-        )
-      ) : user ? (
-        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/70 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700 shrink-0">
-              <Building2 className="size-4" />
-            </span>
-            <div>
-              <p className="font-bold text-amber-900">Anda Masuk Sebagai Akun Koperasi</p>
-              <p className="text-amber-700">Hanya akun pembeli terdaftar yang dapat mengajukan kontrak pasokan.</p>
-            </div>
-          </div>
-          <Link
-            href="/dashboard"
-            className="pill interactive shrink-0 bg-amber-800 text-white px-4 py-2 font-bold hover:bg-amber-900 text-center"
-          >
-            Ke Dasbor Koperasi
-          </Link>
         </div>
-      ) : (
-        <div className="mt-6 rounded-2xl border border-[var(--terrion-green-200)] bg-gradient-to-br from-[var(--terrion-green-50)]/70 via-card to-card p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-          <div className="space-y-1.5 max-w-xl">
-            <div className="flex items-center gap-2">
-              <span className="flex size-7 items-center justify-center rounded-lg bg-[var(--terrion-green-100)] text-[var(--terrion-green-700)]">
-                <Store className="size-4" />
-              </span>
-              <h3 className="text-base font-bold text-foreground">
-                Ajukan Kontrak Pasokan Panen Ini
-              </h3>
+
+        {/* RIGHT COLUMN: Commodity Details & Procurement Action */}
+        <div className="flex min-w-0 flex-col gap-6">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--terrion-green-700)] mb-1">
+              <span>Komoditas Segar Siap Kontrak</span>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Masuk atau daftar sebagai pembeli terdaftar untuk langsung mengajukan kontrak permintaan pasokan kepada <strong className="text-foreground">{listing.cooperativeName}</strong>.
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+              {listing.commodityName}
+              {listing.varietyName && (
+                <span className="font-normal text-muted-foreground"> · Varietas {listing.varietyName}</span>
+              )}
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Diproduksi oleh petani binaan {listing.cooperativeName} di wilayah {listing.district}, siap didistribusikan langsung ke fasilitas pemrosesan atau gudang off-taker.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <Link
-              href={`/login?next=${encodeURIComponent(`/catalog/${listing.id}`)}`}
-              className="pill pill-solid interactive lift bg-[var(--terrion-green-700)] text-white hover:bg-[var(--terrion-green-900)] px-5 py-2.5 text-xs font-bold uppercase tracking-wider shadow-2xs flex items-center gap-1.5"
-            >
-              <LogIn className="size-3.5" />
-              Masuk Pembeli
-            </Link>
-            <Link
-              href="/signup"
-              className="pill interactive lift bg-card text-foreground border border-border hover:bg-muted/50 px-5 py-2.5 text-xs font-semibold tracking-wider shadow-2xs flex items-center gap-1.5"
-            >
-              <UserPlus className="size-3.5" />
-              Daftar Akun Pembeli
-            </Link>
+          {/* Key Figures Cards */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-border/80 bg-card p-5 shadow-xs">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                Estimasi Pasokan Panen
+              </span>
+              <div className="mt-2 flex items-baseline gap-1.5">
+                <span className="text-3xl font-extrabold tabular-nums text-[var(--terrion-green-700)]">
+                  {formatNumberId(listing.tonnes)}
+                </span>
+                <span className="text-base font-semibold text-muted-foreground">ton</span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Berdasarkan luas lahan tanam terdaftar koperasi
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-border/80 bg-card p-5 shadow-xs">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                Perkiraan Jendela Panen
+              </span>
+              <div className="mt-2">
+                <HarvestWindow
+                  size="md"
+                  week={{ start: listing.weekStart, end: listing.weekEnd, basis: listing.basis }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Rentang panen optimal untuk menjaga kesegaran
+              </p>
+            </div>
           </div>
+
+          {/* ─── PROCUREMENT ACTION SECTION ───────────────────────────── */}
+          {user ? (
+            existingRequest ? (
+              <div className="rounded-lg border border-[var(--terrion-green-200)] bg-[var(--terrion-green-50)]/40 p-6 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Badge tone={existingRequest.status === 'accepted' ? 'positive' : 'warning'}>
+                        {requestStatusLabel(existingRequest.status)}
+                      </Badge>
+                      <span className="text-xs font-bold text-foreground">
+                        {existingRequest.volumeKg / 1000} ton diajukan
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground max-w-prose">
+                      Anda telah mengajukan kontrak pasokan untuk panen ini ke <strong className="text-foreground">{listing.cooperativeName}</strong>. Pantau status tanggapan pengurus melalui menu Permintaan Saya.
+                    </p>
+                  </div>
+                  <Link
+                    href="/my-requests"
+                    className={cn(
+                      buttonVariants({ size: 'sm' }),
+                      'interactive gap-2 font-medium bg-[var(--terrion-green-700)] hover:bg-[var(--terrion-green-900)] text-white shadow-xs',
+                    )}
+                  >
+                    Lihat Permintaan Saya
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-border bg-card p-6 shadow-xs sm:p-7">
+                <div className="border-b border-border/70 pb-4 mb-5">
+                  <h2 className="text-lg font-bold tracking-tight text-foreground">
+                    Formulir Pengajuan Kontrak Pasokan
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Kirimkan permohonan alokasi tonase langsung ke pengurus koperasi tanpa perantara.
+                  </p>
+                </div>
+
+                <RequestForm listingId={listing.id} projectedTonnes={listing.tonnes} />
+              </div>
+            )
+          ) : (
+            <div className="rounded-lg border border-border bg-card p-6 shadow-xs sm:p-7">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="max-w-md">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-[var(--terrion-green-100)] px-2.5 py-0.5 text-xs font-semibold text-[var(--terrion-green-700)] mb-2">
+                    <Lock className="size-3" />
+                    Akses Pembeli & Off-taker
+                  </div>
+                  <h2 className="text-base font-bold text-foreground">
+                    Masuk untuk Mengajukan Kontrak Pasokan
+                  </h2>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Daftar akun pembeli untuk memesan tonase panen langsung dari {listing.cooperativeName}. Tanpa biaya perantara dan berstatus hukum jelas.
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 flex-wrap items-center gap-2.5">
+                  <Link
+                    href={`/login?next=${encodeURIComponent(`/catalog/${listing.id}`)}`}
+                    className={cn(
+                      buttonVariants({ size: 'sm' }),
+                      'interactive gap-2 font-medium bg-[var(--terrion-green-700)] hover:bg-[var(--terrion-green-900)] text-white shadow-xs',
+                    )}
+                  >
+                    Masuk Akun
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                  >
+                    Daftar Pembeli Baru
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </Page>
   )
 }

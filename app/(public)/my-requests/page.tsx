@@ -1,3 +1,4 @@
+import { Store } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
@@ -8,23 +9,17 @@ import { loadAtlasCooperativesIfUp } from '@/lib/atlas/load'
 import { currentAppUser } from '@/lib/auth/session'
 import { loadCommodities } from '@/lib/commodities/load'
 import { loadSupplyRequests } from '@/lib/supply-requests/load'
+import { cn } from '@/lib/utils'
 
-export const metadata = { title: 'Permintaan saya' }
+export const metadata = { title: 'Permintaan Pasokan Saya · Terrion' }
 
-// The whole point of the page is the status, and a cooperative can change it
-// at any moment. A cached answer here would tell a buyer they are still
-// waiting on a request that was accepted this morning.
 export const dynamic = 'force-dynamic'
 
 export default async function MyRequestsPage() {
   const user = await currentAppUser()
   if (!user) redirect('/login')
-  // Cooperative staff have their own inbox, which is the same rows read from
-  // the other side; sending them there beats showing them an empty list.
   if (user.role !== 'buyer') redirect('/requests')
 
-  // GET /api/supply-requests is scoped by session, and for a buyer that means
-  // their own requests -- there is nothing to filter here.
   const [rows, commodities, cooperatives] = await Promise.all([
     loadSupplyRequests(),
     loadCommodities(),
@@ -32,13 +27,20 @@ export default async function MyRequestsPage() {
   ])
 
   return (
-    <Page className="flex flex-col gap-6">
+    <Page className="flex max-w-7xl flex-col gap-6 pb-16">
       <PageHeader
-        title="Permintaan saya"
-        description="Status jawaban pengurus koperasi atas pengajuan kontrak pasokan Anda: diterima, menunggu, atau ditolak."
+        title="Permintaan pasokan saya"
+        description="Pengajuan pasokan hasil panen ke koperasi mitra untuk dipantau status persetujuannya."
         actions={
-          <Link href="/catalog" className={buttonVariants({ variant: 'outline' })}>
-            Jelajahi katalog pasokan
+          <Link
+            href="/catalog"
+            className={cn(
+              buttonVariants({ size: 'sm' }),
+              'interactive gap-2 font-medium bg-[var(--terrion-green-700)] hover:bg-[var(--terrion-green-900)] text-white shadow-xs',
+            )}
+          >
+            <Store className="size-4" />
+            Jelajahi Katalog Baru
           </Link>
         }
       />
@@ -49,9 +51,8 @@ export default async function MyRequestsPage() {
         cooperatives={cooperatives ?? []}
       />
 
-      <p className="text-xs leading-relaxed text-muted-foreground border-t border-border pt-4">
-        Terrion adalah penyedia sistem, bukan pihak dalam kontrak. Kesepakatan dan
-        pengiriman diatur langsung antara Anda dan koperasi.
+      <p className="border-t border-border/80 pt-4 text-xs leading-relaxed text-muted-foreground text-center sm:text-left">
+        Kesepakatan harga final, pembayaran, dan administrasi serah terima komoditas diatur langsung antara pihak pembeli dan pengurus koperasi.
       </p>
     </Page>
   )

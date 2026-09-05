@@ -18,7 +18,14 @@ import { currentAppUser, type AppUser } from '@/lib/auth/session'
  * The layout catches this itself because an error.tsx catches a layout's
  * children, never the layout.
  *
- * This layout adds no markup: (auth) pages own their own full-screen frame.
+ * The one piece of markup it does add is `.landing`. The auth screens are the
+ * step between the landing page and the product, and a reader arriving from a
+ * green poster onto the app's slate hairlines reads it as a different site.
+ * `.landing` redefines TOKENS rather than restyling anything -- white paper,
+ * hairlines warmed towards the green, green-50 as the only tinted ground -- so
+ * the forms, the fields and the <Logo> land on the same surface the landing
+ * page uses without any of them knowing where they are. (auth) pages still own
+ * their own full-screen frame inside it.
  */
 export default async function AuthLayout({ children }: LayoutProps<'/'>) {
   // Resolved before the redirect rather than inside the try: redirect() works
@@ -32,5 +39,9 @@ export default async function AuthLayout({ children }: LayoutProps<'/'>) {
 
   if (user) redirect(homeFor(user.role))
 
-  return children
+  return (
+    <div className="landing flex min-h-full flex-1 flex-col selection:bg-[var(--terrion-green-100)]">
+      {children}
+    </div>
+  )
 }

@@ -16,7 +16,7 @@ export default async function NotFound() {
   }
 
   const target = user ? homeFor(user.role) : '/'
-  const actionLabel = user?.role === 'buyer' ? 'Lihat katalog' : user ? 'Ke dasbor' : 'Kembali ke beranda'
+  const actionLabel = user ? (user.role === 'buyer' ? 'Ke beranda' : 'Ke dasbor') : 'Kembali ke beranda'
 
   return (
     <Page className="flex flex-1 items-center justify-center">
