@@ -1,47 +1,42 @@
-import Link from 'next/link'
-
 import { AuthBackButton } from '@/components/auth/AuthBackButton'
 import { AuthShowcasePanel } from '@/components/auth/AuthShowcasePanel'
+import { AuthHeading, AuthNote } from '@/components/auth/frame'
 import { SignupForm } from '@/components/auth/SignupForm'
-import { Logo } from '@/components/ui/Logo'
 
 export const metadata = { title: 'Daftar sebagai pembeli' }
 
 /**
- * Buyer registration.
- *
- * This repo has no backend attached -- SignupForm's action always refuses to
- * register anyone -- but the page is kept real so /signup has somewhere to go.
+ * Buyer registration -- the same frame as /login, with the poster's copy
+ * turned towards the market rather than the season, because the two screens
+ * are one step apart and a visitor who bounces between them should feel a
+ * change of subject, not a change of site.
  */
 export default function SignupPage() {
   return (
-    <main className="grid min-h-dvh lg:grid-cols-2">
+    <main className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
       <AuthShowcasePanel variant="signup" />
 
-      <div className="relative flex flex-col items-center justify-center bg-card p-6 pt-16 sm:pt-6">
-        <AuthBackButton />
+      <div className="flex min-w-0 flex-col justify-center bg-background px-5 py-14 sm:px-10 sm:py-16 lg:px-14 lg:py-12">
+        <div className="mx-auto flex w-full max-w-md flex-col">
+          <AuthBackButton />
 
-        <div className="w-full max-w-sm">
-          <div className="rise flex flex-col items-center gap-3 text-center lg:items-start lg:text-left">
-            <Link href="/" aria-label="Terrion, kembali ke beranda" className="interactive lg:hidden">
-              <Logo size={44} withWordmark={false} />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">Daftar sebagai pembeli</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Untuk menelusuri katalog dan mengajukan permintaan pasokan
-              </p>
-            </div>
-          </div>
+          <AuthHeading
+            title="Ajukan permintaan"
+            emphasis="langsung ke koperasi"
+            subtitle="Untuk menelusuri katalog pasokan dan mengajukan permintaan tanpa perantara."
+          />
 
           <SignupForm />
 
-          <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground lg:text-left">
-            Mendaftarkan koperasi? Akun koperasi dibuat oleh pengelola setelah verifikasi.{' '}
-            <Link href="/login" className="underline underline-offset-2 hover:text-foreground">
-              Sudah punya akun? Masuk
-            </Link>
-          </p>
+          <AuthNote
+            links={[
+              { href: '/login', label: 'Sudah punya akun? Masuk' },
+              { href: '/catalog', label: 'Lihat katalog dulu' },
+            ]}
+          >
+            Formulir ini membuat akun pembeli. Pendaftaran koperasi ditangani
+            pengelola setelah verifikasi legalitas, bukan melalui halaman ini.
+          </AuthNote>
         </div>
       </div>
     </main>

@@ -15,9 +15,11 @@ import { currentAppUser, type AppUser } from '@/lib/auth/session'
  * job happens on the public catalogue, was invited to sign in on every page
  * after they already had, and had nowhere to sign out from at all.
  *
- * The header is sticky and translucent: on the catalogue the reader scrolls a
- * long list and still needs the way back, and a solid bar that far down the
- * page reads as a second, unrelated header.
+ * Now the session decides more than one link: <PublicShell> hands a signed-in
+ * pembeli standing on one of their own screens the cooperative frame — rail,
+ * breadcrumbs, command palette — and everyone else the marketing header built
+ * below. Both are composed here, on the server, and passed down; the fork
+ * itself needs the pathname, which only a client component can read.
  */
 export default async function PublicLayout({ children }: LayoutProps<'/'>) {
   // These pages are public by design, so an unreachable backend must not take
@@ -33,54 +35,54 @@ export default async function PublicLayout({ children }: LayoutProps<'/'>) {
     if (!isBackendDown(error)) throw error
   }
 
+  const shellUser = user
+    ? {
+        fullName: user.full_name,
+        organisation: user.organisation,
+        role: user.role,
+      }
+    : null
+
   return (
-    <PublicShell>
-      {/* Absent on the landing page, which carries its own bar inside the
-          hero card. Everywhere else it is the sticky way back: the catalogue
-          is a long list and a reader deep in it still needs the header. */}
-      <PublicHeader
-        user={
-          user
-            ? {
-                fullName: user.full_name,
-                organisation: user.organisation,
-                role: user.role,
-              }
-            : null
-        }
-      />
+    <PublicShell
+      user={shellUser}
+      // Absent on the landing page, which carries its own bar inside the
+      // hero card. Everywhere else it is the sticky way back: the catalogue
+      // is a long list and a reader deep in it still needs the header.
+      header={<PublicHeader user={shellUser} />}
+      footer={
+        <footer className="border-t border-border bg-card">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <Logo size={24} withWordmark={true} />
+              <p className="mt-3 max-w-xs text-xs leading-relaxed text-muted-foreground">
+                Terrion adalah penyedia sistem, bukan pihak dalam kontrak antara
+                koperasi dan pembeli.
+              </p>
+            </div>
 
-      <main className="flex flex-1 flex-col">{children}</main>
-
-      <footer className="border-t border-border bg-card">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <Logo size={24} withWordmark={true} />
-            <p className="mt-3 max-w-xs text-xs leading-relaxed text-muted-foreground">
-              Terrion adalah penyedia sistem, bukan pihak dalam kontrak antara
-              koperasi dan pembeli.
-            </p>
+            <nav aria-label="Tautan kaki" className="flex flex-col gap-2.5">
+              {(
+                [
+                  ['/atlas', 'Atlas Pasokan'],
+                  ['/catalog', 'Katalog Pasokan'],
+                  ['/login', 'Masuk Koperasi'],
+                ] as const
+              ).map(([href, label]) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="interactive text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
           </div>
-
-          <nav aria-label="Tautan kaki" className="flex flex-col gap-2.5">
-            {(
-              [
-                ['/atlas', 'Atlas Pasokan'],
-                ['/catalog', 'Katalog Pasokan'],
-                ['/login', 'Masuk Koperasi'],
-              ] as const
-            ).map(([href, label]) => (
-              <Link
-                key={href}
-                href={href}
-                className="interactive text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </footer>
+        </footer>
+      }
+    >
+      {children}
     </PublicShell>
   )
 }

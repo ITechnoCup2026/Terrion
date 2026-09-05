@@ -8,7 +8,7 @@ describe('navGroupsFor', () => {
   // got a rail of their own: an item with no `roles` means everyone.
   it('offers a buyer nothing the cooperative owns', () => {
     const hrefs = flatNavItems('buyer').map(i => i.href)
-    expect(hrefs).toEqual(['/catalog', '/my-requests', '/atlas'])
+    expect(hrefs).toEqual(['/beranda', '/catalog', '/my-requests', '/atlas'])
   })
 
   it('gives a buyer one group, so the rail has no section label to print', () => {

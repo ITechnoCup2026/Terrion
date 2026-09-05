@@ -38,7 +38,7 @@ export default async function AtlasPage() {
 
   const homeHref = user ? homeFor(user.role) : '/'
   const homeLabel = user
-    ? (user.role === 'buyer' ? 'Katalog' : 'Dashboard')
+    ? (user.role === 'buyer' ? 'Beranda' : 'Dashboard')
     : 'Beranda'
 
   return (

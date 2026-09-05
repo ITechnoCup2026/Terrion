@@ -1,137 +1,61 @@
-'use client'
-
-import { Lock, Mail } from 'lucide-react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Suspense, useState } from 'react'
-
-import { signIn } from '@/app/actions/login'
 import { AuthBackButton } from '@/components/auth/AuthBackButton'
 import { AuthShowcasePanel } from '@/components/auth/AuthShowcasePanel'
-import { AuthField, AuthPasswordField } from '@/components/auth/fields'
-import { Button } from '@/components/ui/button'
-import { Logo } from '@/components/ui/Logo'
-import { homeFor } from '@/lib/auth/display'
+import { AuthHeading, AuthNote } from '@/components/auth/frame'
+import { LoginForm } from '@/components/auth/LoginForm'
 
-/** The sign-in page. The role comes back in the login response itself --
- *  POST /api/auth/login answers with a UserResponse -- so a single login form
- *  authenticates all users and routes them to their corresponding home. */
-export default function LoginPage() {
+export const metadata = { title: 'Masuk ke Terrion' }
+
+/**
+ * The sign-in page: the landing poster on the left, the form on the right.
+ *
+ * A server component again. It used to be `'use client'` from the first line
+ * purely because the form's state lived in the same file, which meant the
+ * brand panel beside it could never draw anything the server knows -- and the
+ * archipelago, the one picture in this product that is made of real data, is
+ * read from disk. <LoginForm> is the only part that needs the browser now.
+ *
+ * The poster carries the mark on `lg` and up; below that it is hidden and the
+ * heading carries it instead, because there is no room for both next to a
+ * form on a phone.
+ *
+ * `?next=` is read here rather than through useSearchParams() inside the form,
+ * so the form keeps no dependency on the URL and the page needs no Suspense
+ * boundary around it.
+ */
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const next = (await searchParams).next
   return (
-    <main className="grid min-h-dvh lg:grid-cols-2">
+    <main className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
       <AuthShowcasePanel />
 
-      <div className="relative flex flex-col items-center justify-center bg-card p-6 pt-16 sm:pt-6">
-        <AuthBackButton />
+      <div className="flex min-w-0 flex-col justify-center bg-background px-5 py-14 sm:px-10 sm:py-16 lg:px-14 lg:py-12">
+        <div className="mx-auto flex w-full max-w-md flex-col">
+          <AuthBackButton />
 
-        <div className="w-full max-w-sm">
-          <div className="rise flex flex-col items-center gap-3 text-center lg:items-start lg:text-left">
-            <Link href="/" aria-label="Terrion, kembali ke beranda" className="interactive lg:hidden">
-              <Logo size={44} withWordmark={false} />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">Masuk ke Terrion</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Kalender tanam bersama untuk koperasi tani
-              </p>
-            </div>
-          </div>
+          <AuthHeading
+            title="Lanjutkan ke kalender"
+            emphasis="tanam bersama"
+            subtitle="Satu akun untuk mencatat lahan, membaca proyeksi panen, dan menjawab permintaan pasokan."
+          />
 
-          <Suspense
-            fallback={
-              <div
-                aria-hidden
-                className="mt-7 h-[19.5rem] animate-pulse rounded-lg border border-border bg-card"
-              />
-            }
+          <LoginForm next={typeof next === 'string' ? next : undefined} />
+
+          <AuthNote
+            links={[
+              { href: '/signup', label: 'Daftar sebagai pembeli' },
+              { href: '/catalog', label: 'Lihat katalog tanpa masuk' },
+            ]}
           >
-            <LoginForm />
-          </Suspense>
-
-          <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground lg:text-left">
-            Pembeli baru?{' '}
-            <Link href="/signup" className="underline underline-offset-2 hover:text-foreground">
-              Daftar di sini
-            </Link>
-            . Akun koperasi dibuat oleh pengelola setelah verifikasi.{' '}
-            <Link href="/catalog" className="underline underline-offset-2 hover:text-foreground">
-              Lihat katalog tanpa masuk
-            </Link>
-          </p>
+            Akun koperasi dibuat oleh pengelola setelah verifikasi legalitas
+            koperasi. Pembeli dapat mendaftar sendiri, dan katalog pasokan tetap
+            terbuka tanpa perlu masuk.
+          </AuthNote>
         </div>
       </div>
     </main>
   )
 }
-
-function LoginForm() {
-  const router = useRouter()
-
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [pending, setPending] = useState(false)
-
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setError(null)
-    setPending(true)
-    try {
-      const result = await signIn({ email, password })
-      if (!result.ok) {
-        setError(result.message)
-        return
-      }
-      // Where they land follows the role the backend returned
-      router.push(homeFor(result.role))
-      router.refresh()
-    } catch {
-      setError('Tidak bisa menghubungi server. Periksa koneksi Anda, lalu coba lagi.')
-    } finally {
-      setPending(false)
-    }
-  }
-
-  return (
-    <form
-      onSubmit={onSubmit}
-      className="rise relative mt-7 flex flex-col gap-4 overflow-hidden rounded-lg border border-border bg-card p-6"
-      style={{ ['--rise-delay' as string]: '80ms' }}
-    >
-
-      <AuthField
-        icon={Mail}
-        label="Email"
-        type="email"
-        value={email}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-        required
-        autoComplete="email"
-        placeholder="nama@email.com"
-      />
-
-      <AuthPasswordField
-        icon={Lock}
-        label="Kata sandi"
-        value={password}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-        required
-        autoComplete="current-password"
-      />
-
-      {error && (
-        <p
-          role="alert"
-          className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-        >
-          {error}
-        </p>
-      )}
-
-      <Button type="submit" size="lg" disabled={pending} className="interactive mt-1">
-        {pending ? 'Memproses…' : 'Masuk'}
-      </Button>
-    </form>
-  )
-}
-

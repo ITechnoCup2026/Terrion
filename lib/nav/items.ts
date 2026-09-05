@@ -1,5 +1,6 @@
 import {
   ClipboardList,
+  Home,
   Inbox,
   LayoutDashboard,
   Map,
@@ -98,6 +99,13 @@ export const NAV_GROUPS: readonly NavGroup[] = [
   {
     label: 'Publik',
     items: [
+      {
+        href: '/beranda',
+        label: 'Beranda',
+        hint: 'Ringkasan permintaan Anda dan panen terdekat',
+        icon: Home,
+        roles: ['buyer'],
+      },
       {
         href: '/catalog',
         label: 'Katalog',

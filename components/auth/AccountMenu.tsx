@@ -1,7 +1,7 @@
 'use client'
 
 import { Menu } from '@base-ui/react/menu'
-import { ChevronDown, ClipboardList, LayoutDashboard, LogOut, Store } from 'lucide-react'
+import { ChevronDown, ClipboardList, Home, LayoutDashboard, LogOut, Store } from 'lucide-react'
 import Link from 'next/link'
 
 import { signOut } from '@/app/actions/auth'
@@ -116,27 +116,47 @@ export function AccountMenu({
                 >
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
                     {role === 'buyer'
-                      ? <Store aria-hidden className="size-4" />
+                      ? <Home aria-hidden className="size-4" />
                       : <LayoutDashboard aria-hidden className="size-4" />}
                   </span>
                   <span className="text-sm font-medium text-foreground">
-                    {role === 'buyer' ? 'Katalog pasokan' : 'Dashboard koperasi'}
+                    {role === 'buyer' ? 'Beranda pembeli' : 'Dashboard koperasi'}
                   </span>
                 </Menu.Item>
 
+                {/* A buyer's two working screens, named. The menu used to
+                    offer the catalogue as their "home" and nothing else
+                    besides the request list, which left the two halves of
+                    their job — browsing, and tracking what they had asked
+                    for — reachable from different places. */}
                 {role === 'buyer' && (
-                  <Menu.Item
-                    render={<Link href="/my-requests" />}
-                    className={cn(
-                      'interactive flex items-center gap-2.5 rounded-lg p-2.5 outline-none',
-                      'data-[highlighted]:bg-muted',
-                    )}
-                  >
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
-                      <ClipboardList aria-hidden className="size-4" />
-                    </span>
-                    <span className="text-sm font-medium text-foreground">Permintaan saya</span>
-                  </Menu.Item>
+                  <>
+                    <Menu.Item
+                      render={<Link href="/catalog" />}
+                      className={cn(
+                        'interactive flex items-center gap-2.5 rounded-lg p-2.5 outline-none',
+                        'data-[highlighted]:bg-muted',
+                      )}
+                    >
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+                        <Store aria-hidden className="size-4" />
+                      </span>
+                      <span className="text-sm font-medium text-foreground">Katalog pasokan</span>
+                    </Menu.Item>
+
+                    <Menu.Item
+                      render={<Link href="/my-requests" />}
+                      className={cn(
+                        'interactive flex items-center gap-2.5 rounded-lg p-2.5 outline-none',
+                        'data-[highlighted]:bg-muted',
+                      )}
+                    >
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+                        <ClipboardList aria-hidden className="size-4" />
+                      </span>
+                      <span className="text-sm font-medium text-foreground">Permintaan saya</span>
+                    </Menu.Item>
+                  </>
                 )}
               </>
             )}
